@@ -424,8 +424,7 @@ export default function Home() {
     <main id="top" className="min-h-screen bg-transparent text-gray-900">
       {/* ✅ ALWAYS-ON install prompt until installed */}
       <InstallAppPrompt />
- {/* 🔥 REPLACE THIS WHOLE BACKGROUND BLOCK */}
-  <div className="pointer-events-none fixed inset-0 -z-10">
+<div className="pointer-events-none fixed inset-0 -z-10">
   {/* Clean luxury base */}
   <div className="absolute inset-0 bg-[#F8F6F1]" />
 
@@ -442,8 +441,6 @@ export default function Home() {
   {/* 🔥 Premium grain texture (ADD THIS LAST) */}
   <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply bg-[url('/noise.png')]" />
 </div>
-    
-    
 
       {/* NAVBAR */}
       <header className="max-w-7xl mx-auto px-6 sm:px-10 py-7 flex items-center justify-between">
