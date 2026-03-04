@@ -83,22 +83,23 @@ function Shell({
 }) {
   return (
     <main className="min-h-screen text-gray-900">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#efe8da] via-[#f7f4ee] to-white" />
-        <div className="absolute -top-56 left-[-10%] h-[780px] w-[780px] rounded-full bg-[#B8963D]/25 blur-3xl" />
-        <div className="absolute top-[-20%] right-[-15%] h-[900px] w-[900px] rounded-full bg-black/15 blur-3xl" />
-        <div className="absolute -bottom-72 left-[20%] h-[980px] w-[980px] rounded-full bg-[#B8963D]/18 blur-3xl" />
-        <div
-          className="absolute inset-0 opacity-[0.14]"
-          style={{
-            backgroundImage:
-              "linear-gradient(45deg, rgba(0,0,0,0.18) 1px, transparent 1px), linear-gradient(-45deg, rgba(0,0,0,0.18) 1px, transparent 1px)",
-            backgroundSize: "72px 72px",
-            backgroundPosition: "0 0, 36px 36px",
-          }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_12%,transparent_55%,rgba(0,0,0,0.10))]" />
-      </div>
+     <div className="pointer-events-none fixed inset-0 -z-10">
+  {/* Clean luxury base */}
+  <div className="absolute inset-0 bg-[#F8F6F1]" />
+
+  {/* Deep contrast blobs */}
+  <div className="absolute -top-72 -right-40 h-[900px] w-[900px] rounded-full bg-[#1F3F3F]/25 blur-3xl" />
+  <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#B8963D]/20 blur-3xl" />
+
+  {/* Subtle radial glow */}
+  <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_70%_20%,rgba(184,150,61,0.15),transparent_60%)]" />
+
+  {/* Elegant vignette */}
+  <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_10%,transparent_50%,rgba(0,0,0,0.08))]" />
+
+  {/* Noise */}
+  <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply bg-[url('/noise.png')]" />
+</div>
 
       <div className="max-w-5xl mx-auto px-5 sm:px-10 py-8 sm:py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
