@@ -17,7 +17,7 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center">
-        <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur px-6 py-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-300 bg-white/70 backdrop-blur px-6 py-4 shadow-sm">
           Loading...
         </div>
       </div>
