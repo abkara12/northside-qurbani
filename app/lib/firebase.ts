@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCHHIRRDoIRHkzhWSLtcBOFMJi3wa3-znI",
-  authDomain: "ys2-thehifdhjournal.firebaseapp.com",
-  projectId: "ys2-thehifdhjournal",
-  storageBucket: "ys2-thehifdhjournal.firebasestorage.app",
-  messagingSenderId: "962912820364",
-  appId: "1:962912820364:web:07a1b28fd206fdcb242fa9"
+  apiKey: "AIzaSyCLkAWVGoWwmqkWe68Csfth3e1d5M-Kg7o",
+  authDomain: "main-thehifdhjournal-fa34a.firebaseapp.com",
+  projectId: "main-thehifdhjournal-fa34a",
+  storageBucket: "main-thehifdhjournal-fa34a.firebasestorage.app",
+  messagingSenderId: "532135430249",
+  appId: "1:532135430249:web:b7f8f632744883c52d7af8"
 };
 
 
