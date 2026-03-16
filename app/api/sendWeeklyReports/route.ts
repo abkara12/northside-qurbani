@@ -34,32 +34,27 @@ export async function GET() {
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
 
+      // Get all logs for this user
       const logsSnapshot = await db
         .collection("users")
         .doc(userDoc.id)
         .collection("logs")
+        .orderBy("createdAt", "desc")
         .get();
 
-      // Filter logs for last 7 days (works with Timestamp or string)
+      // Filter logs from the last 7 days
       const recentLogs = logsSnapshot.docs.filter((logDoc) => {
         const logData = logDoc.data();
-        let logDate: Date;
-
-        if (logData.date?.toDate) {
-          // Firestore Timestamp
-          logDate = logData.date.toDate();
-        } else {
-          // Assume string
-          logDate = new Date(logData.date);
-        }
-
-        return logDate >= sevenDaysAgo;
+        const createdAt = logData.createdAt?.toDate?.();
+        return createdAt && createdAt >= sevenDaysAgo;
       });
 
       if (recentLogs.length > 0) {
-        const reportText = `Assalaamu Alaikum\n\nWeekly Hifdh Report\nStudent: ${userData.name}\n\n📅 ${new Date().toLocaleDateString()}\n`;
+        // Generate a simple report (you can expand with log details)
+        const reportText = `Assalaamu Alaikum\n\nWeekly Hifdh Report\nStudent: ${userData.username}\n\n📅 ${new Date().toLocaleDateString()}\n`;
+
         reports.push({
-          student: userData.name,
+          student: userData.username,
           parentPhone: userData.parentPhone,
           report: reportText,
         });
