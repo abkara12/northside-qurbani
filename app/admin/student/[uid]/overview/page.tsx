@@ -178,6 +178,10 @@ setStudentName(
   return map;
 }, [rows]);
 
+const currentMonth = getMonthLabel(new Date().toISOString().slice(0, 10));
+
+const currentMonthAbsents = absentsByMonth[currentMonth] || 0;
+
   const summary = useMemo(() => {
     if (!rows.length) return { totalDays: 0, avgSabak: 0, lastGoal: 0 };
     const sabakNums = rows.map((r) => num(r.sabak)).filter((n) => n > 0);
@@ -292,8 +296,12 @@ setStudentName(
 
       <section className="max-w-6xl mx-auto px-6 sm:px-10 pb-16">
         {/* Summary cards */}
-        <div className="grid sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid sm:grid-cols-4 gap-4 mb-8">
           <StatCard label="Days logged" value={String(summary.totalDays)} />
+                    <StatCard
+            label="Absences (this month)"
+            value={String(currentMonthAbsents)}
+          />
           <StatCard label="Average Sabak" value={summary.avgSabak ? summary.avgSabak.toFixed(1) : "—"} />
           <StatCard label="Latest weekly goal" value={summary.lastGoal ? String(summary.lastGoal) : "—"} />
         </div>
