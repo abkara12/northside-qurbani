@@ -681,14 +681,14 @@ if (markGoalCompleted && !nextCompletedKey) {
                 <div className="flex items-end justify-between gap-4">
                   <span className="text-sm font-semibold text-gray-900">Weekly Sabak Goal</span>
                   <span className="text-xs text-gray-500">
-                    {goalLocked ? "Locked until completed" : "Set a new goal"}
+                    {goalLockedThisWeek ? "Locked until completed" : "Set a new goal"}
                   </span>
                 </div>
 
                 <input
                     value={weeklyGoal}
   onChange={(e) => setWeeklyGoal(e.target.value)}
-  disabled={goalLocked}
+  disabled={goalLockedThisWeek}
                   className="h-12 rounded-2xl border border-gray-300 bg-white/80 px-4 outline-none focus:ring-2 focus:ring-[#B8963D]/30 disabled:opacity-60"
                   placeholder="Example: 10 pages"
                 />
