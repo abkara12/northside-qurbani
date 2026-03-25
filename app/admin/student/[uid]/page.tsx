@@ -681,10 +681,10 @@ async function handleSave(e: React.FormEvent) {
                 </div>
 
                 <input
-                  value={weeklyGoal}
-                  onChange={(e) => setWeeklyGoal(e.target.value)}
-                  disabled={goalLockedThisWeek}
-                  className="h-12 rounded-2xl border border-gray-200 bg-white/80 px-4 outline-none focus:ring-2 focus:ring-[#A46B72]/30 disabled:opacity-60"
+                    value={weeklyGoal}
+  onChange={(e) => setWeeklyGoal(e.target.value)}
+  disabled={goalLockedThisWeek}
+                  className="h-12 rounded-2xl border border-gray-300 bg-white/80 px-4 outline-none focus:ring-2 focus:ring-[#B8963D]/30 disabled:opacity-60"
                   placeholder="Example: 10 pages"
                 />
               </label>
