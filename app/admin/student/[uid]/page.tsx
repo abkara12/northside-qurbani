@@ -697,6 +697,9 @@ if (nextCompletedKey && weeklyGoal.trim() !== "" && !markGoalCompleted) {
                   className="h-12 rounded-2xl border border-gray-200 bg-white/80 px-4 outline-none focus:ring-2 focus:ring-[#A46B72]/30 disabled:opacity-60"
                   placeholder="Example: 10 pages"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                After typing a new goal, press <span className="font-semibold">Enter</span> or click Save to activate it.
+              </p>
               </label>
 
               <div className="grid gap-2 sm:grid-cols-3">
