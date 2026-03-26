@@ -207,7 +207,7 @@ export default function SignupPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
                     required
-                    placeholder="student@email.com"
+                    placeholder="Parent's Email"
                     className="mt-2 w-full h-12 rounded-2xl border border-gray-300 bg-white/80 px-4 outline-none focus:ring-2 focus:ring-[#B8963D]/40"
                   />
                 </div>
