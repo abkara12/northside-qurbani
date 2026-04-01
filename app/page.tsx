@@ -400,7 +400,7 @@ function MenuRow({
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-center sm:text-left">
+    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left">
       <div className="text-sm text-white/50">{label}</div>
       <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
     </div>
@@ -438,20 +438,20 @@ export default function Home() {
   }
 
   return (
-    <main id="top" className="min-h-screen overflow-x-hidden bg-[#0b080d] text-white">
+   <main id="top" className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
-  <div className="absolute inset-0 bg-[#0b080d]" />
-  <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0d090e_38%,#080609_100%)]" />
+  <div className="absolute inset-0 bg-[#09070b]" />
+  <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
 
   <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-  <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.25] blur-3xl" />
-  <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.07] blur-3xl" />
+  <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.26] blur-3xl" />
+  <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
 
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.06),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.16),transparent_32%)]" />
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
 
-  <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:44px_44px]" />
+  <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
 
   <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
 </div>
