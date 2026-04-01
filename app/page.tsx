@@ -672,10 +672,10 @@ export default function Home() {
         experience for both customers and staff from booking to final collection.
       </p>
 
-      <div className="mt-6 flex flex-col items-center gap-2.5 sm:w-full sm:max-w-sm sm:mx-auto lg:mx-0 lg:max-w-none lg:flex-row lg:items-center lg:justify-start">
+      <div className="mt-6 flex flex-col items-center gap-2.5 lg:mt-6 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
         <Link
   href="/order"
-  className="inline-flex h-[44px] w-full items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:w-auto lg:px-7"
+  className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
 >
   Place Your Order
 </Link>
@@ -683,14 +683,14 @@ export default function Home() {
        {user ? (
   <Link
     href="/admin"
-    className="inline-flex h-[40px] w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:w-auto lg:px-6"
+    className="inline-flex h-[40px] min-w-[168px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
   >
     Open Dashboard
   </Link>
 ) : (
   <Link
     href="/login"
-    className="inline-flex h-[40px] w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:w-auto lg:px-6"
+    className="inline-flex h-[40px] min-w-[168px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
   >
     Staff Sign In
   </Link>
