@@ -401,7 +401,7 @@ function MenuRow({
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[20px] border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left">
-      <div className="text-sm text-white/50">{label}</div>
+      <div className="text-sm text-white/48">{label}</div>
       <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
     </div>
   );
@@ -653,48 +653,48 @@ export default function Home() {
       )}
 
       {/* HERO */}
-<section className="mx-auto max-w-7xl px-6 pt-2 pb-16 sm:px-10 lg:pt-4 lg:pb-24">
-  <div className="grid items-center gap-8 lg:grid-cols-12">
+<section className="mx-auto max-w-7xl px-6 pt-3 pb-18 sm:px-10 lg:pt-6 lg:pb-24">
+  <div className="grid items-center gap-8 lg:grid-cols-12 xl:gap-10">
     <div className="text-center lg:col-span-7 lg:text-left">
-      <h1 className="bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.055em] text-transparent sm:text-[3.3rem] lg:text-[4.2rem] xl:text-[4.9rem]">
-  Qurbani elevated
-  <span className="block mt-1">
-    with care, precision,
-  </span>
-  <span className="block mt-1">
-    and excellence.
-  </span>
-</h1>
+      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
+        Northside Qurbani
+      </div>
 
-      <p className="mx-auto mt-4 max-w-2xl text-[0.97rem] leading-7 text-white/68 sm:text-[1rem] sm:leading-7 lg:mx-0 lg:max-w-[39rem] lg:text-[1.04rem] lg:leading-8">
-        Northside Qurbani brings together trusted service, professional coordination,
-        and a beautifully designed digital platform — creating a smoother, more refined
-        experience for both customers and staff from booking to final collection.
+      <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.02] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
+        Qurbani elevated
+        <span className="mt-1 block">with care, precision,</span>
+        <span className="mt-1 block">and trusted excellence.</span>
+      </h1>
+
+      <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[40rem] lg:text-[1.06rem]">
+        Northside Qurbani combines trusted service, careful coordination, and a beautifully
+        designed digital platform to deliver a smoother, more premium experience from booking
+        right through to final collection.
       </p>
 
-      <div className="mt-6 flex flex-col items-center gap-2.5 lg:mt-6 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
+      <div className="mt-7 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
         <Link
-  href="/order"
-  className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
->
-  Place Your Order
-</Link>
+          href="/order"
+          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+        >
+          Place Your Order
+        </Link>
 
-       {user ? (
-  <Link
-    href="/admin"
-    className="inline-flex h-[40px] min-w-[168px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-  >
-    Open Dashboard
-  </Link>
-) : (
-  <Link
-    href="/login"
-    className="inline-flex h-[40px] min-w-[168px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-  >
-    Staff Sign In
-  </Link>
-)}
+        {user ? (
+          <Link
+            href="/admin"
+            className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+          >
+            Open Dashboard
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+          >
+            Staff Sign In
+          </Link>
+        )}
       </div>
 
       <div className="mx-auto mt-8 hidden max-w-3xl gap-4 md:grid md:grid-cols-3 lg:mx-0">
@@ -707,7 +707,7 @@ export default function Home() {
             key={item.k}
             className="rounded-[22px] border border-white/10 bg-white/[0.045] px-5 py-4 text-center shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left"
           >
-            <div className="text-sm text-white/45">{item.k}</div>
+            <div className="text-sm text-white/42">{item.k}</div>
             <div className="mt-1 font-semibold leading-snug text-white">{item.v}</div>
           </div>
         ))}
@@ -715,7 +715,7 @@ export default function Home() {
     </div>
 
     <div className="lg:col-span-5">
-      <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
+      <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#171018] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-[-4rem] top-[-4rem] h-40 w-40 rounded-full bg-[#c6a268]/14 blur-3xl" />
           <div className="absolute bottom-[-4rem] left-[-4rem] h-36 w-36 rounded-full bg-[#5a3045]/20 blur-3xl" />
@@ -725,38 +725,38 @@ export default function Home() {
 
         <div className="relative flex h-full flex-col text-center sm:text-left">
           <div className="inline-flex w-fit self-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.25em] text-[#d8b67e] sm:self-start">
-            Elite operations
+            Refined operations
           </div>
 
-          <h3 className="mt-4 text-[1.5rem] font-semibold leading-tight lg:text-[1.65rem]">
+          <h3 className="mt-4 text-[1.55rem] font-semibold leading-tight lg:text-[1.72rem]">
             A premium qurbani service,
             <br />
             supported by a modern platform.
           </h3>
 
-          <p className="mt-3 text-[0.94rem] leading-6 text-white/70">
-            A more controlled, premium, and professional experience across booking,
-            coordination, and collection.
+          <p className="mt-3 text-[0.95rem] leading-6 text-white/68">
+            Designed to give customers a smoother experience and give staff clearer control
+            across ordering, coordination, and collection.
           </p>
 
-          <div className="mt-5 grid gap-3">
-            <StatPill label="Customer ordering" value="Elegant and clear" />
-            <StatPill label="Team coordination" value="Structured on busy days" />
-            <StatPill label="Collection handover" value="Organised and professional" />
+          <div className="mt-6 grid gap-3">
+            <StatPill label="Customer ordering" value="Elegant and easy to complete" />
+            <StatPill label="Operations" value="More structured on busy days" />
+            <StatPill label="Collection" value="Clearer and more professional" />
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="mt-6 grid grid-cols-2 gap-3">
             {[
               ["Service", "Premium"],
               ["Workflow", "Refined"],
-              ["Experience", "Trusted"],
-              ["Brand", "Elevated"],
+              ["Trust", "Established"],
+              ["Experience", "Elevated"],
             ].map(([label, value]) => (
               <div
                 key={label}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left"
               >
-                <div className="text-sm text-white/45">{label}</div>
+                <div className="text-sm text-white/42">{label}</div>
                 <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
               </div>
             ))}
@@ -767,68 +767,81 @@ export default function Home() {
   </div>
 </section>
 
-      {/* ABOUT / STORY */}
-      <section id="about" className="py-20">
-        <div className="mx-auto max-w-6xl px-6 sm:px-10">
-          <div className="grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-5">
-              <div className="rounded-[36px] border border-white/10 bg-white/[0.045] p-10 text-center shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left">
-                <SectionEyebrow>Our story</SectionEyebrow>
-                <h2 className="mt-3 text-4xl font-semibold tracking-tight text-white">
-                  Built on trust, handled with care, presented with excellence.
-                </h2>
-                <p className="mt-5 text-lg leading-relaxed text-[#c8bdc3]">
-                  Northside Qurbani is led by Moulana Shaheed Bhabha and Yaqoob Sader,
-                  combining trusted service with a more refined, modern standard of organisation.
-                  The aim is to make the qurbani experience feel smoother, more professional,
-                  and more dignified from beginning to end.
-                </p>
+{/* ABOUT / BRAND STORY */}
+<section className="mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:py-24">
+  <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+    
+    {/* LEFT */}
+    <div className="text-center lg:text-left">
+      <p className="text-[11px] uppercase tracking-[0.3em] text-[#d8b67e] mb-4">
+        About Northside Qurbani
+      </p>
+
+      <h2 className="text-[2rem] sm:text-[2.4rem] lg:text-[2.8rem] font-semibold leading-tight tracking-[-0.03em] text-white">
+        A trusted qurbani service,
+        <br />
+        built on care, responsibility,
+        <br />
+        and experience.
+      </h2>
+
+      <p className="mt-5 text-[0.98rem] leading-7 text-white/70 sm:text-[1.05rem] sm:leading-8">
+        Northside Qurbani is led by <span className="text-[#d8b67e] font-medium">Moulana Shaheed Bhabha</span> and <span className="text-[#d8b67e] font-medium">Yaqoob Sader</span>,
+        bringing together years of experience, responsibility, and a deep understanding of the importance of qurbani.
+      </p>
+
+      <p className="mt-4 text-[0.95rem] leading-7 text-white/65 sm:text-[1rem] sm:leading-8">
+        Every aspect of the process is handled with care — from the initial booking to the final collection —
+        ensuring that each qurbani is carried out in a way that is organised, respectful, and aligned with proper standards.
+      </p>
+
+      <p className="mt-4 text-[0.95rem] leading-7 text-white/65 sm:text-[1rem] sm:leading-8">
+        By combining trusted service with a modern system, Northside Qurbani offers a more refined and seamless experience,
+        making the entire process easier for both customers and staff.
+      </p>
+    </div>
+
+    {/* RIGHT */}
+    <div className="relative">
+      <div className="rounded-[32px] border border-white/10 bg-[#161015] p-6 sm:p-8 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        
+        <div className="grid gap-5 sm:grid-cols-2">
+          {[
+            {
+              name: "Moulana Shaheed Bhabha",
+              role: "Religious Oversight & Guidance",
+            },
+            {
+              name: "Yaqoob Sader",
+              role: "Operations & Coordination",
+            },
+          ].map((person) => (
+            <div
+              key={person.name}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center sm:text-left"
+            >
+              <div className="text-sm text-white/40">
+                {person.role}
+              </div>
+              <div className="mt-1 font-semibold text-white">
+                {person.name}
               </div>
             </div>
+          ))}
+        </div>
 
-            <div className="lg:col-span-7">
-              <div className="rounded-[36px] border border-white/10 bg-white/[0.045] p-10 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                <div className="grid gap-8 md:grid-cols-2">
-                  <div className="text-center sm:text-left">
-                    <div className="text-sm uppercase tracking-[0.2em] text-[#a98a61]">What sets us apart</div>
-                    <p className="mt-3 leading-relaxed text-[#c8bdc3]">
-                      Northside Qurbani is more than a basic service. It is a premium,
-                      carefully managed experience designed for people who value trust,
-                      clarity, professionalism, and a smoother process.
-                    </p>
-                  </div>
-
-                  <div className="text-center sm:text-left">
-                    <div className="text-sm uppercase tracking-[0.2em] text-[#a98a61]">Why the platform matters</div>
-                    <p className="mt-3 leading-relaxed text-[#c8bdc3]">
-                      Busy qurbani periods can become difficult to manage without proper systems.
-                      The Northside platform adds structure, reduces confusion, improves visibility,
-                      and supports a more elevated customer and staff experience.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8 h-px bg-white/10" />
-
-                <div className="mt-8 grid gap-5 sm:grid-cols-3">
-                  {[
-                    "Trusted leadership",
-                    "Premium customer journey",
-                    "Modern operational structure",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-center text-sm font-medium text-white sm:text-left"
-                    >
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-center sm:text-left">
+          <div className="text-sm text-white/45">
+            Our Approach
+          </div>
+          <div className="mt-2 text-[0.95rem] leading-6 text-white/70">
+            Structured processes, clear communication, and a focus on delivering a smooth and professional qurbani experience from start to finish.
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* SERVICES */}
       <section id="services" className="pb-24 pt-4">
