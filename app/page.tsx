@@ -659,15 +659,13 @@ export default function Home() {
       </div>
 
       <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.02] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
-        Qurbani elevated
-        <span className="mt-1 block">with care, precision,</span>
-        <span className="mt-1 block">and trusted excellence.</span>
+        Elevating the Qurbani experience,
+        <span className="mt-1 block">with clarity,</span>
+        <span className="mt-1 block">care, and organisation.</span>
       </h1>
 
       <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[40rem] lg:text-[1.06rem]">
-        Northside Qurbani combines trusted service, careful coordination, and a beautifully
-        designed digital platform to deliver a smoother, more premium experience from booking
-        right through to final collection.
+       Northside Qurbani offers a trusted and well-managed service, supported by a refined digital system that brings greater ease, clarity, and structure to the entire process.
       </p>
 
       <div className="mt-7 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
@@ -794,8 +792,7 @@ export default function Home() {
       </p>
 
       <p className="mt-4 text-[0.95rem] leading-7 text-white/65 sm:text-[1rem] sm:leading-8">
-        By combining trusted service with a modern system, Northside Qurbani offers a more refined and seamless experience,
-        making the entire process easier for both customers and staff.
+        The introduction of a refined digital platform allows the team to manage operations with greater clarity and coordination, while maintaining the same trusted approach the service is known for.
       </p>
     </div>
 
@@ -852,25 +849,24 @@ export default function Home() {
         built around service, clarity, and trust.
       </h2>
       <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8">
-        Every part of the Northside Qurbani experience is designed to feel smoother,
-        more organised, and more professional for both customers and staff.
+        Every part of the Northside Qurbani experience is designed to Every part of the experience is designed to feel smooth, organised, and easy to navigate for both customers and staff.
       </p>
     </div>
 
     <div className="grid gap-6 md:grid-cols-3 lg:gap-7">
       <FeatureCard
         title="Seamless Ordering"
-        text="Customers can place their qurbani booking through a clean, premium online flow that feels simple, trustworthy, and easy to complete."
+        text="Customers can place their qurbani booking through a clear and simple process that feels smooth, reliable, and easy to complete."
         icon={<SparkIcon />}
       />
       <FeatureCard
         title="Structured Operations"
-        text="Staff work from one organised platform for orders, payments, preferences, progress updates, and collection coordination."
+        text="The team works from one organised system, making it easier to manage orders, preferences, and day-of coordination."
         icon={<WorkflowIcon />}
       />
       <FeatureCard
         title="Trusted Fulfilment"
-        text="Careful service, clear processes, and better systems come together to deliver a more elevated and professional overall experience."
+        text="A careful and well-managed approach ensures that every stage of the process is handled with consistency and attention to detail."
         icon={<ShieldIcon />}
       />
     </div>
@@ -883,7 +879,8 @@ export default function Home() {
           <div className="mb-10 text-center sm:text-left">
             <SectionEyebrow>The platform</SectionEyebrow>
             <h2 className="mt-2 text-4xl font-semibold tracking-tight text-white">
-              Designed to make Qurbani day feel smoother, calmer, and more organised
+              Bringing clarity and structure
+                to every stage of the process.
             </h2>
           </div>
 
@@ -891,23 +888,23 @@ export default function Home() {
             {[
               {
                 step: "01",
-                title: "Customer Books",
-                text: "The customer submits their booking, quantity, and preferences through one elegant digital flow.",
+                title: "Booking",
+                text: "Customers submit their qurbani order and preferences through a clear and guided process.",
               },
               {
                 step: "02",
-                title: "Team Prepares",
-                text: "Orders appear instantly for staff, ready for payment visibility and day-of planning.",
+                title: "Preparation",
+                text: "Orders are organised and prepared in advance, allowing the team to plan more effectively.",
               },
               {
                 step: "03",
-                title: "Live Coordination",
-                text: "Throughout the day, staff can manage updates, processing, and progress from one place.",
+                title: "Live Management",
+                text: "Throughout the day, progress and coordination are managed in one place with better visibility.",
               },
               {
                 step: "04",
-                title: "Collection Handover",
-                text: "Final handover becomes clearer and more professional because everything is already structured.",
+                title: "Collection",
+                text: "Collection becomes more structured and straightforward, making the final stage smoother for everyone.",
               },
             ].map((item) => (
               <div
@@ -942,10 +939,8 @@ export default function Home() {
           </h2>
 
           <p className="mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/70 sm:text-[1.04rem] sm:leading-8">
-            The value is not only in the design. It is in the structure, confidence,
-            and clarity the platform brings to the full Northside Qurbani experience —
-            making the business feel more organised, more premium, and more trusted.
-          </p>
+  The value lies in the clarity, smoother coordination, and overall experience the platform supports, helping the full qurbani process feel more seamless from beginning to end.
+</p>
         </div>
 
         <div className="lg:col-span-5">
@@ -990,11 +985,10 @@ export default function Home() {
       <p className="text-[11px] uppercase tracking-[0.28em] text-[#a98a61]">
         Questions & Answers
       </p>
-      <h2 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.35rem] lg:text-[2.9rem]">
-        Frequently asked about the service
-        <br className="hidden sm:block" />
-        and the platform
-      </h2>
+      <h2 className="mt-3 text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.35rem] lg:text-[2.9rem]">
+  Frequently asked about the service
+  <span className="block mt-1">and the platform</span>
+</h2>
       <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.04rem] sm:leading-8">
         A few of the most common questions about how Northside Qurbani works,
         what the platform adds, and why the experience feels more organised overall.
@@ -1007,24 +1001,12 @@ export default function Home() {
         answer="Northside Qurbani combines trusted service, careful coordination, and a refined digital platform. The result is a qurbani experience that feels more organised, more professional, and easier for both customers and staff from beginning to end."
       />
       <FAQItem
-        question="Is the platform only for placing orders?"
-        answer="No. The platform supports far more than online ordering. It also helps staff manage visibility, coordination, payment tracking, progress updates, and final collection in a much more structured way."
-      />
-      <FAQItem
         question="Can customers submit their qurbani booking online themselves?"
         answer="Yes. Customers can place their order through a clean and simple online flow, making the process clearer, faster, and more convenient while also reducing unnecessary back-and-forth."
       />
       <FAQItem
-        question="Can the team use the system on mobile during Qurbani day?"
-        answer="Yes. The platform is designed to work smoothly on mobile, allowing staff to access information, manage updates, and coordinate more effectively while moving through the day."
-      />
-      <FAQItem
         question="Why is a digital platform useful for a qurbani service?"
         answer="Because it improves structure. Instead of relying only on manual coordination, the platform keeps important information visible and organised, helping the business run more calmly and giving customers a more premium experience."
-      />
-      <FAQItem
-        question="Is this website about the business or the system?"
-        answer="It represents both. Northside Qurbani is the service itself, while the platform supports that service by making the full customer and staff experience more refined, more efficient, and more professional."
       />
     </div>
   </div>
@@ -1037,15 +1019,13 @@ export default function Home() {
       <div className="grid items-center gap-10 lg:grid-cols-12">
         <div className="text-center lg:col-span-8 lg:text-left">
           <SectionEyebrow>Ready to proceed?</SectionEyebrow>
-          <h2 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.3rem] lg:text-[2.8rem]">
-            Place your order or continue
-            <br className="hidden sm:block" />
-            to the staff dashboard
-          </h2>
+          <h2 className="mt-3 text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.3rem] lg:text-[2.8rem]">
+  Place your order or continue
+  <span className="block mt-1">to the staff dashboard</span>
+</h2>
           <p className="mt-4 max-w-2xl text-[1rem] leading-7 text-[#c8bdc3] sm:text-[1.05rem] sm:leading-8">
-            A premium qurbani service, supported by a more elegant, more structured,
-            and more professional digital experience.
-          </p>
+  A trusted qurbani service presented through a clear, refined, and easy-to-use digital experience.
+</p>
         </div>
 
         <div className="flex flex-col items-center justify-center gap-2.5 lg:col-span-4 lg:items-end lg:justify-end lg:gap-3">
@@ -1090,8 +1070,8 @@ export default function Home() {
               Northside Qurbani
             </div>
             <div className="mt-1 max-w-[16rem] text-sm leading-6 text-white/55 lg:max-w-[18rem]">
-              Premium qurbani service with refined digital operations and a more structured customer experience.
-            </div>
+  Premium qurbani service presented through a refined digital experience for customers and staff.
+</div>
           </div>
         </div>
       </div>
@@ -1152,9 +1132,8 @@ export default function Home() {
               <div className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-white">
                 Trusted service, elevated presentation
               </div>
-              <div className="mt-2 max-w-[30rem] text-sm leading-6 text-[#c8bdc3]">
-                Premium qurbani coordination supported by a refined digital platform built for clarity, trust, and smoother operations.
-              </div>
+                Premium qurbani coordination presented through a refined platform designed to support clarity, trust, and a smooth overall experience.
+
             </div>
 
             <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:items-center">
