@@ -418,8 +418,8 @@ export default function Home() {
             <Image
               src="/logo4.png"
               alt="Qurbani Management System"
-              width={58}
-              height={58}
+              width={65}
+              height={65}
               className="rounded"
               priority
             />
@@ -510,8 +510,8 @@ export default function Home() {
                     <Image
                       src="/logo4.png"
                       alt="Qurbani Management"
-                      width={58}
-                      height={58}
+                      width={65}
+                      height={65}
                       className="rounded"
                       priority
                     />
@@ -856,8 +856,8 @@ export default function Home() {
                   <Image
                     src="/logo4.png"
                     alt="Qurbani Management"
-                    width={58}
-                    height={58}
+                    width={65}
+                    height={65}
                     className="rounded"
                     priority
                   />
