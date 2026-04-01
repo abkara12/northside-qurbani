@@ -405,7 +405,7 @@ export default function Home() {
         <div className="flex items-center gap-4">
           <div className="grid h-[82px] w-[82px] place-items-center rounded-[1.5rem] border border-white/50 bg-white/80 shadow-[0_10px_35px_rgba(0,0,0,0.06)] backdrop-blur-xl">
             <Image
-              src="/icon-512.png"
+              src="/logo4.png"
               alt="Northside Qurbani"
               width={62}
               height={62}
@@ -504,7 +504,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div className="grid h-[76px] w-[76px] place-items-center rounded-[1.25rem] border border-white/50 bg-white/80 shadow-sm">
                     <Image
-                      src="/icon-512.png"
+                      src="/logo4.png"
                       alt="Northside Qurbani"
                       width={58}
                       height={58}
@@ -889,7 +889,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <div className="grid h-[78px] w-[78px] place-items-center rounded-[1.3rem] border border-white/50 bg-white/80 shadow-sm">
                   <Image
-                    src="/icon-512.png"
+                    src="/logo4.png"
                     alt="Northside Qurbani"
                     width={58}
                     height={58}
