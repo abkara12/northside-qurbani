@@ -460,7 +460,7 @@ export default function Home() {
                   href="/admin"
                   className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 backdrop-blur-xl transition-colors"
                 >
-                  Admin Dashboard
+                  Admin 
                 </Link>
               ) : null}
 
