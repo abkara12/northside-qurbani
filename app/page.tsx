@@ -649,125 +649,125 @@ export default function Home() {
       )}
 
       {/* HERO */}
-      <section className="mx-auto max-w-7xl px-6 pb-24 pt-6 sm:px-10 lg:pb-28 lg:pt-10">
-        <div className="grid items-stretch gap-8 lg:grid-cols-12">
-          <div className="flex flex-col justify-center text-center lg:col-span-7 lg:text-left">
-            <div className="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm shadow-sm backdrop-blur-xl lg:mx-0">
-              <span className="h-2 w-2 rounded-full bg-[#c6a268]" />
-              <span className="text-white/65">
-                Trusted service. Refined systems. A premium Qurbani experience.
-              </span>
-            </div>
+      <section className="mx-auto max-w-7xl px-6 pb-20 pt-4 sm:px-10 lg:pb-24 lg:pt-6">
+  <div className="grid items-stretch gap-8 lg:grid-cols-12">
+    <div className="flex flex-col justify-center text-center lg:col-span-7 lg:text-left">
+      <div className="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm shadow-sm backdrop-blur-xl lg:mx-0">
+        <span className="h-2 w-2 rounded-full bg-[#c6a268]" />
+        <span className="text-white/65">
+          Trusted service. Refined systems. A premium Qurbani experience.
+        </span>
+      </div>
 
-            <h1 className="mt-7 text-[2.8rem] font-semibold leading-[1.02] tracking-[-0.04em] text-white sm:text-[3.7rem] lg:text-[4.7rem] xl:text-[5.5rem]">
-              Qurbani elevated
-              <br className="hidden sm:block" />
-              with care,
-              <br className="hidden sm:block" />
-              precision, and excellence.
-            </h1>
+      <h1 className="mt-6 text-[3.1rem] font-semibold leading-[0.96] tracking-[-0.055em] text-white sm:text-[4.2rem] lg:text-[5rem] xl:text-[5.9rem]">
+        Qurbani elevated
+        <br className="hidden sm:block" />
+        with care, precision,
+        <br className="hidden sm:block" />
+        and excellence.
+      </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/68 sm:text-lg sm:leading-8 lg:mx-0 lg:text-[1.15rem]">
-              Northside Qurbani brings together trusted service, professional coordination,
-              and a beautifully designed digital platform — creating a smoother, more refined
-              experience for both customers and staff from booking to final collection.
-            </p>
+      <p className="mx-auto mt-5 max-w-2xl text-[1.02rem] leading-7 text-white/70 sm:text-lg sm:leading-8 lg:mx-0 lg:max-w-[44rem]">
+        Northside Qurbani brings together trusted service, professional coordination,
+        and a beautifully designed digital platform — creating a smoother, more refined
+        experience for both customers and staff from booking to final collection.
+      </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
-              <Link
-                href="/order"
-                className="inline-flex h-14 items-center justify-center rounded-full bg-[#c6a268] px-8 text-base font-medium text-[#161015] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:brightness-105"
-              >
-                Place Your Order
-              </Link>
+      <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+        <Link
+          href="/order"
+          className="inline-flex h-14 items-center justify-center rounded-full bg-[#c6a268] px-8 text-base font-medium text-[#161015] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:brightness-105"
+        >
+          Place Your Order
+        </Link>
 
-              {user ? (
-                <Link
-                  href="/admin"
-                  className="inline-flex h-14 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-base font-medium text-white backdrop-blur-xl transition hover:bg-white/10"
-                >
-                  Open Dashboard
-                </Link>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex h-14 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-base font-medium text-white backdrop-blur-xl transition hover:bg-white/10"
-                >
-                  Staff Sign In
-                </Link>
-              )}
-            </div>
+        {user ? (
+          <Link
+            href="/admin"
+            className="inline-flex h-14 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-base font-medium text-white backdrop-blur-xl transition hover:bg-white/10"
+          >
+            Open Dashboard
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex h-14 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-base font-medium text-white backdrop-blur-xl transition hover:bg-white/10"
+          >
+            Staff Sign In
+          </Link>
+        )}
+      </div>
 
-            <div className="mx-auto mt-10 grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3 lg:mx-0">
-              {[
-                { k: "Trusted Service", v: "Handled with dignity and care" },
-                { k: "Premium Ordering", v: "Simple, polished, and modern" },
-                { k: "Smooth Operations", v: "Better structure on the day" },
-              ].map((item) => (
-                <div
-                  key={item.k}
-                  className="rounded-[28px] border border-white/10 bg-white/[0.045] px-5 py-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left"
-                >
-                  <div className="text-sm text-white/45">{item.k}</div>
-                  <div className="mt-1 font-semibold leading-snug text-white">{item.v}</div>
-                </div>
-              ))}
-            </div>
+      <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3 lg:mx-0">
+        {[
+          { k: "Trusted Service", v: "Handled with dignity and care" },
+          { k: "Premium Ordering", v: "Simple, polished, and modern" },
+          { k: "Smooth Operations", v: "Better structure on the day" },
+        ].map((item) => (
+          <div
+            key={item.k}
+            className="rounded-[28px] border border-white/10 bg-white/[0.045] px-5 py-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left"
+          >
+            <div className="text-sm text-white/45">{item.k}</div>
+            <div className="mt-1 font-semibold leading-snug text-white">{item.v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="lg:col-span-5">
+      <div className="relative h-full overflow-hidden rounded-[40px] border border-white/10 bg-[#171018] p-8 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-4rem] top-[-4rem] h-48 w-48 rounded-full bg-[#c6a268]/14 blur-3xl" />
+          <div className="absolute bottom-[-4rem] left-[-4rem] h-44 w-44 rounded-full bg-[#5a3045]/20 blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))]" />
+          <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:34px_34px]" />
+        </div>
+
+        <div className="relative flex h-full flex-col text-center sm:text-left">
+          <div className="inline-flex w-fit self-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[#d8b67e] sm:self-start">
+            Elite operations
           </div>
 
-          <div className="lg:col-span-5">
-            <div className="relative h-full overflow-hidden rounded-[40px] border border-white/10 bg-[#171018] p-8 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)]">
-              <div className="pointer-events-none absolute inset-0">
-                <div className="absolute right-[-4rem] top-[-4rem] h-48 w-48 rounded-full bg-[#c6a268]/14 blur-3xl" />
-                <div className="absolute bottom-[-4rem] left-[-4rem] h-44 w-44 rounded-full bg-[#5a3045]/20 blur-3xl" />
-                <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))]" />
-                <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:34px_34px]" />
+          <h3 className="mt-6 text-3xl font-semibold leading-tight">
+            A premium qurbani service,
+            <br />
+            supported by a modern operations platform.
+          </h3>
+
+          <p className="mt-4 leading-relaxed text-white/70">
+            Northside Qurbani is not only about taking orders. It is about delivering
+            a more controlled, more premium, and more professional experience across the full journey.
+          </p>
+
+          <div className="mt-8 grid gap-3">
+            <StatPill label="Customer ordering" value="Elegant, simple, and clear" />
+            <StatPill label="Team coordination" value="More structured on busy days" />
+            <StatPill label="Processing visibility" value="Cleaner updates for staff" />
+            <StatPill label="Collection handover" value="More organised and professional" />
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {[
+              ["Service", "Premium"],
+              ["Workflow", "Refined"],
+              ["Experience", "Trusted"],
+              ["Brand", "Elevated"],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left"
+              >
+                <div className="text-sm text-white/45">{label}</div>
+                <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
               </div>
-
-              <div className="relative flex h-full flex-col text-center sm:text-left">
-                <div className="inline-flex w-fit self-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[#d8b67e] sm:self-start">
-                  Elite operations
-                </div>
-
-                <h3 className="mt-6 text-3xl font-semibold leading-tight">
-                  A premium qurbani service,
-                  <br />
-                  supported by a modern operations platform.
-                </h3>
-
-                <p className="mt-4 leading-relaxed text-white/70">
-                  Northside Qurbani is not only about taking orders. It is about delivering
-                  a more controlled, more premium, and more professional experience across the full journey.
-                </p>
-
-                <div className="mt-8 grid gap-3">
-                  <StatPill label="Customer ordering" value="Elegant, simple, and clear" />
-                  <StatPill label="Team coordination" value="More structured on busy days" />
-                  <StatPill label="Processing visibility" value="Cleaner updates for staff" />
-                  <StatPill label="Collection handover" value="More organised and professional" />
-                </div>
-
-                <div className="mt-8 grid grid-cols-2 gap-3">
-                  {[
-                    ["Service", "Premium"],
-                    ["Workflow", "Refined"],
-                    ["Experience", "Trusted"],
-                    ["Brand", "Elevated"],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left"
-                    >
-                      <div className="text-sm text-white/45">{label}</div>
-                      <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* ABOUT / STORY */}
       <section id="about" className="py-20">
