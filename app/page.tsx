@@ -438,7 +438,7 @@ export default function Home() {
   }
 
   return (
-    <main id="top" className="min-h-screen overflow-x-hidden bg-[#0f0a10] text-white">
+    <main id="top" className="min-h-screen overflow-x-hidden bg-[#0b080d] text-white">
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
