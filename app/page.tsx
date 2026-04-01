@@ -656,13 +656,15 @@ export default function Home() {
 <section className="mx-auto max-w-7xl px-6 pt-2 pb-16 sm:px-10 lg:pt-4 lg:pb-24">
   <div className="grid items-center gap-8 lg:grid-cols-12">
     <div className="text-center lg:col-span-7 lg:text-left">
-      <h1 className="bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.055em] text-transparent sm:text-[3.3rem] lg:text-[4.2rem] xl:text-[4.9rem]">
-        Qurbani elevated
-        <br className="hidden sm:block" />
-        with care, precision,
-        <br className="hidden sm:block" />
-        and excellence.
-      </h1>
+      <h1 className="bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.055em] text-transparent sm:text-[3.3rem] lg:text-[4.2rem] xl:text-[4.9rem]">
+  Qurbani elevated
+  <span className="block mt-1">
+    with care, precision,
+  </span>
+  <span className="block mt-1">
+    and excellence.
+  </span>
+</h1>
 
       <p className="mx-auto mt-4 max-w-2xl text-[0.97rem] leading-7 text-white/68 sm:text-[1rem] sm:leading-7 lg:mx-0 lg:max-w-[39rem] lg:text-[1.04rem] lg:leading-8">
         Northside Qurbani brings together trusted service, professional coordination,
@@ -672,27 +674,27 @@ export default function Home() {
 
       <div className="mt-6 flex flex-col items-center gap-3 sm:w-full sm:max-w-sm sm:mx-auto lg:mx-0 lg:max-w-none lg:flex-row lg:items-center lg:justify-start">
         <Link
-          href="/order"
-          className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-medium text-[#161015] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:brightness-105 sm:text-base lg:w-auto lg:px-8 whitespace-nowrap"
-        >
-          Place Your Order
-        </Link>
+  href="/order"
+  className="inline-flex h-[50px] w-full items-center justify-center rounded-full bg-[#c6a268] px-8 text-[15px] font-semibold text-[#161015] shadow-[0_18px_38px_rgba(0,0,0,0.28)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_22px_45px_rgba(0,0,0,0.35)] sm:text-base lg:h-[54px] lg:w-auto lg:px-10"
+>
+  Place Your Order
+</Link>
 
         {user ? (
-          <Link
-            href="/admin"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white backdrop-blur-xl transition hover:bg-white/10 sm:text-base lg:w-auto lg:px-8 whitespace-nowrap"
-          >
-            Open Dashboard
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white backdrop-blur-xl transition hover:bg-white/10 sm:text-base lg:w-auto lg:px-8 whitespace-nowrap"
-          >
-            Staff Sign In
-          </Link>
-        )}
+  <Link
+    href="/admin"
+    className="inline-flex h-[46px] w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-7 text-[14px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[50px] lg:w-auto lg:px-8"
+  >
+    Open Dashboard
+  </Link>
+) : (
+  <Link
+    href="/login"
+    className="inline-flex h-[46px] w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-7 text-[14px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[50px] lg:w-auto lg:px-8"
+  >
+    Staff Sign In
+  </Link>
+)}
       </div>
 
       <div className="mx-auto mt-8 hidden max-w-3xl gap-4 md:grid md:grid-cols-3 lg:mx-0">
