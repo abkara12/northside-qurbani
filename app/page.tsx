@@ -114,17 +114,12 @@ function InstallAppPrompt() {
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={handleClose} />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/20 bg-white/80 shadow-2xl backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8945C]/18 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#5A314A]/10 blur-3xl" />
-        </div>
-
+      <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-2xl">
         <div className="relative p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-xs uppercase tracking-[0.25em] text-[#B8945C]">Install App</div>
-              <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#2A1B24]">
+              <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-500">Install App</div>
+              <h3 className="mt-2 text-xl font-semibold tracking-tight text-neutral-950">
                 Add Northside Qurbani to your Home Screen
               </h3>
             </div>
@@ -132,7 +127,7 @@ function InstallAppPrompt() {
             <button
               type="button"
               onClick={handleClose}
-              className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-white/70 transition-colors hover:bg-white"
+              className="grid h-10 w-10 place-items-center rounded-full border border-neutral-200 bg-white transition-colors hover:bg-neutral-50"
               aria-label="Close"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
@@ -147,8 +142,8 @@ function InstallAppPrompt() {
           </div>
 
           {isIOS ? (
-            <div className="mt-5 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
-              <div className="font-semibold text-[#2A1B24]">On iPhone / iPad (Safari):</div>
+            <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+              <div className="font-semibold text-neutral-950">On iPhone / iPad (Safari):</div>
               <ol className="mt-2 list-inside list-decimal space-y-1">
                 <li>Tap the <span className="font-semibold">Share</span> button</li>
                 <li>Select <span className="font-semibold">Add to Home Screen</span></li>
@@ -156,7 +151,7 @@ function InstallAppPrompt() {
               </ol>
             </div>
           ) : (
-            <div className="mt-5 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
+            <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
               {deferred ? (
                 <div>
                   Tap <span className="font-semibold">Install</span> to add quick access for staff on Qurbani day.
@@ -174,7 +169,7 @@ function InstallAppPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="h-12 flex-1 rounded-2xl bg-[#2A1B24] font-semibold text-white transition-colors hover:bg-[#1e131a] disabled:opacity-60"
+                className="h-12 flex-1 rounded-2xl bg-neutral-950 font-semibold text-white transition-colors hover:bg-black disabled:opacity-60"
                 disabled={!deferred}
               >
                 Install
@@ -184,13 +179,13 @@ function InstallAppPrompt() {
             <button
               type="button"
               onClick={handleClose}
-              className="h-12 flex-1 rounded-2xl border border-gray-300 bg-white/70 font-semibold transition-colors hover:bg-white"
+              className="h-12 flex-1 rounded-2xl border border-neutral-200 bg-white font-semibold transition-colors hover:bg-neutral-50"
             >
               Not now
             </button>
           </div>
 
-          <div className="mt-4 text-xs text-gray-500">
+          <div className="mt-4 text-xs text-neutral-500">
             Best for staff using the system throughout the day.
           </div>
         </div>
@@ -258,14 +253,14 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     <button
       type="button"
       onClick={() => setOpen((v) => !v)}
-      className="w-full rounded-[1.75rem] border border-white/40 bg-white/70 p-6 text-left shadow-[0_10px_35px_rgba(0,0,0,0.06)] backdrop-blur-xl transition hover:shadow-[0_16px_50px_rgba(0,0,0,0.08)]"
+      className="w-full rounded-[28px] border border-black/5 bg-white p-6 text-left shadow-[0_10px_35px_rgba(0,0,0,0.04)] transition hover:shadow-[0_16px_45px_rgba(0,0,0,0.06)]"
       aria-expanded={open}
     >
       <div className="flex items-center justify-between gap-6">
-        <h4 className="text-lg font-semibold text-[#2A1B24]">{question}</h4>
-        <span className="flex items-center gap-3 text-[#B8945C]">
+        <h4 className="text-lg font-semibold text-neutral-950">{question}</h4>
+        <span className="flex items-center gap-3 text-neutral-500">
           <span className="hidden text-sm font-medium sm:inline">{open ? "Close" : "Open"}</span>
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#B8945C]/10 text-[#B8945C]">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-neutral-100 text-neutral-700">
             <ChevronIcon open={open} />
           </span>
         </span>
@@ -277,7 +272,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="leading-relaxed text-gray-700">{answer}</p>
+          <p className="leading-relaxed text-neutral-600">{answer}</p>
         </div>
       </div>
     </button>
@@ -294,15 +289,14 @@ function FeatureCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/70 p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-      <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[#B8945C]/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+    <div className="group relative overflow-hidden rounded-[32px] border border-black/5 bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(0,0,0,0.06)]">
       <div className="flex items-start gap-4">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#2A1B24] text-white shadow-sm">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-neutral-950 text-white shadow-sm">
           {icon}
         </div>
         <div>
-          <h4 className="mb-2 text-2xl font-semibold text-[#2A1B24]">{title}</h4>
-          <p className="leading-relaxed text-gray-700">{text}</p>
+          <h4 className="mb-2 text-2xl font-semibold text-neutral-950">{title}</h4>
+          <p className="leading-relaxed text-neutral-600">{text}</p>
         </div>
       </div>
     </div>
@@ -325,21 +319,16 @@ function MenuRow({
   const base =
     "group relative overflow-hidden rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-300";
   const primary =
-    "border-[#2A1B24] bg-[#2A1B24] text-white shadow-lg shadow-black/10 hover:bg-[#1f141b]";
-  const normal = "border-gray-200 bg-white/70 text-[#2A1B24] shadow-sm hover:bg-white";
+    "border-neutral-950 bg-neutral-950 text-white shadow-lg shadow-black/10 hover:bg-black";
+  const normal = "border-neutral-200 bg-white text-neutral-950 shadow-sm hover:bg-neutral-50";
 
   return (
     <Link href={href} onClick={onClick} className={`${base} ${variant === "primary" ? primary : normal}`}>
-      <div
-        className={`pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100 ${
-          variant === "primary" ? "bg-white/10" : "bg-[#B8945C]/14"
-        }`}
-      />
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-base leading-tight">{label}</div>
           {sub ? (
-            <div className={`mt-1 text-xs font-medium ${variant === "primary" ? "text-white/70" : "text-gray-600"}`}>
+            <div className={`mt-1 text-xs font-medium ${variant === "primary" ? "text-white/70" : "text-neutral-500"}`}>
               {sub}
             </div>
           ) : null}
@@ -347,7 +336,7 @@ function MenuRow({
 
         <div
           className={`grid h-10 w-10 place-items-center rounded-full transition-all duration-300 ${
-            variant === "primary" ? "bg-white/10 text-white" : "bg-[#B8945C]/10 text-[#B8945C]"
+            variant === "primary" ? "bg-white/10 text-white" : "bg-neutral-100 text-neutral-700"
           }`}
         >
           <DotArrowIcon />
@@ -388,24 +377,20 @@ export default function Home() {
   }
 
   return (
-    <main id="top" className="min-h-screen bg-transparent text-gray-900">
+    <main id="top" className="min-h-screen bg-[#f7f7f5] text-neutral-900">
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#F6F2EC]" />
-        <div className="absolute -top-72 -right-40 h-[950px] w-[950px] rounded-full bg-[#B8945C]/18 blur-3xl" />
-        <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#5A314A]/14 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_70%_15%,rgba(184,148,92,0.14),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_20%_80%,rgba(90,49,74,0.08),transparent_50%)]" />
-        <div className="absolute inset-0 opacity-[0.025] mix-blend-multiply bg-[url('/noise.png')]" />
+        <div className="absolute inset-0 bg-[#f7f7f5]" />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-multiply bg-[url('/noise.png')]" />
       </div>
 
       {/* NAVBAR */}
       <header className="max-w-7xl mx-auto px-6 sm:px-10 py-7 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="grid h-[82px] w-[82px] place-items-center rounded-[1.5rem] border border-white/50 bg-white/80 shadow-[0_10px_35px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+          <div className="grid h-[84px] w-[84px] place-items-center rounded-[22px] border border-black/5 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <Image
-              src="/logo4.png"
+              src="/icon-512 (5).png"
               alt="Northside Qurbani"
               width={62}
               height={62}
@@ -415,27 +400,27 @@ export default function Home() {
           </div>
 
           <div className="hidden sm:block">
-            <div className="text-lg font-semibold tracking-tight text-[#2A1B24]">Northside Qurbani</div>
-            <div className="text-sm text-gray-600">A refined digital Qurbani experience</div>
+            <div className="text-lg font-semibold tracking-tight text-neutral-950">Northside Qurbani</div>
+            <div className="text-sm text-neutral-500">Modern digital qurbani management</div>
           </div>
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="#about"
-            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-neutral-900 transition-colors hover:bg-white"
           >
             About
           </a>
           <a
             href="#how-it-works"
-            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-neutral-900 transition-colors hover:bg-white"
           >
             How It Works
           </a>
           <a
             href="#faq"
-            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-neutral-900 transition-colors hover:bg-white"
           >
             FAQ
           </a>
@@ -443,7 +428,7 @@ export default function Home() {
           {user ? (
             <Link
               href="/admin"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-950 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-black"
             >
               Dashboard
             </Link>
@@ -451,13 +436,13 @@ export default function Home() {
             <>
               <Link
                 href="/login"
-                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-neutral-900 transition-colors hover:bg-white"
               >
                 Staff Sign In
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-950 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-black"
               >
                 Place Order
               </Link>
@@ -471,7 +456,7 @@ export default function Home() {
             setMobileOpen(true);
             requestAnimationFrame(() => setMenuState("open"));
           }}
-          className="lg:hidden relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 shadow-sm transition-colors hover:bg-white"
+          className="lg:hidden relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm transition-colors hover:bg-neutral-50"
           aria-label="Open menu"
         >
           <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/5" />
@@ -490,38 +475,33 @@ export default function Home() {
           />
 
           <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/40 bg-white/80 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-neutral-200 bg-[#f7f7f5] shadow-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
               menuState === "open" ? "translate-x-0" : "translate-x-full"
             }`}
           >
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8945C]/18 blur-3xl" />
-              <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#5A314A]/12 blur-3xl" />
-            </div>
-
             <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[1.25rem] border border-white/50 bg-white/80 shadow-sm">
+                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[20px] border border-black/5 bg-white shadow-sm">
                     <Image
-                      src="/logo4.png"
+                      src="/icon-512 (5).png"
                       alt="Northside Qurbani"
-                      width={58}
-                      height={58}
+                      width={56}
+                      height={56}
                       className="object-contain"
                       priority
                     />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold leading-tight text-[#2A1B24]">Northside Qurbani</div>
-                    <div className="text-xs text-gray-700">Menu</div>
+                    <div className="text-sm font-semibold leading-tight text-neutral-950">Northside Qurbani</div>
+                    <div className="text-xs text-neutral-500">Menu</div>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={closeMenu}
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 shadow-sm transition-colors hover:bg-white"
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm transition-colors hover:bg-neutral-50"
                   aria-label="Close menu"
                 >
                   <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/5" />
@@ -535,7 +515,7 @@ export default function Home() {
                 <MenuRow href="#how-it-works" label="How It Works" sub="The full order process" onClick={closeMenu} />
                 <MenuRow href="#faq" label="FAQ" sub="Common questions" onClick={closeMenu} />
 
-                <div className="my-1 h-px bg-gray-200/80" />
+                <div className="my-1 h-px bg-neutral-200" />
 
                 {user ? (
                   <MenuRow
@@ -560,19 +540,19 @@ export default function Home() {
               </div>
 
               <div className="mt-auto pt-6">
-                <div className="rounded-[1.75rem] border border-white/40 bg-white/70 px-5 py-4 shadow-sm">
-                  <div className="text-xs uppercase tracking-[0.25em] text-[#B8945C]">Quick tip</div>
-                  <div className="mt-1 text-sm text-gray-700">
+                <div className="rounded-[28px] border border-neutral-200 bg-white px-5 py-4 shadow-sm">
+                  <div className="text-xs uppercase tracking-[0.25em] text-neutral-500">Quick tip</div>
+                  <div className="mt-1 text-sm text-neutral-600">
                     Add the app to your home screen for quick access on the day.
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-xs text-gray-600">
+                <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">
                   <span>© {new Date().getFullYear()} Northside Qurbani</span>
                   <button
                     type="button"
                     onClick={closeMenu}
-                    className="rounded-full border border-gray-200 bg-white/70 px-3 py-1.5 transition-colors hover:bg-white"
+                    className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 transition-colors hover:bg-neutral-50"
                   >
                     Close
                   </button>
@@ -587,26 +567,26 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-8 pb-16">
         <div className="grid lg:grid-cols-12 gap-10 items-stretch">
           <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-4 py-2 text-sm shadow-sm backdrop-blur-xl">
-              <span className="h-2 w-2 rounded-full bg-[#B8945C]" />
-              <span className="text-[#2A1B24]">Premium Qurbani Management</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 text-sm shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-neutral-950" />
+              <span className="text-neutral-700">Northside Qurbani Management</span>
             </div>
 
-            <h1 className="mt-6 text-4xl sm:text-6xl xl:text-7xl font-bold leading-[0.98] tracking-tight text-[#2A1B24]">
-              Seamless Qurbani,
+            <h1 className="mt-6 text-4xl sm:text-6xl xl:text-7xl font-semibold leading-[0.95] tracking-tight text-neutral-950">
+              Premium qurbani,
               <br />
-              <span className="text-[#B8945C]">from order to collection.</span>
+              managed beautifully.
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-gray-700">
-              A refined digital experience for customers and staff — capturing orders beautifully,
-              managing payments clearly, and keeping every stage of Qurbani day organised in one place.
+            <p className="mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-neutral-600">
+              A modern digital experience for customers and staff — making ordering, tracking,
+              payment checking, and collection smoother from beginning to end.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link
                 href="/order"
-                className="inline-flex h-13 items-center justify-center rounded-full bg-[#2A1B24] px-8 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
+                className="inline-flex h-13 items-center justify-center rounded-full bg-neutral-950 px-8 text-base font-medium text-white shadow-sm transition-colors hover:bg-black"
               >
                 Place Your Order
               </Link>
@@ -614,14 +594,14 @@ export default function Home() {
               {user ? (
                 <Link
                   href="/admin"
-                  className="inline-flex h-13 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-8 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
+                  className="inline-flex h-13 items-center justify-center rounded-full border border-neutral-200 bg-white px-8 text-base font-medium text-neutral-950 transition-colors hover:bg-neutral-50"
                 >
                   Open Dashboard
                 </Link>
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex h-13 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-8 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
+                  className="inline-flex h-13 items-center justify-center rounded-full border border-neutral-200 bg-white px-8 text-base font-medium text-neutral-950 transition-colors hover:bg-neutral-50"
                 >
                   Staff Sign In
                 </Link>
@@ -630,66 +610,57 @@ export default function Home() {
 
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
               {[
-                { k: "Orders", v: "Captured digitally" },
-                { k: "Tracking", v: "Live status updates" },
-                { k: "Collection", v: "Clear final handover" },
+                { k: "Orders", v: "Submitted online" },
+                { k: "Tracking", v: "Updated live" },
+                { k: "Collection", v: "Handled clearly" },
               ].map((item) => (
                 <div
                   key={item.k}
-                  className="group relative overflow-hidden rounded-[1.75rem] border border-white/40 bg-white/70 px-5 py-5 shadow-[0_10px_35px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(0,0,0,0.07)]"
+                  className="rounded-[28px] border border-black/5 bg-white px-5 py-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)]"
                 >
-                  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#B8945C] via-[#B8945C]/60 to-transparent" />
-                  <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#B8945C]/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
-                  <div>
-                    <div className="text-sm text-gray-600">{item.k}</div>
-                    <div className="mt-1 font-semibold text-[#2A1B24]">{item.v}</div>
-                  </div>
+                  <div className="text-sm text-neutral-500">{item.k}</div>
+                  <div className="mt-1 font-semibold text-neutral-950">{item.v}</div>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="lg:col-span-5 grid gap-6">
-            <div className="rounded-[2rem] border border-white/40 bg-gradient-to-br from-white/80 to-white/55 p-8 shadow-[0_14px_50px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+            <div className="rounded-[32px] border border-black/5 bg-white p-8 shadow-[0_14px_50px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-4">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#2A1B24] text-white">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-neutral-950 text-white">
                   <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
                     <path d="M7 12h10M7 8h10M7 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <path d="M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" stroke="currentColor" strokeWidth="2" />
                   </svg>
                 </div>
                 <div>
-                  <div className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Designed For</div>
-                  <div className="text-xl font-semibold text-[#2A1B24]">Customers & Staff</div>
+                  <div className="text-sm uppercase tracking-[0.25em] text-neutral-500">Designed For</div>
+                  <div className="text-xl font-semibold text-neutral-950">Customers & Staff</div>
                 </div>
               </div>
 
-              <p className="mt-5 text-gray-700 leading-relaxed">
-                Customers enjoy a cleaner ordering experience, while staff get a modern live dashboard for
+              <p className="mt-5 text-neutral-600 leading-relaxed">
+                Customers get a polished ordering experience, while staff get a clean live dashboard for
                 payments, slaughter progress, slicing instructions, and collection status.
               </p>
             </div>
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-[#2A1B24]/10 bg-[#2A1B24] p-8 text-white shadow-[0_18px_60px_rgba(0,0,0,0.12)]">
-              <div className="absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#B8945C]/25 blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-white/5 blur-3xl" />
+            <div className="rounded-[32px] border border-neutral-900/5 bg-neutral-950 p-8 text-white shadow-[0_18px_60px_rgba(0,0,0,0.12)]">
+              <div className="text-sm uppercase tracking-[0.25em] text-white/50">Live Overview</div>
+              <h3 className="mt-2 text-2xl font-semibold">Everything visible at a glance</h3>
+              <p className="mt-3 leading-relaxed text-white/70">
+                Customer details, sheep count, payment status, slicing preferences, and collection updates —
+                all from one refined workspace.
+              </p>
 
-              <div className="relative">
-                <div className="text-sm uppercase tracking-[0.25em] text-[#D8B98A]">Live Operations</div>
-                <h3 className="mt-2 text-2xl font-semibold">Everything visible at a glance</h3>
-                <p className="mt-3 leading-relaxed text-white/75">
-                  Order details, sheep count, payment status, slicing preferences, and collection updates —
-                  all in one refined workspace.
-                </p>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  {["Customer", "Paid", "Slaughtered", "Collected"].map((t) => (
-                    <div key={t} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
-                      <div className="text-sm text-white/70">{t}</div>
-                      <div className="mt-1 text-sm font-semibold">—</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                {["Customer", "Paid", "Slaughtered", "Collected"].map((t) => (
+                  <div key={t} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <div className="text-sm text-white/60">{t}</div>
+                    <div className="mt-1 text-sm font-semibold">—</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -699,20 +670,20 @@ export default function Home() {
       {/* ABOUT */}
       <section id="about" className="py-20">
         <div className="max-w-5xl mx-auto px-6 sm:px-10">
-          <div className="rounded-[2rem] border border-white/40 bg-white/70 p-10 shadow-[0_14px_50px_rgba(0,0,0,0.05)] backdrop-blur-xl">
-            <p className="mb-3 text-sm uppercase tracking-[0.25em] text-[#B8945C]">About Northside Qurbani</p>
-            <h2 className="text-4xl font-semibold tracking-tight text-[#2A1B24]">
-              A more refined and professional way to manage Qurbani
+          <div className="rounded-[32px] border border-black/5 bg-white p-10 shadow-[0_14px_50px_rgba(0,0,0,0.04)]">
+            <p className="mb-3 text-sm uppercase tracking-[0.25em] text-neutral-500">About Northside Qurbani</p>
+            <h2 className="text-4xl font-semibold tracking-tight text-neutral-950">
+              A more professional and organised way to manage qurbani
             </h2>
 
             <div className="mt-6 grid md:grid-cols-2 gap-8">
-              <p className="text-lg leading-relaxed text-gray-700">
-                The system is built to remove the usual back-and-forth, manual capturing, and day-of confusion.
-                Customers place their order through one simple form, and every detail is stored neatly for staff.
+              <p className="text-lg leading-relaxed text-neutral-600">
+                The system removes unnecessary back-and-forth, manual capturing, and day-of confusion.
+                Customers place their order through one simple flow, and every detail is stored neatly for staff.
               </p>
-              <p className="text-lg leading-relaxed text-gray-700">
-                From the first booking to the final collection, the experience is smoother, clearer, and more
-                professional for everyone involved.
+              <p className="text-lg leading-relaxed text-neutral-600">
+                From the first booking to the final collection, the experience feels smoother, clearer,
+                and more refined for everyone involved.
               </p>
             </div>
           </div>
@@ -723,9 +694,9 @@ export default function Home() {
       <section id="how-it-works" className="py-8 pb-24">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
           <div className="mb-10">
-            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">How it works</p>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
-              A streamlined flow from booking to handover
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-500">How it works</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-neutral-950">
+              A smooth flow from booking to handover
             </h2>
           </div>
 
@@ -738,13 +709,13 @@ export default function Home() {
               },
               {
                 step: "02",
-                title: "Staff Manage",
+                title: "Staff Prepare",
                 text: "Orders appear instantly in the dashboard, ready for payment checks, ticket allocation, and preparation.",
               },
               {
                 step: "03",
                 title: "Live Tracking",
-                text: "On Qurbani day, staff can search customers quickly and update statuses as sheep are processed.",
+                text: "On qurbani day, staff can search customers quickly and update statuses as sheep are processed.",
               },
               {
                 step: "04",
@@ -754,11 +725,11 @@ export default function Home() {
             ].map((item) => (
               <div
                 key={item.step}
-                className="rounded-[1.75rem] border border-white/40 bg-white/70 p-6 shadow-[0_10px_35px_rgba(0,0,0,0.05)] backdrop-blur-xl"
+                className="rounded-[28px] border border-black/5 bg-white p-6 shadow-[0_10px_35px_rgba(0,0,0,0.04)]"
               >
-                <div className="text-sm font-semibold tracking-[0.2em] text-[#B8945C]">{item.step}</div>
-                <h3 className="mt-3 text-xl font-semibold text-[#2A1B24]">{item.title}</h3>
-                <p className="mt-3 leading-relaxed text-gray-700">{item.text}</p>
+                <div className="text-sm font-semibold tracking-[0.2em] text-neutral-500">{item.step}</div>
+                <h3 className="mt-3 text-xl font-semibold text-neutral-950">{item.title}</h3>
+                <p className="mt-3 leading-relaxed text-neutral-600">{item.text}</p>
               </div>
             ))}
           </div>
@@ -769,16 +740,16 @@ export default function Home() {
       <section className="py-8 pb-24">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
           <div className="mb-10">
-            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">System highlights</p>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
-              Built for elegance, clarity, and speed
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-500">System highlights</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-neutral-950">
+              Built for clarity, elegance, and speed
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
               title="Digital Order Capture"
-              text="Customers enter their own details through a clean ordering flow, reducing manual admin and improving accuracy."
+              text="Customers enter their details through a clean ordering flow, reducing manual admin and improving accuracy."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
                   <path d="M8 7h8M8 12h8M8 17h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -797,7 +768,7 @@ export default function Home() {
             />
             <FeatureCard
               title="Professional Experience"
-              text="A polished digital system creates trust, improves organisation, and presents a more premium experience to customers."
+              text="A polished digital system builds trust, improves organisation, and creates a more premium customer experience."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
                   <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -819,8 +790,8 @@ export default function Home() {
       <section id="faq" className="py-24">
         <div className="max-w-4xl mx-auto px-6 sm:px-10">
           <div className="mb-12 text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Questions & Answers</p>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">Frequently Asked Questions</h2>
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-500">Questions & Answers</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-neutral-950">Frequently Asked Questions</h2>
           </div>
 
           <div className="grid gap-4">
@@ -847,31 +818,28 @@ export default function Home() {
       {/* CTA */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/40 bg-gradient-to-br from-white/75 to-white/55 p-10 shadow-[0_14px_50px_rgba(0,0,0,0.06)] backdrop-blur-xl">
-            <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[#B8945C]/15 blur-3xl" />
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#5A314A]/10 blur-3xl" />
-
-            <div className="relative grid md:grid-cols-12 gap-10 items-center">
+          <div className="rounded-[32px] border border-black/5 bg-white p-10 shadow-[0_14px_50px_rgba(0,0,0,0.04)]">
+            <div className="grid md:grid-cols-12 gap-10 items-center">
               <div className="md:col-span-8">
-                <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Ready to proceed?</p>
-                <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
+                <p className="text-sm uppercase tracking-[0.25em] text-neutral-500">Ready to proceed?</p>
+                <h2 className="mt-2 text-4xl font-semibold tracking-tight text-neutral-950">
                   Place your order or continue to the staff dashboard
                 </h2>
-                <p className="mt-4 text-lg leading-relaxed text-gray-700">
-                  A complete digital workflow for bookings, live tracking, and a smoother Qurbani day.
+                <p className="mt-4 text-lg leading-relaxed text-neutral-600">
+                  A complete digital workflow for bookings, live tracking, and a smoother qurbani day.
                 </p>
               </div>
 
               <div className="md:col-span-4 flex md:justify-end gap-3">
                 <Link
                   href="/order"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-[#2A1B24] px-7 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-neutral-950 px-7 text-base font-medium text-white shadow-sm transition-colors hover:bg-black"
                 >
                   Place Order
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-7 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-200 bg-white px-7 text-base font-medium text-neutral-950 transition-colors hover:bg-neutral-50"
                 >
                   Staff Sign In
                 </Link>
@@ -882,24 +850,24 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/40 bg-white/60 backdrop-blur-xl">
+      <footer className="border-t border-black/5 bg-white/70 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 py-14">
           <div className="grid lg:grid-cols-12 gap-10 items-start">
             <div className="lg:col-span-4">
               <div className="flex items-center gap-4">
-                <div className="grid h-[78px] w-[78px] place-items-center rounded-[1.3rem] border border-white/50 bg-white/80 shadow-sm">
+                <div className="grid h-[78px] w-[78px] place-items-center rounded-[20px] border border-black/5 bg-white shadow-sm">
                   <Image
-                    src="/logo4.png"
+                    src="/icon-512 (5).png"
                     alt="Northside Qurbani"
-                    width={58}
-                    height={58}
+                    width={56}
+                    height={56}
                     className="object-contain"
                     priority
                   />
                 </div>
                 <div>
-                  <div className="text-lg font-semibold text-[#2A1B24]">Northside Qurbani</div>
-                  <div className="text-sm text-gray-600">Elegant digital Qurbani operations</div>
+                  <div className="text-lg font-semibold text-neutral-950">Northside Qurbani</div>
+                  <div className="text-sm text-neutral-500">Modern digital qurbani operations</div>
                 </div>
               </div>
             </div>
@@ -907,53 +875,53 @@ export default function Home() {
             <div className="lg:col-span-7 lg:col-start-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
                 <div>
-                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Explore</div>
+                  <div className="mb-4 text-sm font-semibold text-neutral-950">Explore</div>
                   <div className="space-y-3">
-                    <a href="/" className="block text-sm text-gray-700 hover:text-black">Home</a>
-                    <a href="#about" className="block text-sm text-gray-700 hover:text-black">About</a>
-                    <a href="#faq" className="block text-sm text-gray-700 hover:text-black">FAQ</a>
+                    <a href="/" className="block text-sm text-neutral-600 hover:text-black">Home</a>
+                    <a href="#about" className="block text-sm text-neutral-600 hover:text-black">About</a>
+                    <a href="#faq" className="block text-sm text-neutral-600 hover:text-black">FAQ</a>
                   </div>
                 </div>
 
                 <div>
-                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Access</div>
+                  <div className="mb-4 text-sm font-semibold text-neutral-950">Access</div>
                   <div className="space-y-3">
-                    <a href="/order" className="block text-sm text-gray-700 hover:text-black">Place Order</a>
-                    <a href="/login" className="block text-sm text-gray-700 hover:text-black">Staff Sign In</a>
+                    <a href="/order" className="block text-sm text-neutral-600 hover:text-black">Place Order</a>
+                    <a href="/login" className="block text-sm text-neutral-600 hover:text-black">Staff Sign In</a>
                     {user ? (
-                      <a href="/admin" className="block text-sm text-gray-700 hover:text-black">Dashboard</a>
+                      <a href="/admin" className="block text-sm text-neutral-600 hover:text-black">Dashboard</a>
                     ) : null}
                   </div>
                 </div>
 
                 <div>
-                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Service</div>
+                  <div className="mb-4 text-sm font-semibold text-neutral-950">Service</div>
                   <div className="space-y-3">
-                    <a href="#how-it-works" className="block text-sm text-gray-700 hover:text-black">How It Works</a>
-                    <a href="#faq" className="block text-sm text-gray-700 hover:text-black">Questions</a>
+                    <a href="#how-it-works" className="block text-sm text-neutral-600 hover:text-black">How It Works</a>
+                    <a href="#faq" className="block text-sm text-neutral-600 hover:text-black">Questions</a>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-10 rounded-[1.75rem] border border-white/40 bg-gradient-to-br from-white/75 to-white/55 p-6 shadow-sm">
+              <div className="mt-10 rounded-[28px] border border-black/5 bg-white p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <div className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Northside Portal</div>
-                    <div className="mt-1 text-lg font-semibold text-[#2A1B24]">A more refined way to manage Qurbani</div>
-                    <div className="mt-1 text-sm text-gray-700">
+                    <div className="text-sm uppercase tracking-[0.25em] text-neutral-500">Northside Portal</div>
+                    <div className="mt-1 text-lg font-semibold text-neutral-950">A cleaner way to manage qurbani</div>
+                    <div className="mt-1 text-sm text-neutral-600">
                       Orders, tracking, slicing instructions, and collection — all together.
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <a
                       href="/order"
-                      className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white hover:bg-[#1f141b]"
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-950 px-6 text-sm font-medium text-white hover:bg-black"
                     >
                       Place Order
                     </a>
                     <a
                       href="/login"
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 px-6 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white"
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-neutral-200 bg-white px-6 text-sm font-medium text-neutral-950 transition-colors hover:bg-neutral-50"
                     >
                       Staff Sign In
                     </a>
@@ -963,9 +931,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="my-10 h-px bg-gray-200/80" />
+          <div className="my-10 h-px bg-neutral-200" />
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-neutral-500">
             <a href="#top" className="hover:text-black">Back to top ↑</a>
             <span>Northside Qurbani • {new Date().getFullYear()}</span>
           </div>
