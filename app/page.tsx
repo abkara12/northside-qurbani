@@ -657,10 +657,6 @@ export default function Home() {
   <div className="grid items-start gap-5 lg:grid-cols-12">
     <div className="flex flex-col justify-center text-center lg:col-span-7 lg:pt-2 lg:text-left">
       <div className="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm shadow-sm backdrop-blur-xl lg:mx-0">
-        <span className="h-2 w-2 rounded-full bg-[#c6a268]" />
-        <span className="text-white/65">
-          Trusted service. Refined systems. A premium Qurbani experience.
-        </span>
       </div>
 
       <h1 className="mt-4 bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.1rem] xl:text-[4.8rem]">
