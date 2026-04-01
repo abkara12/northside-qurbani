@@ -653,7 +653,7 @@ export default function Home() {
       )}
 
       {/* HERO */}
-<section className="mx-auto max-w-7xl px-6 pb-8 pt-1 sm:px-10 lg:pb-10 lg:pt-1">
+<section className="mx-auto max-w-7xl px-6 pb-16 pt-1 sm:px-10 lg:pb-20 lg:pt-1">
   <div className="grid items-start gap-5 lg:grid-cols-12">
     <div className="flex flex-col justify-center text-center lg:col-span-7 lg:pt-2 lg:text-left">
       <div className="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm shadow-sm backdrop-blur-xl lg:mx-0">
@@ -663,7 +663,7 @@ export default function Home() {
         </span>
       </div>
 
-      <h1 className="mt-4 bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.6rem] font-semibold leading-[0.94] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.1rem] xl:text-[4.8rem]">
+      <h1 className="mt-4 bg-[linear-gradient(135deg,#f8f1e6_0%,#d8b67e_46%,#ffffff_100%)] bg-clip-text text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.1rem] xl:text-[4.8rem]">
         Qurbani elevated
         <br className="hidden sm:block" />
         with care, precision,
@@ -677,10 +677,10 @@ export default function Home() {
         experience for both customers and staff from booking to final collection.
       </p>
 
-      <div className="mt-4 flex items-center justify-center gap-3 lg:justify-start">
+      <div className="mt-4 flex flex-col items-center justify-center gap-3 lg:items-start lg:justify-start">
         <Link
           href="/order"
-          className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 sm:px-8 text-sm sm:text-base font-medium text-[#161015] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:brightness-105 whitespace-nowrap"
+          className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-7 text-sm font-medium text-[#161015] shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition hover:brightness-105 whitespace-nowrap"
         >
           Place Your Order
         </Link>
@@ -688,7 +688,7 @@ export default function Home() {
         {user ? (
           <Link
             href="/admin"
-            className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 sm:px-8 text-sm sm:text-base font-medium text-white backdrop-blur-xl transition hover:bg-white/10 whitespace-nowrap"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-7 text-sm font-medium text-white backdrop-blur-xl transition hover:bg-white/10 whitespace-nowrap"
           >
             Open Dashboard
           </Link>
