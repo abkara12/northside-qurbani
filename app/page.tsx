@@ -442,15 +442,19 @@ export default function Home() {
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#0f0a10]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#140d14_0%,#110b12_34%,#0c080d_100%)]" />
-        <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.12] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[12rem] h-[28rem] w-[28rem] rounded-full bg-[#4a2a3b]/[0.22] blur-3xl" />
-        <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.08] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_30%)]" />
-        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:42px_42px]" />
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
-      </div>
+  <div className="absolute inset-0 bg-[#0b080d]" />
+  <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0d090e_38%,#080609_100%)]" />
+
+  <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
+  <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.25] blur-3xl" />
+  <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.07] blur-3xl" />
+
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.06),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.16),transparent_32%)]" />
+
+  <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:44px_44px]" />
+
+  <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
+</div>
 
       {/* NAVBAR */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
