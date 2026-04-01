@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
 
-/* ---------------- PWA Install Prompt (ALWAYS shows until installed) ---------------- */
+/* ---------------- PWA Install Prompt ---------------- */
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -33,7 +33,6 @@ function InstallAppPrompt() {
   const [standalone, setStandalone] = useState(false);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
 
-  // Shows on every visit until installed (but if they close it, we wait a short cooldown)
   const DISMISS_KEY = "pwa_install_dismissed_at";
   const DISMISS_COOLDOWN_HOURS = 6;
 
@@ -54,7 +53,6 @@ function InstallAppPrompt() {
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || "0");
     const hoursSince = dismissedAt ? (Date.now() - dismissedAt) / (1000 * 60 * 60) : 999;
 
-    // iOS: no native prompt; always show our instructions
     if (ios) {
       if (hoursSince >= DISMISS_COOLDOWN_HOURS) setOpen(true);
       return;
@@ -76,8 +74,6 @@ function InstallAppPrompt() {
     window.addEventListener("beforeinstallprompt", onBIP);
     window.addEventListener("appinstalled", onInstalled);
 
-    // Some browsers (incl. some Huawei) don't fire beforeinstallprompt.
-    // Still show the modal with manual instructions.
     if (hoursSince >= DISMISS_COOLDOWN_HOURS) setOpen(true);
 
     return () => {
@@ -87,7 +83,8 @@ function InstallAppPrompt() {
   }, []);
 
   async function handleInstall() {
-    if (!deferred) return; // show manual instructions in UI
+    if (!deferred) return;
+
     try {
       await deferred.prompt();
       const choice = await deferred.userChoice;
@@ -128,7 +125,7 @@ function InstallAppPrompt() {
             <div>
               <div className="text-xs uppercase tracking-widest text-[#B8963D]">Install App</div>
               <h3 className="mt-2 text-xl font-semibold tracking-tight text-gray-900">
-                Add the Hifdh Journal App to your Home Screen
+                Add Qurbani Management to your Home Screen
               </h3>
             </div>
 
@@ -166,10 +163,7 @@ function InstallAppPrompt() {
                 </div>
               ) : (
                 <div>
-                  A calm, focused space for daily Qur’an progress.
-                  <div className="mt-2 text-xs text-gray-600">
-              
-                  </div>
+                  Quick access for staff managing orders and Qurbani day updates.
                 </div>
               )}
             </div>
@@ -197,7 +191,7 @@ function InstallAppPrompt() {
           </div>
 
           <div className="mt-4 text-xs text-gray-500">
-            This message will keep showing until the app is installed.
+            Install for faster access during busy Qurbani operations.
           </div>
         </div>
       </div>
@@ -205,7 +199,7 @@ function InstallAppPrompt() {
   );
 }
 
-/* ✅ Icons */
+/* Icons */
 function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
@@ -252,7 +246,6 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-/* ✅ Fancy icon for menu rows */
 function DotArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -327,7 +320,6 @@ function FeatureCard({
   );
 }
 
-/* ✅ Fancy reusable menu row (with glow + arrow) */
 function MenuRow({
   href,
   label,
@@ -377,11 +369,9 @@ function MenuRow({
 }
 
 export default function Home() {
-  /* ✅ mobile menu state */
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuState, setMenuState] = useState<"open" | "closed">("closed");
 
-  // ✅ Track auth state to show correct links
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -395,7 +385,7 @@ export default function Home() {
       try {
         const snap = await getDoc(doc(db, "users", u.uid));
         const role = snap.exists() ? (snap.data() as any).role : null;
-        setIsAdmin(role === "admin");
+        setIsAdmin(role === "admin" || role === "staff");
       } catch {
         setIsAdmin(false);
       }
@@ -404,17 +394,6 @@ export default function Home() {
     return () => unsub();
   }, []);
 
-  const footerLinks = useMemo(
-    () => [
-      { label: "Home", href: "/" },
-      { label: "About", href: "#about" },
-      { label: "FAQ", href: "#faq" },
-      { label: "Sign In", href: "/login" },
-      { label: "Enrol (Sign Up)", href: "/signup" },
-    ],
-    []
-  );
-
   function closeMenu() {
     setMenuState("closed");
     setTimeout(() => setMobileOpen(false), 650);
@@ -422,76 +401,82 @@ export default function Home() {
 
   return (
     <main id="top" className="min-h-screen bg-transparent text-gray-900">
-      {/* ✅ ALWAYS-ON install prompt until installed */}
       <InstallAppPrompt />
-<div className="pointer-events-none fixed inset-0 -z-10">
-  {/* Clean luxury base */}
-  <div className="absolute inset-0 bg-[#F8F6F1]" />
 
-  {/* Deep contrast blobs */}
-  <div className="absolute -top-72 -right-40 h-[900px] w-[900px] rounded-full bg-[#1F3F3F]/25 blur-3xl" />
-  <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#B8963D]/20 blur-3xl" />
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[#F8F6F1]" />
+        <div className="absolute -top-72 -right-40 h-[900px] w-[900px] rounded-full bg-[#1F3F3F]/25 blur-3xl" />
+        <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#B8963D]/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_70%_20%,rgba(184,150,61,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_10%,transparent_50%,rgba(0,0,0,0.08))]" />
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply bg-[url('/noise.png')]" />
+      </div>
 
-  {/* Subtle radial glow */}
-  <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_70%_20%,rgba(184,150,61,0.15),transparent_60%)]" />
-
-  {/* Elegant vignette */}
-  <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_10%,transparent_50%,rgba(0,0,0,0.08))]" />
-
-  {/* 🔥 Premium grain texture (ADD THIS LAST) */}
-  <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply bg-[url('/noise.png')]" />
-</div>
-
-      {/* NAVBAR */}
       <header className="max-w-7xl mx-auto px-6 sm:px-10 py-7 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-[80px] w-[85px] rounded-xl bg-white/100 backdrop-blur border border-gray-300 shadow-sm grid place-items-center">
-            <Image src="/logo4.png" alt="Hifdh Journal" width={58} height={58} className="rounded" priority />
+          <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+            <Image
+              src="/logo4.png"
+              alt="Qurbani Management System"
+              width={58}
+              height={58}
+              className="rounded"
+              priority
+            />
+          </div>
+
+          <div className="hidden sm:block">
+            <div className="text-lg font-semibold leading-tight">Qurbani Management</div>
+            <div className="text-sm text-gray-600">Orders. Tracking. Collection.</div>
           </div>
         </div>
 
-        {/* ✅ Desktop actions */}
         <div className="hidden lg:flex items-center gap-3">
+          <a
+            href="#about"
+            className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
+          >
+            About
+          </a>
+          <a
+            href="#faq"
+            className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
+          >
+            FAQ
+          </a>
 
           {user ? (
-            <>
-              {isAdmin ? (
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 backdrop-blur-xl transition-colors"
-                >
-                  Admin 
-                </Link>
-              ) : null}
-
-             
-            </>
+            <Link
+              href="/admin"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900 shadow-sm"
+            >
+              Dashboard
+            </Link>
           ) : (
             <>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 backdrop-blur-xl transition-colors"
+                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
               >
-                Sign In
+                Staff Sign In
               </Link>
               <Link
-                href="/signup"
+                href="/order"
                 className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900 shadow-sm"
               >
-                Sign Up
+                Place Order
               </Link>
             </>
           )}
         </div>
 
-        {/* ✅ Burger (mobile) */}
         <button
           type="button"
           onClick={() => {
             setMobileOpen(true);
             requestAnimationFrame(() => setMenuState("open"));
           }}
-          className="lg:hidden relative inline-flex items-center justify-center h-11 w-11 rounded-full border border-gray-300 bg-white/70 backdrop-blur shadow-sm hover:bg-white transition-colors"
+          className="lg:hidden relative inline-flex items-center justify-center h-11 w-11 rounded-full border border-gray-300 bg-white/70 shadow-sm hover:bg-white transition-colors"
           aria-label="Open menu"
         >
           <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/5" />
@@ -499,7 +484,6 @@ export default function Home() {
         </button>
       </header>
 
-      {/* ✅ Fancy Mobile Menu */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50">
           <div
@@ -517,17 +501,23 @@ export default function Home() {
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8963D]/18 blur-3xl" />
               <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#2f6f6f]/12 blur-3xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(600px_circle_at_70%_10%,rgba(156,124,56,0.14),transparent_55%)]" />
             </div>
 
             <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-[80px] w-[85px] rounded-xl bg-white/100 backdrop-blur border border-gray-300 shadow-sm grid place-items-center">
-                    <Image src="/logo4.png" alt="Hifdh Journal" width={58} height={58} className="rounded" priority />
+                  <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+                    <Image
+                      src="/logo4.png"
+                      alt="Qurbani Management"
+                      width={58}
+                      height={58}
+                      className="rounded"
+                      priority
+                    />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold leading-tight"> The Hifdh Journal</div>
+                    <div className="text-sm font-semibold leading-tight">Qurbani Management</div>
                     <div className="text-xs text-gray-700">Menu</div>
                   </div>
                 </div>
@@ -543,43 +533,28 @@ export default function Home() {
                 </button>
               </div>
 
-              <div className="mt-6 flex items-center justify-between gap-3 rounded-3xl border border-gray-300 bg-white/70 backdrop-blur-xl px-4 py-3 shadow-sm">
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-[#B8963D]">Status</div>
-                  <div className="text-sm font-semibold text-gray-900">{user ? "Signed in" : "Guest"}</div>
-                </div>
-
-                <div
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border ${
-                    user
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-gray-300 bg-white/70 backdrop-blur-xl text-gray-700"
-                  }`}
-                >
-                  <span className={`h-2 w-2 rounded-full ${user ? "bg-emerald-500" : "bg-[#B8963D]"}`} />
-                  {user ? "Active" : "Not logged in"}
-                </div>
-              </div>
-
               <div className="mt-6 grid gap-3">
                 <MenuRow href="/" label="Home" sub="Back to the main page" onClick={closeMenu} />
-                <MenuRow href="#about" label="About" sub="About the system" onClick={closeMenu} />
+                <MenuRow href="#about" label="About" sub="How the system works" onClick={closeMenu} />
                 <MenuRow href="#faq" label="FAQ" sub="Common questions" onClick={closeMenu} />
+
                 <div className="my-1 h-px bg-gray-200/80" />
 
                 {user ? (
-                  <>
-                    {isAdmin ? (
-                      <MenuRow href="/admin" label="Admin Dashboard" sub="Manage students" onClick={closeMenu} />
-                    ) : null}
-                  </>
+                  <MenuRow
+                    href="/admin"
+                    label="Dashboard"
+                    sub="Manage orders and statuses"
+                    onClick={closeMenu}
+                    variant="primary"
+                  />
                 ) : (
                   <>
-                    <MenuRow href="/login" label="Sign In" sub="Continue your journey" onClick={closeMenu} />
+                    <MenuRow href="/login" label="Staff Sign In" sub="Access admin dashboard" onClick={closeMenu} />
                     <MenuRow
-                      href="/signup"
-                      label="Sign Up"
-                      sub="Create student account"
+                      href="/order"
+                      label="Place Order"
+                      sub="Submit your Qurbani order"
                       onClick={closeMenu}
                       variant="primary"
                     />
@@ -588,17 +563,19 @@ export default function Home() {
               </div>
 
               <div className="mt-auto pt-6">
-                <div className="rounded-3xl border border-gray-300 bg-white/70 backdrop-blur-xl px-5 py-4 shadow-sm">
+                <div className="rounded-3xl border border-gray-300 bg-white/70 px-5 py-4 shadow-sm">
                   <div className="text-xs uppercase tracking-widest text-[#B8963D]">Quick tip</div>
-                  <div className="mt-1 text-sm text-gray-700">Add this site to your home screen.</div>
+                  <div className="mt-1 text-sm text-gray-700">
+                    Staff can add this app to the home screen for quicker access on Qurbani day.
+                  </div>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between text-xs text-gray-600">
-                  <span>© {new Date().getFullYear()} Hifdh Journal</span>
+                  <span>© {new Date().getFullYear()} Qurbani Management</span>
                   <button
                     type="button"
                     onClick={closeMenu}
-                    className="rounded-full border border-gray-300 bg-white/70 backdrop-blur-xl px-3 py-1.5 hover:bg-white transition-colors"
+                    className="rounded-full border border-gray-300 bg-white/70 px-3 py-1.5 hover:bg-white transition-colors"
                   >
                     Close
                   </button>
@@ -609,130 +586,76 @@ export default function Home() {
         </div>
       )}
 
-      {/* HERO */}
       <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-16">
         <div className="grid lg:grid-cols-12 gap-10 items-stretch">
           <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/70 backdrop-blur-xl backdrop-blur px-4 py-2 text-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/70 px-4 py-2 text-sm">
               <span className="h-2 w-2 rounded-full bg-[#B8963D]" />
-              <span className="text-gray-800">The Hifdh Journal</span>
+              <span className="text-gray-800">Digital Qurbani Operations</span>
             </div>
 
             <h1 className="mt-6 text-4xl sm:text-6xl font-bold leading-[1.05] tracking-tight">
-              Preserve the Qur’an.
+              A smoother,
               <br />
-              <span className="text-[#1F3F3F]">Elevate the Heart.</span>
+              <span className="text-[#1F3F3F]">more organised Qurbani day.</span>
             </h1>
 
             <p className="mt-6 text-lg sm:text-xl text-gray-800 leading-relaxed max-w-2xl">
-              Welcome to the Hifdh Journal — a journey of memorisation, discipline,
-              and spiritual growth. Track your daily Sabak, Dhor, Sabak Dhor and weekly goals — all
-              in one place.
+              Capture customer orders, track payments, manage slaughter progress, and keep slicing
+              instructions in one clean system — from order submission to collection.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-             {user ? (
-    isAdmin ? (
-      // ✅ Admin buttons
-      <>
-        <Link
-          href="/admin"
-          className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-gray-300 bg-white/40 backdrop-blur text-base font-medium hover:bg-white/70 transition-colors"
-        >
-          Admin Dashboard
-        </Link>
-      </>
-    ) : (
-      // ✅ Student button
-      <Link
-        href="/overview"
-        className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
-      >
-        My Overview
-      </Link>
-    )
-  ) : (
-    // ✅ Guest buttons
-    <>
-      <Link
-        href="/signup"
-        className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
-      >
-        Begin My Journey
-      </Link>
-      <a
-        href="#about"
-        className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-gray-300 bg-white/40 backdrop-blur text-base font-medium hover:bg-white/70 transition-colors"
-      >
-        Explore Program
-      </a>
-    </>
-  )}
+              {user ? (
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
+                >
+                  Open Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/order"
+                    className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
+                  >
+                    Place Order
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-gray-300 bg-white/40 text-base font-medium hover:bg-white/70 transition-colors"
+                  >
+                    Staff Sign In
+                  </Link>
+                </>
+              )}
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl items-stretch">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl items-stretch">
               {[
                 {
-                  k: "Sabak",
-                  v: "Daily memorisation",
-                  icon: (
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
-                      <path
-                        d="M7 4h10a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 012-2z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  ),
+                  k: "Orders",
+                  v: "Captured in one place",
                 },
                 {
-                  k: "Dhor",
-                  v: "Strong retention",
-                  icon: (
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
-                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                  ),
+                  k: "Statuses",
+                  v: "Paid, slaughtered, collected",
                 },
                 {
-                  k: "Targets",
-                  v: "Weekly clarity",
-                  icon: (
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
-                      <path
-                        d="M9 11l3 3L22 4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ),
+                  k: "Instructions",
+                  v: "Clear slicing notes",
                 },
               ].map((item) => (
                 <div
                   key={item.k}
-                  className="group relative overflow-hidden rounded-3xl border border-gray-300 bg-white/70 backdrop-blur-xl backdrop-blur px-5 py-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 h-[88px] flex items-center"
+                  className="group relative overflow-hidden rounded-3xl border border-gray-300 bg-white/70 px-5 py-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 h-[88px] flex items-center"
                 >
                   <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#B8963D] via-[#B8963D]/60 to-transparent" />
                   <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#B8963D]/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-2xl bg-black text-white grid place-items-center shadow-sm">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-700">{item.k}</div>
-                      <div className="mt-0.5 font-semibold text-gray-900">{item.v}</div>
-                    </div>
+                  <div>
+                    <div className="text-sm text-gray-700">{item.k}</div>
+                    <div className="mt-0.5 font-semibold text-gray-900">{item.v}</div>
                   </div>
                 </div>
               ))}
@@ -740,25 +663,24 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5 grid gap-6">
-            <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/80 to-white/40 backdrop-blur p-8 shadow-lg">
+            <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/80 to-white/40 p-8 shadow-lg">
               <p className="text-xl leading-relaxed italic">
-                “And We have certainly made the Qur’an easy for remembrance, so is there any who
-                will remember?”
+                “Professional, organised, and much easier to manage when things get busy.”
               </p>
               <div className="mt-5 flex items-center justify-between">
-                <p className="text-sm text-gray-600">Surah Al-Qamar • 54:17</p>
+                <p className="text-sm text-gray-600">Built for real Qurbani day operations</p>
               </div>
             </div>
 
             <div className="rounded-3xl border border-gray-300 bg-black text-white p-8 shadow-xl relative overflow-hidden">
               <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[#B8963D]/25 blur-2xl" />
-              <h3 className="mt-1 text-2xl font-semibold">Preview: Student Dashboard</h3>
+              <h3 className="mt-1 text-2xl font-semibold">At a glance</h3>
               <p className="mt-3 text-white/70 leading-relaxed">
-                Secure login. Daily submissions. Weekly goals. A calm system designed for focus —
-                not distraction.
+                Staff can instantly see customer details, sheep count, payment status, slicing
+                preference, and collection progress from one dashboard.
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3">
-                {["Sabak", "Sabak Dhor", "Dhor", "Weekly Goal"].map((t) => (
+                {["Customer", "Sheep Count", "Paid", "Collected"].map((t) => (
                   <div key={t} className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3">
                     <div className="text-sm text-white/80">{t}</div>
                     <div className="mt-1 text-sm font-semibold">—</div>
@@ -770,57 +692,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ABOUT */}
       <section id="about" className="py-20">
         <div className="max-w-5xl mx-auto px-6 sm:px-10">
-          <div className="rounded-3xl border border-gray-300 bg-white/70 backdrop-blur-xl backdrop-blur p-10 shadow-sm">
-            <p className="uppercase tracking-widest text-sm text-[#B8963D] mb-3">About the Hifdh Journal</p>
+          <div className="rounded-3xl border border-gray-300 bg-white/70 p-10 shadow-sm">
+            <p className="uppercase tracking-widest text-sm text-[#B8963D] mb-3">About the system</p>
 
-            <h2 className="text-4xl font-semibold tracking-tight">Clarity, Consistency, and Accountability in Hifdh</h2>
+            <h2 className="text-4xl font-semibold tracking-tight">
+              From customer order to final collection
+            </h2>
 
             <div className="mt-6 grid md:grid-cols-2 gap-8">
               <p className="text-gray-800 leading-relaxed text-lg">
-A structured and organised platform designed to track and manage Hifdh progress with clarity and consistency.
+                Customers submit their Qurbani order through one simple form. Staff then manage
+                everything from a central dashboard instead of juggling WhatsApp messages, spreadsheets,
+                and printed lists.
+              </p>
 
-Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalised notes, the system ensures steady memorisation progress while promoting discipline and accountability.              </p>
-             
+              <p className="text-gray-800 leading-relaxed text-lg">
+                On the day, staff can search customers quickly, confirm payment, track slaughter
+                progress, check slicing instructions, and mark orders as collected — all in one place.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
       <section className="py-12 pb-24">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div>
-              <p className="uppercase tracking-widest text-sm text-[#5E4A1D]">Program Highlights</p>
-              <h2 className="mt-2 text-4xl font-semibold tracking-tight">Designed for Consistency & Excellence</h2>
+              <p className="uppercase tracking-widest text-sm text-[#5E4A1D]">System highlights</p>
+              <h2 className="mt-2 text-4xl font-semibold tracking-tight">
+                Built to streamline Qurbani day
+              </h2>
             </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
-              title="Structured Memorisation"
-              text="Daily Sabak and guided Dhor routines help students progress steadily with strong retention."
+              title="Order Capture"
+              text="Customers submit orders themselves, reducing back-and-forth WhatsApp messages and manual recapturing."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
                   <path
-                    d="M7 4h10a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 012-2z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              }
-            />
-            <FeatureCard
-              title="Weekly Accountability"
-              text="Clear weekly targets make progress measurable and keep students motivated and consistent."
-              icon={
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-                  <path
-                    d="M8 7V4m8 3V4M5 11h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    d="M8 7h8M8 12h8M8 17h5M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
@@ -829,12 +744,38 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
               }
             />
             <FeatureCard
-              title="Progress System"
-              text="The Ustadh logs in and submits the student's Sabak, Dhor, sabak dhor and weekly goal progress."
+              title="Live Tracking"
+              text="Staff can track paid, slaughtered, and collected statuses live as the day progresses."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-                  <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="2" />
-                  <path d="M4 20a8 8 0 0116 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M5 12l4 4L19 6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            />
+            <FeatureCard
+              title="Clear Instructions"
+              text="Every order keeps slicing preferences and notes visible, helping reduce mistakes and confusion."
+              icon={
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
+                  <path
+                    d="M12 20h9"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               }
             />
@@ -842,7 +783,6 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
         </div>
       </section>
 
-      {/* FAQ */}
       <section id="faq" className="py-24">
         <div className="max-w-4xl mx-auto px-6 sm:px-10">
           <div className="text-center mb-12">
@@ -852,55 +792,54 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
 
           <div className="grid gap-4">
             <FAQItem
-              question="What makes this system more effective than simple tracking?"
-              answer="Unlike basic record-keeping, this system combines progress tracking, structured targets, and performance notes in one place — creating a complete overview that supports both discipline and steady improvement."
+              question="Does this replace WhatsApp completely?"
+              answer="Not necessarily. Staff can still communicate with customers on WhatsApp, but the actual order details are captured properly in the system."
             />
             <FAQItem
-              question="Does it replace manual record-keeping?"
-              answer="Yes. Instead of using notebooks, everything is organised and securely stored in one structured digital system."
+              question="Can staff use it on the day from a phone?"
+              answer="Yes. The system is designed to be easy to use from a phone so staff can search customers and update statuses live."
             />
             <FAQItem
-              question="How does the system support long-term Hifdh goals?"
-              answer="By combining daily tracking, revision monitoring, and structured targets, the system encourages steady progress and long-term memorisation retention."
+              question="What does the system track?"
+              answer="It tracks customer details, sheep count, preferred weight, slicing instructions, notes, payment status, slaughter status, and collection status."
             />
             <FAQItem
-              question="How will this system improve memorisation consistency?"
-              answer="The system creates clear daily and weekly structure through Sabak and Dhor tracking, helping maintain discipline and preventing gaps in revision."
+              question="Why is this better than using a spreadsheet only?"
+              answer="It removes manual recapturing, makes searching much faster on the day, and keeps operational statuses easy to update in real time."
             />
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
-          <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 backdrop-blur p-10 shadow-lg overflow-hidden relative">
+          <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 p-10 shadow-lg overflow-hidden relative">
             <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[#B8963D]/15 blur-3xl" />
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-black/10 blur-3xl" />
 
             <div className="grid md:grid-cols-12 gap-10 items-center relative">
               <div className="md:col-span-8">
-                <p className="uppercase tracking-widest text-sm text-[#B8963D]">Ready to begin?</p>
+                <p className="uppercase tracking-widest text-sm text-[#B8963D]">Ready to continue?</p>
                 <h2 className="mt-2 text-4xl font-semibold tracking-tight">
-                  Enrol and start tracking your Hifdh journey today
+                  Submit an order or open the staff dashboard
                 </h2>
                 <p className="mt-4 text-gray-800 text-lg leading-relaxed">
-                  A focused system for daily Sabak, consistent Dhor, and weekly targets — built for clarity, discipline, and steady progress.
+                  One system for customer orders, payment checks, slaughter tracking, and collection tracking.
                 </p>
               </div>
 
               <div className="md:col-span-4 flex md:justify-end gap-3">
                 <Link
-                  href="/signup"
+                  href="/order"
                   className="inline-flex items-center justify-center h-12 px-7 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
                 >
-                  Sign Up
+                  Place Order
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center h-12 px-7 rounded-full border border-gray-300 bg-white/50 backdrop-blur text-base font-medium hover:bg-white/80 transition-colors"
+                  className="inline-flex items-center justify-center h-12 px-7 rounded-full border border-gray-300 bg-white/50 text-base font-medium hover:bg-white/80 transition-colors"
                 >
-                  Sign In
+                  Staff Sign In
                 </Link>
               </div>
             </div>
@@ -908,17 +847,24 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-gray-300 bg-white/70 backdrop-blur-xl backdrop-blur">
+      <footer className="border-t border-gray-300 bg-white/70">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 py-14">
           <div className="grid gap-10 lg:grid-cols-12 items-start">
             <div className="lg:col-span-4">
               <div className="flex items-center gap-4">
-               <div className="h-[80px] w-[85px] rounded-xl bg-white/100 backdrop-blur border border-gray-300 shadow-sm grid place-items-center">
-            <Image src="/logo4.png" alt="Hifdh Journal" width={58} height={58} className="rounded" priority />
-          </div>
+                <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+                  <Image
+                    src="/logo4.png"
+                    alt="Qurbani Management"
+                    width={58}
+                    height={58}
+                    className="rounded"
+                    priority
+                  />
+                </div>
                 <div>
-                  <div className="font-semibold text-lg">The Hifdh Journal</div>
+                  <div className="font-semibold text-lg">Qurbani Management</div>
+                  <div className="text-sm text-gray-600">Professional order and day-of tracking</div>
                 </div>
               </div>
             </div>
@@ -935,46 +881,48 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 mb-4">Portal</div>
+                  <div className="text-sm font-semibold text-gray-900 mb-4">Access</div>
                   <div className="space-y-3">
-                    <a href="/login" className="block text-sm text-gray-700 hover:text-black">Sign In</a>
-                    <a href="/signup" className="block text-sm text-gray-700 hover:text-black">Enrol (Sign Up)</a>
-                    {user && isAdmin ? (
+                    <a href="/order" className="block text-sm text-gray-700 hover:text-black">Place Order</a>
+                    <a href="/login" className="block text-sm text-gray-700 hover:text-black">Staff Sign In</a>
+                    {user ? (
                       <a href="/admin" className="block text-sm text-gray-700 hover:text-black">
-                        Admin Dashboard
+                        Dashboard
                       </a>
                     ) : null}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 mb-4">Program</div>
+                  <div className="text-sm font-semibold text-gray-900 mb-4">System</div>
                   <div className="space-y-3">
-                    <a href="#about" className="block text-sm text-gray-700 hover:text-black">Structure</a>
-                    <a href="/signup" className="block text-sm text-gray-700 hover:text-black">Enrolment</a>
+                    <a href="#about" className="block text-sm text-gray-700 hover:text-black">How it works</a>
+                    <a href="#faq" className="block text-sm text-gray-700 hover:text-black">Questions</a>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-10 rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 backdrop-blur p-6 shadow-sm">
+              <div className="mt-10 rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <div className="text-sm uppercase tracking-widest text-[#B8963D]">Student Portal</div>
-                    <div className="mt-1 font-semibold text-lg">Ready to begin your journey?</div>
-                    <div className="mt-1 text-sm text-gray-700">Sign up and start tracking daily progress.</div>
+                    <div className="text-sm uppercase tracking-widest text-[#B8963D]">Qurbani Portal</div>
+                    <div className="mt-1 font-semibold text-lg">Everything organised in one place</div>
+                    <div className="mt-1 text-sm text-gray-700">
+                      Orders, payments, slaughter progress, and collection tracking.
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     <a
-                      href="/signup"
+                      href="/order"
                       className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900"
                     >
-                      Enrol Now
+                      Place Order
                     </a>
                     <a
                       href="/login"
                       className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-gray-300 bg-white/70 hover:bg-white transition-colors text-sm font-medium"
                     >
-                      Sign In
+                      Staff Sign In
                     </a>
                   </div>
                 </div>
@@ -987,7 +935,6 @@ Through focused Sabak tracking, Dhor monitoring, weekly targets, and personalise
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-4">
               <a href="#top" className="hover:text-black">Back to top ↑</a>
-              <span className="text-gray-300">|</span>
             </div>
           </div>
         </div>
