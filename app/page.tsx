@@ -114,25 +114,25 @@ function InstallAppPrompt() {
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={handleClose} />
 
-      <div className="relative w-full max-w-md rounded-3xl border border-white/30 bg-white/75 backdrop-blur-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/20 bg-white/80 shadow-2xl backdrop-blur-2xl">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8963D]/18 blur-3xl" />
-          <div className="absolute -bottom-28 -left-28 h-80 w-80 rounded-full bg-black/10 blur-3xl" />
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8945C]/18 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#5A314A]/10 blur-3xl" />
         </div>
 
         <div className="relative p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-xs uppercase tracking-widest text-[#B8963D]">Install App</div>
-              <h3 className="mt-2 text-xl font-semibold tracking-tight text-gray-900">
-                Add Qurbani Management to your Home Screen
+              <div className="text-xs uppercase tracking-[0.25em] text-[#B8945C]">Install App</div>
+              <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#2A1B24]">
+                Add Northside Qurbani to your Home Screen
               </h3>
             </div>
 
             <button
               type="button"
               onClick={handleClose}
-              className="shrink-0 h-10 w-10 rounded-full border border-gray-300 bg-white/70 hover:bg-white transition-colors grid place-items-center"
+              className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-white/70 transition-colors hover:bg-white"
               aria-label="Close"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
@@ -147,23 +147,23 @@ function InstallAppPrompt() {
           </div>
 
           {isIOS ? (
-            <div className="mt-5 rounded-2xl border border-gray-300 bg-white/70 p-4 text-sm text-gray-700">
-              <div className="font-semibold text-gray-900">On iPhone / iPad (Safari):</div>
-              <ol className="mt-2 space-y-1 list-decimal list-inside">
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
+              <div className="font-semibold text-[#2A1B24]">On iPhone / iPad (Safari):</div>
+              <ol className="mt-2 list-inside list-decimal space-y-1">
                 <li>Tap the <span className="font-semibold">Share</span> button</li>
                 <li>Select <span className="font-semibold">Add to Home Screen</span></li>
                 <li>Tap <span className="font-semibold">Add</span></li>
               </ol>
             </div>
           ) : (
-            <div className="mt-5 rounded-2xl border border-gray-300 bg-white/70 p-4 text-sm text-gray-700">
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
               {deferred ? (
                 <div>
-                  Tap <span className="font-semibold">Install</span> to add it to your Home Screen.
+                  Tap <span className="font-semibold">Install</span> to add quick access for staff on Qurbani day.
                 </div>
               ) : (
                 <div>
-                  Quick access for staff managing orders and Qurbani day updates.
+                  Quick access for live order management, payment updates, and collection tracking.
                 </div>
               )}
             </div>
@@ -174,7 +174,7 @@ function InstallAppPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="flex-1 h-12 rounded-2xl bg-black text-white font-semibold hover:bg-gray-900 transition-colors disabled:opacity-60"
+                className="h-12 flex-1 rounded-2xl bg-[#2A1B24] font-semibold text-white transition-colors hover:bg-[#1e131a] disabled:opacity-60"
                 disabled={!deferred}
               >
                 Install
@@ -184,14 +184,14 @@ function InstallAppPrompt() {
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 h-12 rounded-2xl border border-gray-300 bg-white/70 hover:bg-white transition-colors font-semibold"
+              className="h-12 flex-1 rounded-2xl border border-gray-300 bg-white/70 font-semibold transition-colors hover:bg-white"
             >
               Not now
             </button>
           </div>
 
           <div className="mt-4 text-xs text-gray-500">
-            Install for faster access during busy Qurbani operations.
+            Best for staff using the system throughout the day.
           </div>
         </div>
       </div>
@@ -199,16 +199,11 @@ function InstallAppPrompt() {
   );
 }
 
-/* Icons */
+/* ---------------- Icons ---------------- */
 function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -216,12 +211,7 @@ function MenuIcon() {
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-      <path
-        d="M6 6l12 12M18 6l-12 12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -232,7 +222,6 @@ function ChevronIcon({ open }: { open: boolean }) {
       viewBox="0 0 24 24"
       className={`h-5 w-5 transition-transform duration-300 ${open ? "rotate-180" : "rotate-0"}`}
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <path
@@ -261,6 +250,7 @@ function DotArrowIcon() {
   );
 }
 
+/* ---------------- UI Components ---------------- */
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
 
@@ -268,26 +258,26 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     <button
       type="button"
       onClick={() => setOpen((v) => !v)}
-      className="w-full text-left rounded-2xl border border-gray-300 bg-white/70 backdrop-blur px-6 py-5 shadow-sm hover:shadow-md transition-shadow"
+      className="w-full rounded-[1.75rem] border border-white/40 bg-white/70 p-6 text-left shadow-[0_10px_35px_rgba(0,0,0,0.06)] backdrop-blur-xl transition hover:shadow-[0_16px_50px_rgba(0,0,0,0.08)]"
       aria-expanded={open}
     >
       <div className="flex items-center justify-between gap-6">
-        <h4 className="text-lg font-semibold text-gray-900">{question}</h4>
-        <span className="flex items-center gap-3 text-[#B8963D]">
-          <span className="hidden sm:inline text-sm font-medium">{open ? "Close" : "Open"}</span>
-          <span className="grid place-items-center h-10 w-10 rounded-full bg-[#B8963D]/10 text-[#B8963D]">
+        <h4 className="text-lg font-semibold text-[#2A1B24]">{question}</h4>
+        <span className="flex items-center gap-3 text-[#B8945C]">
+          <span className="hidden text-sm font-medium sm:inline">{open ? "Close" : "Open"}</span>
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#B8945C]/10 text-[#B8945C]">
             <ChevronIcon open={open} />
           </span>
         </span>
       </div>
 
       <div
-        className={`grid transition-all duration-400 ease-out ${
-          open ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0 mt-0"
+        className={`grid transition-all duration-300 ${
+          open ? "mt-4 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">
-          <p className="text-gray-700 leading-relaxed">{answer}</p>
+          <p className="leading-relaxed text-gray-700">{answer}</p>
         </div>
       </div>
     </button>
@@ -304,16 +294,15 @@ function FeatureCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-gray-300 bg-white/70 backdrop-blur p-8 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[#B8963D]/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
+    <div className="group relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/70 p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[#B8945C]/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
       <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-black text-white grid place-items-center shadow-sm">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#2A1B24] text-white shadow-sm">
           {icon}
         </div>
         <div>
-          <h4 className="text-2xl font-semibold mb-2">{title}</h4>
-          <p className="text-gray-700 leading-relaxed">{text}</p>
+          <h4 className="mb-2 text-2xl font-semibold text-[#2A1B24]">{title}</h4>
+          <p className="leading-relaxed text-gray-700">{text}</p>
         </div>
       </div>
     </div>
@@ -335,17 +324,17 @@ function MenuRow({
 }) {
   const base =
     "group relative overflow-hidden rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-300";
-  const primary = "border-black bg-[#111111] text-white hover:bg-[#1c1c1c] shadow-lg shadow-black/10 shadow-sm";
-  const normal = "border-gray-300 bg-white/70 text-gray-900 hover:bg-white shadow-sm";
+  const primary =
+    "border-[#2A1B24] bg-[#2A1B24] text-white shadow-lg shadow-black/10 hover:bg-[#1f141b]";
+  const normal = "border-gray-200 bg-white/70 text-[#2A1B24] shadow-sm hover:bg-white";
 
   return (
     <Link href={href} onClick={onClick} className={`${base} ${variant === "primary" ? primary : normal}`}>
       <div
-        className={`pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-          variant === "primary" ? "bg-white/15" : "bg-[#B8963D]/14"
+        className={`pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100 ${
+          variant === "primary" ? "bg-white/10" : "bg-[#B8945C]/14"
         }`}
       />
-
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-base leading-tight">{label}</div>
@@ -357,9 +346,9 @@ function MenuRow({
         </div>
 
         <div
-          className={`grid place-items-center h-10 w-10 rounded-full transition-all duration-300 ${
-            variant === "primary" ? "bg-white/10 text-white" : "bg-[#B8963D]/10 text-[#B8963D]"
-          } group-hover:scale-[1.04]`}
+          className={`grid h-10 w-10 place-items-center rounded-full transition-all duration-300 ${
+            variant === "primary" ? "bg-white/10 text-white" : "bg-[#B8945C]/10 text-[#B8945C]"
+          }`}
         >
           <DotArrowIcon />
         </div>
@@ -371,7 +360,6 @@ function MenuRow({
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuState, setMenuState] = useState<"open" | "closed">("closed");
-
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -404,43 +392,50 @@ export default function Home() {
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#F8F6F1]" />
-        <div className="absolute -top-72 -right-40 h-[900px] w-[900px] rounded-full bg-[#1F3F3F]/25 blur-3xl" />
-        <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#B8963D]/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_70%_20%,rgba(184,150,61,0.15),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_10%,transparent_50%,rgba(0,0,0,0.08))]" />
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply bg-[url('/noise.png')]" />
+        <div className="absolute inset-0 bg-[#F6F2EC]" />
+        <div className="absolute -top-72 -right-40 h-[950px] w-[950px] rounded-full bg-[#B8945C]/18 blur-3xl" />
+        <div className="absolute bottom-[-25%] left-[-15%] h-[1000px] w-[1000px] rounded-full bg-[#5A314A]/14 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_70%_15%,rgba(184,148,92,0.14),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_20%_80%,rgba(90,49,74,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 opacity-[0.025] mix-blend-multiply bg-[url('/noise.png')]" />
       </div>
 
+      {/* NAVBAR */}
       <header className="max-w-7xl mx-auto px-6 sm:px-10 py-7 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+          <div className="grid h-[82px] w-[82px] place-items-center rounded-[1.5rem] border border-white/50 bg-white/80 shadow-[0_10px_35px_rgba(0,0,0,0.06)] backdrop-blur-xl">
             <Image
-              src="/logo4.png"
-              alt="Qurbani Management System"
-              width={65}
-              height={65}
-              className="rounded"
+              src="/icon-512.png"
+              alt="Northside Qurbani"
+              width={62}
+              height={62}
+              className="object-contain"
               priority
             />
           </div>
 
           <div className="hidden sm:block">
-            <div className="text-lg font-semibold leading-tight">Qurbani Management</div>
-            <div className="text-sm text-gray-600">Orders. Tracking. Collection.</div>
+            <div className="text-lg font-semibold tracking-tight text-[#2A1B24]">Northside Qurbani</div>
+            <div className="text-sm text-gray-600">A refined digital Qurbani experience</div>
           </div>
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="#about"
-            className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
           >
             About
           </a>
           <a
+            href="#how-it-works"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
+          >
+            How It Works
+          </a>
+          <a
             href="#faq"
-            className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
           >
             FAQ
           </a>
@@ -448,7 +443,7 @@ export default function Home() {
           {user ? (
             <Link
               href="/admin"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900 shadow-sm"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
             >
               Dashboard
             </Link>
@@ -456,13 +451,13 @@ export default function Home() {
             <>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-sm font-medium text-gray-900 hover:bg-white/70 transition-colors"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white/70"
               >
                 Staff Sign In
               </Link>
               <Link
                 href="/order"
-                className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900 shadow-sm"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
               >
                 Place Order
               </Link>
@@ -476,7 +471,7 @@ export default function Home() {
             setMobileOpen(true);
             requestAnimationFrame(() => setMenuState("open"));
           }}
-          className="lg:hidden relative inline-flex items-center justify-center h-11 w-11 rounded-full border border-gray-300 bg-white/70 shadow-sm hover:bg-white transition-colors"
+          className="lg:hidden relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 shadow-sm transition-colors hover:bg-white"
           aria-label="Open menu"
         >
           <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/5" />
@@ -484,6 +479,7 @@ export default function Home() {
         </button>
       </header>
 
+      {/* MOBILE MENU */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50">
           <div
@@ -494,30 +490,30 @@ export default function Home() {
           />
 
           <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/40 bg-white/75 backdrop-blur-2xl shadow-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/40 bg-white/80 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
               menuState === "open" ? "translate-x-0" : "translate-x-full"
             }`}
           >
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8963D]/18 blur-3xl" />
-              <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#2f6f6f]/12 blur-3xl" />
+              <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#B8945C]/18 blur-3xl" />
+              <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#5A314A]/12 blur-3xl" />
             </div>
 
             <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[1.25rem] border border-white/50 bg-white/80 shadow-sm">
                     <Image
-                      src="/logo4.png"
-                      alt="Qurbani Management"
-                      width={65}
-                      height={65}
-                      className="rounded"
+                      src="/icon-512.png"
+                      alt="Northside Qurbani"
+                      width={58}
+                      height={58}
+                      className="object-contain"
                       priority
                     />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold leading-tight">Qurbani Management</div>
+                    <div className="text-sm font-semibold leading-tight text-[#2A1B24]">Northside Qurbani</div>
                     <div className="text-xs text-gray-700">Menu</div>
                   </div>
                 </div>
@@ -525,7 +521,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={closeMenu}
-                  className="relative inline-flex items-center justify-center h-11 w-11 rounded-full border border-gray-300 bg-white/70 hover:bg-white transition-colors shadow-sm"
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 shadow-sm transition-colors hover:bg-white"
                   aria-label="Close menu"
                 >
                   <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/5" />
@@ -534,8 +530,9 @@ export default function Home() {
               </div>
 
               <div className="mt-6 grid gap-3">
-                <MenuRow href="/" label="Home" sub="Back to the main page" onClick={closeMenu} />
-                <MenuRow href="#about" label="About" sub="How the system works" onClick={closeMenu} />
+                <MenuRow href="/" label="Home" sub="Return to homepage" onClick={closeMenu} />
+                <MenuRow href="#about" label="About" sub="Overview of the service" onClick={closeMenu} />
+                <MenuRow href="#how-it-works" label="How It Works" sub="The full order process" onClick={closeMenu} />
                 <MenuRow href="#faq" label="FAQ" sub="Common questions" onClick={closeMenu} />
 
                 <div className="my-1 h-px bg-gray-200/80" />
@@ -544,17 +541,17 @@ export default function Home() {
                   <MenuRow
                     href="/admin"
                     label="Dashboard"
-                    sub="Manage orders and statuses"
+                    sub="Manage live orders and statuses"
                     onClick={closeMenu}
                     variant="primary"
                   />
                 ) : (
                   <>
-                    <MenuRow href="/login" label="Staff Sign In" sub="Access admin dashboard" onClick={closeMenu} />
+                    <MenuRow href="/login" label="Staff Sign In" sub="Access the operations dashboard" onClick={closeMenu} />
                     <MenuRow
                       href="/order"
                       label="Place Order"
-                      sub="Submit your Qurbani order"
+                      sub="Submit your Qurbani booking"
                       onClick={closeMenu}
                       variant="primary"
                     />
@@ -563,19 +560,19 @@ export default function Home() {
               </div>
 
               <div className="mt-auto pt-6">
-                <div className="rounded-3xl border border-gray-300 bg-white/70 px-5 py-4 shadow-sm">
-                  <div className="text-xs uppercase tracking-widest text-[#B8963D]">Quick tip</div>
+                <div className="rounded-[1.75rem] border border-white/40 bg-white/70 px-5 py-4 shadow-sm">
+                  <div className="text-xs uppercase tracking-[0.25em] text-[#B8945C]">Quick tip</div>
                   <div className="mt-1 text-sm text-gray-700">
-                    Staff can add this app to the home screen for quicker access on Qurbani day.
+                    Add the app to your home screen for quick access on the day.
                   </div>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between text-xs text-gray-600">
-                  <span>© {new Date().getFullYear()} Qurbani Management</span>
+                  <span>© {new Date().getFullYear()} Northside Qurbani</span>
                   <button
                     type="button"
                     onClick={closeMenu}
-                    className="rounded-full border border-gray-300 bg-white/70 px-3 py-1.5 hover:bg-white transition-colors"
+                    className="rounded-full border border-gray-200 bg-white/70 px-3 py-1.5 transition-colors hover:bg-white"
                   >
                     Close
                   </button>
@@ -586,76 +583,66 @@ export default function Home() {
         </div>
       )}
 
-      <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-16">
+      {/* HERO */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-8 pb-16">
         <div className="grid lg:grid-cols-12 gap-10 items-stretch">
           <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/70 px-4 py-2 text-sm">
-              <span className="h-2 w-2 rounded-full bg-[#B8963D]" />
-              <span className="text-gray-800">Digital Qurbani Operations</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-4 py-2 text-sm shadow-sm backdrop-blur-xl">
+              <span className="h-2 w-2 rounded-full bg-[#B8945C]" />
+              <span className="text-[#2A1B24]">Premium Qurbani Management</span>
             </div>
 
-            <h1 className="mt-6 text-4xl sm:text-6xl font-bold leading-[1.05] tracking-tight">
-              A smoother,
+            <h1 className="mt-6 text-4xl sm:text-6xl xl:text-7xl font-bold leading-[0.98] tracking-tight text-[#2A1B24]">
+              Seamless Qurbani,
               <br />
-              <span className="text-[#1F3F3F]">more organised Qurbani day.</span>
+              <span className="text-[#B8945C]">from order to collection.</span>
             </h1>
 
-            <p className="mt-6 text-lg sm:text-xl text-gray-800 leading-relaxed max-w-2xl">
-              Capture customer orders, track payments, manage slaughter progress, and keep slicing
-              instructions in one clean system — from order submission to collection.
+            <p className="mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-gray-700">
+              A refined digital experience for customers and staff — capturing orders beautifully,
+              managing payments clearly, and keeping every stage of Qurbani day organised in one place.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/order"
+                className="inline-flex h-13 items-center justify-center rounded-full bg-[#2A1B24] px-8 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
+              >
+                Place Your Order
+              </Link>
+
               {user ? (
                 <Link
                   href="/admin"
-                  className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
+                  className="inline-flex h-13 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-8 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
                 >
                   Open Dashboard
                 </Link>
               ) : (
-                <>
-                  <Link
-                    href="/order"
-                    className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
-                  >
-                    Place Order
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-gray-300 bg-white/40 text-base font-medium hover:bg-white/70 transition-colors"
-                  >
-                    Staff Sign In
-                  </Link>
-                </>
+                <Link
+                  href="/login"
+                  className="inline-flex h-13 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-8 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
+                >
+                  Staff Sign In
+                </Link>
               )}
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl items-stretch">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
               {[
-                {
-                  k: "Orders",
-                  v: "Captured in one place",
-                },
-                {
-                  k: "Statuses",
-                  v: "Paid, slaughtered, collected",
-                },
-                {
-                  k: "Instructions",
-                  v: "Clear slicing notes",
-                },
+                { k: "Orders", v: "Captured digitally" },
+                { k: "Tracking", v: "Live status updates" },
+                { k: "Collection", v: "Clear final handover" },
               ].map((item) => (
                 <div
                   key={item.k}
-                  className="group relative overflow-hidden rounded-3xl border border-gray-300 bg-white/70 px-5 py-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 h-[88px] flex items-center"
+                  className="group relative overflow-hidden rounded-[1.75rem] border border-white/40 bg-white/70 px-5 py-5 shadow-[0_10px_35px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(0,0,0,0.07)]"
                 >
-                  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#B8963D] via-[#B8963D]/60 to-transparent" />
-                  <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#B8963D]/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
+                  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#B8945C] via-[#B8945C]/60 to-transparent" />
+                  <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#B8945C]/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
                   <div>
-                    <div className="text-sm text-gray-700">{item.k}</div>
-                    <div className="mt-0.5 font-semibold text-gray-900">{item.v}</div>
+                    <div className="text-sm text-gray-600">{item.k}</div>
+                    <div className="mt-1 font-semibold text-[#2A1B24]">{item.v}</div>
                   </div>
                 </div>
               ))}
@@ -663,112 +650,157 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5 grid gap-6">
-            <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/80 to-white/40 p-8 shadow-lg">
-              <p className="text-xl leading-relaxed italic">
-                “Professional, organised, and much easier to manage when things get busy.”
-              </p>
-              <div className="mt-5 flex items-center justify-between">
-                <p className="text-sm text-gray-600">Built for real Qurbani day operations</p>
+            <div className="rounded-[2rem] border border-white/40 bg-gradient-to-br from-white/80 to-white/55 p-8 shadow-[0_14px_50px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+              <div className="flex items-center gap-4">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#2A1B24] text-white">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
+                    <path d="M7 12h10M7 8h10M7 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Designed For</div>
+                  <div className="text-xl font-semibold text-[#2A1B24]">Customers & Staff</div>
+                </div>
               </div>
+
+              <p className="mt-5 text-gray-700 leading-relaxed">
+                Customers enjoy a cleaner ordering experience, while staff get a modern live dashboard for
+                payments, slaughter progress, slicing instructions, and collection status.
+              </p>
             </div>
 
-            <div className="rounded-3xl border border-gray-300 bg-black text-white p-8 shadow-xl relative overflow-hidden">
-              <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[#B8963D]/25 blur-2xl" />
-              <h3 className="mt-1 text-2xl font-semibold">At a glance</h3>
-              <p className="mt-3 text-white/70 leading-relaxed">
-                Staff can instantly see customer details, sheep count, payment status, slicing
-                preference, and collection progress from one dashboard.
-              </p>
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                {["Customer", "Sheep Count", "Paid", "Collected"].map((t) => (
-                  <div key={t} className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3">
-                    <div className="text-sm text-white/80">{t}</div>
-                    <div className="mt-1 text-sm font-semibold">—</div>
-                  </div>
-                ))}
+            <div className="relative overflow-hidden rounded-[2rem] border border-[#2A1B24]/10 bg-[#2A1B24] p-8 text-white shadow-[0_18px_60px_rgba(0,0,0,0.12)]">
+              <div className="absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#B8945C]/25 blur-3xl" />
+              <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-white/5 blur-3xl" />
+
+              <div className="relative">
+                <div className="text-sm uppercase tracking-[0.25em] text-[#D8B98A]">Live Operations</div>
+                <h3 className="mt-2 text-2xl font-semibold">Everything visible at a glance</h3>
+                <p className="mt-3 leading-relaxed text-white/75">
+                  Order details, sheep count, payment status, slicing preferences, and collection updates —
+                  all in one refined workspace.
+                </p>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  {["Customer", "Paid", "Slaughtered", "Collected"].map((t) => (
+                    <div key={t} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+                      <div className="text-sm text-white/70">{t}</div>
+                      <div className="mt-1 text-sm font-semibold">—</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* ABOUT */}
       <section id="about" className="py-20">
         <div className="max-w-5xl mx-auto px-6 sm:px-10">
-          <div className="rounded-3xl border border-gray-300 bg-white/70 p-10 shadow-sm">
-            <p className="uppercase tracking-widest text-sm text-[#B8963D] mb-3">About the system</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight">
-              From customer order to final collection
+          <div className="rounded-[2rem] border border-white/40 bg-white/70 p-10 shadow-[0_14px_50px_rgba(0,0,0,0.05)] backdrop-blur-xl">
+            <p className="mb-3 text-sm uppercase tracking-[0.25em] text-[#B8945C]">About Northside Qurbani</p>
+            <h2 className="text-4xl font-semibold tracking-tight text-[#2A1B24]">
+              A more refined and professional way to manage Qurbani
             </h2>
 
             <div className="mt-6 grid md:grid-cols-2 gap-8">
-              <p className="text-gray-800 leading-relaxed text-lg">
-                Customers submit their Qurbani order through one simple form. Staff then manage
-                everything from a central dashboard instead of juggling WhatsApp messages, spreadsheets,
-                and printed lists.
+              <p className="text-lg leading-relaxed text-gray-700">
+                The system is built to remove the usual back-and-forth, manual capturing, and day-of confusion.
+                Customers place their order through one simple form, and every detail is stored neatly for staff.
               </p>
-
-              <p className="text-gray-800 leading-relaxed text-lg">
-                On the day, staff can search customers quickly, confirm payment, track slaughter
-                progress, check slicing instructions, and mark orders as collected — all in one place.
+              <p className="text-lg leading-relaxed text-gray-700">
+                From the first booking to the final collection, the experience is smoother, clearer, and more
+                professional for everyone involved.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-12 pb-24">
+      {/* HOW IT WORKS */}
+      <section id="how-it-works" className="py-8 pb-24">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-            <div>
-              <p className="uppercase tracking-widest text-sm text-[#5E4A1D]">System highlights</p>
-              <h2 className="mt-2 text-4xl font-semibold tracking-tight">
-                Built to streamline Qurbani day
-              </h2>
-            </div>
+          <div className="mb-10">
+            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">How it works</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
+              A streamlined flow from booking to handover
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-5">
+            {[
+              {
+                step: "01",
+                title: "Customer Books",
+                text: "The customer submits their order, sheep quantity, preferred weight, slicing preferences, and notes.",
+              },
+              {
+                step: "02",
+                title: "Staff Manage",
+                text: "Orders appear instantly in the dashboard, ready for payment checks, ticket allocation, and preparation.",
+              },
+              {
+                step: "03",
+                title: "Live Tracking",
+                text: "On Qurbani day, staff can search customers quickly and update statuses as sheep are processed.",
+              },
+              {
+                step: "04",
+                title: "Collection",
+                text: "Final collection is tracked clearly, helping keep the handover organised and efficient.",
+              },
+            ].map((item) => (
+              <div
+                key={item.step}
+                className="rounded-[1.75rem] border border-white/40 bg-white/70 p-6 shadow-[0_10px_35px_rgba(0,0,0,0.05)] backdrop-blur-xl"
+              >
+                <div className="text-sm font-semibold tracking-[0.2em] text-[#B8945C]">{item.step}</div>
+                <h3 className="mt-3 text-xl font-semibold text-[#2A1B24]">{item.title}</h3>
+                <p className="mt-3 leading-relaxed text-gray-700">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section className="py-8 pb-24">
+        <div className="max-w-6xl mx-auto px-6 sm:px-10">
+          <div className="mb-10">
+            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">System highlights</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
+              Built for elegance, clarity, and speed
+            </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
-              title="Order Capture"
-              text="Customers submit orders themselves, reducing back-and-forth WhatsApp messages and manual recapturing."
+              title="Digital Order Capture"
+              text="Customers enter their own details through a clean ordering flow, reducing manual admin and improving accuracy."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-                  <path
-                    d="M8 7h8M8 12h8M8 17h5M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M8 7h8M8 12h8M8 17h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" stroke="currentColor" strokeWidth="2" />
                 </svg>
               }
             />
             <FeatureCard
-              title="Live Tracking"
-              text="Staff can track paid, slaughtered, and collected statuses live as the day progresses."
+              title="Operational Control"
+              text="Staff can manage payment status, slaughter progress, slicing details, and collection updates from one place."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-                  <path
-                    d="M5 12l4 4L19 6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  <path d="M5 12l4 4L19 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               }
             />
             <FeatureCard
-              title="Clear Instructions"
-              text="Every order keeps slicing preferences and notes visible, helping reduce mistakes and confusion."
+              title="Professional Experience"
+              text="A polished digital system creates trust, improves organisation, and presents a more premium experience to customers."
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-                  <path
-                    d="M12 20h9"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   <path
                     d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"
                     stroke="currentColor"
@@ -783,61 +815,63 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FAQ */}
       <section id="faq" className="py-24">
         <div className="max-w-4xl mx-auto px-6 sm:px-10">
-          <div className="text-center mb-12">
-            <p className="uppercase tracking-widest text-sm text-[#5E4A1D]">Questions & Answers</p>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight">Frequently Asked Questions</h2>
+          <div className="mb-12 text-center">
+            <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Questions & Answers</p>
+            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">Frequently Asked Questions</h2>
           </div>
 
           <div className="grid gap-4">
             <FAQItem
-              question="Does this replace WhatsApp completely?"
-              answer="Not necessarily. Staff can still communicate with customers on WhatsApp, but the actual order details are captured properly in the system."
+              question="Can customers place their order online themselves?"
+              answer="Yes. Customers can submit their order directly through the system, allowing staff to receive all details in a clean and organised format."
             />
             <FAQItem
-              question="Can staff use it on the day from a phone?"
-              answer="Yes. The system is designed to be easy to use from a phone so staff can search customers and update statuses live."
+              question="Can staff use the system on the day from a phone?"
+              answer="Yes. The interface is designed to work smoothly on mobile so staff can search customers quickly and update progress live."
             />
             <FAQItem
-              question="What does the system track?"
-              answer="It tracks customer details, sheep count, preferred weight, slicing instructions, notes, payment status, slaughter status, and collection status."
+              question="What can staff track in the system?"
+              answer="The system can track customer details, sheep quantity, preferred weight, slicing preferences, notes, payment status, slaughter progress, and collection status."
             />
             <FAQItem
-              question="Why is this better than using a spreadsheet only?"
-              answer="It removes manual recapturing, makes searching much faster on the day, and keeps operational statuses easy to update in real time."
+              question="Why is this better than only using WhatsApp and spreadsheets?"
+              answer="It reduces manual recapturing, improves speed, keeps details in one place, and presents a more professional experience to both staff and customers."
             />
           </div>
         </div>
       </section>
 
+      {/* CTA */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-6 sm:px-10">
-          <div className="rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 p-10 shadow-lg overflow-hidden relative">
-            <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[#B8963D]/15 blur-3xl" />
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-black/10 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/40 bg-gradient-to-br from-white/75 to-white/55 p-10 shadow-[0_14px_50px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+            <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[#B8945C]/15 blur-3xl" />
+            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#5A314A]/10 blur-3xl" />
 
-            <div className="grid md:grid-cols-12 gap-10 items-center relative">
+            <div className="relative grid md:grid-cols-12 gap-10 items-center">
               <div className="md:col-span-8">
-                <p className="uppercase tracking-widest text-sm text-[#B8963D]">Ready to continue?</p>
-                <h2 className="mt-2 text-4xl font-semibold tracking-tight">
-                  Submit an order or open the staff dashboard
+                <p className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Ready to proceed?</p>
+                <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#2A1B24]">
+                  Place your order or continue to the staff dashboard
                 </h2>
-                <p className="mt-4 text-gray-800 text-lg leading-relaxed">
-                  One system for customer orders, payment checks, slaughter tracking, and collection tracking.
+                <p className="mt-4 text-lg leading-relaxed text-gray-700">
+                  A complete digital workflow for bookings, live tracking, and a smoother Qurbani day.
                 </p>
               </div>
 
               <div className="md:col-span-4 flex md:justify-end gap-3">
                 <Link
                   href="/order"
-                  className="inline-flex items-center justify-center h-12 px-7 rounded-full bg-black text-white text-base font-medium hover:bg-gray-900 shadow-sm"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-[#2A1B24] px-7 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#1f141b]"
                 >
                   Place Order
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center h-12 px-7 rounded-full border border-gray-300 bg-white/50 text-base font-medium hover:bg-white/80 transition-colors"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-gray-200 bg-white/60 px-7 text-base font-medium text-[#2A1B24] backdrop-blur-xl transition-colors hover:bg-white"
                 >
                   Staff Sign In
                 </Link>
@@ -847,24 +881,25 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-300 bg-white/70">
+      {/* FOOTER */}
+      <footer className="border-t border-white/40 bg-white/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 py-14">
-          <div className="grid gap-10 lg:grid-cols-12 items-start">
+          <div className="grid lg:grid-cols-12 gap-10 items-start">
             <div className="lg:col-span-4">
               <div className="flex items-center gap-4">
-                <div className="h-[80px] w-[85px] rounded-xl bg-white/100 border border-gray-300 shadow-sm grid place-items-center">
+                <div className="grid h-[78px] w-[78px] place-items-center rounded-[1.3rem] border border-white/50 bg-white/80 shadow-sm">
                   <Image
-                    src="/logo4.png"
-                    alt="Qurbani Management"
-                    width={65}
-                    height={65}
-                    className="rounded"
+                    src="/icon-512.png"
+                    alt="Northside Qurbani"
+                    width={58}
+                    height={58}
+                    className="object-contain"
                     priority
                   />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">Qurbani Management</div>
-                  <div className="text-sm text-gray-600">Professional order and day-of tracking</div>
+                  <div className="text-lg font-semibold text-[#2A1B24]">Northside Qurbani</div>
+                  <div className="text-sm text-gray-600">Elegant digital Qurbani operations</div>
                 </div>
               </div>
             </div>
@@ -872,7 +907,7 @@ export default function Home() {
             <div className="lg:col-span-7 lg:col-start-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 mb-4">Explore</div>
+                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Explore</div>
                   <div className="space-y-3">
                     <a href="/" className="block text-sm text-gray-700 hover:text-black">Home</a>
                     <a href="#about" className="block text-sm text-gray-700 hover:text-black">About</a>
@@ -881,46 +916,44 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 mb-4">Access</div>
+                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Access</div>
                   <div className="space-y-3">
                     <a href="/order" className="block text-sm text-gray-700 hover:text-black">Place Order</a>
                     <a href="/login" className="block text-sm text-gray-700 hover:text-black">Staff Sign In</a>
                     {user ? (
-                      <a href="/admin" className="block text-sm text-gray-700 hover:text-black">
-                        Dashboard
-                      </a>
+                      <a href="/admin" className="block text-sm text-gray-700 hover:text-black">Dashboard</a>
                     ) : null}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 mb-4">System</div>
+                  <div className="mb-4 text-sm font-semibold text-[#2A1B24]">Service</div>
                   <div className="space-y-3">
-                    <a href="#about" className="block text-sm text-gray-700 hover:text-black">How it works</a>
+                    <a href="#how-it-works" className="block text-sm text-gray-700 hover:text-black">How It Works</a>
                     <a href="#faq" className="block text-sm text-gray-700 hover:text-black">Questions</a>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-10 rounded-3xl border border-gray-300 bg-gradient-to-br from-white/70 to-white/40 p-6 shadow-sm">
+              <div className="mt-10 rounded-[1.75rem] border border-white/40 bg-gradient-to-br from-white/75 to-white/55 p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <div className="text-sm uppercase tracking-widest text-[#B8963D]">Qurbani Portal</div>
-                    <div className="mt-1 font-semibold text-lg">Everything organised in one place</div>
+                    <div className="text-sm uppercase tracking-[0.25em] text-[#B8945C]">Northside Portal</div>
+                    <div className="mt-1 text-lg font-semibold text-[#2A1B24]">A more refined way to manage Qurbani</div>
                     <div className="mt-1 text-sm text-gray-700">
-                      Orders, payments, slaughter progress, and collection tracking.
+                      Orders, tracking, slicing instructions, and collection — all together.
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <a
                       href="/order"
-                      className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-900"
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-[#2A1B24] px-6 text-sm font-medium text-white hover:bg-[#1f141b]"
                     >
                       Place Order
                     </a>
                     <a
                       href="/login"
-                      className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-gray-300 bg-white/70 hover:bg-white transition-colors text-sm font-medium"
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white/70 px-6 text-sm font-medium text-[#2A1B24] transition-colors hover:bg-white"
                     >
                       Staff Sign In
                     </a>
@@ -930,12 +963,11 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="my-10 h-px bg-gray-200" />
+          <div className="my-10 h-px bg-gray-200/80" />
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-4">
-              <a href="#top" className="hover:text-black">Back to top ↑</a>
-            </div>
+            <a href="#top" className="hover:text-black">Back to top ↑</a>
+            <span>Northside Qurbani • {new Date().getFullYear()}</span>
           </div>
         </div>
       </footer>
