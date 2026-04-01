@@ -309,14 +309,21 @@ function FeatureCard({
   icon: ReactNode;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.045] p-8 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#c6a268]/10 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#4a2a3b] text-[#d8b67e]">
+    <div className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-6 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.06] hover:shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:p-7 sm:text-left">
+      <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#c6a268]/10 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div className="relative">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#4a2a3b] text-[#d8b67e] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
           {icon}
         </div>
-        <h4 className="mt-4 text-2xl font-semibold text-white">{title}</h4>
-        <p className="mt-3 leading-relaxed text-[#c8bdc3]">{text}</p>
+
+        <h3 className="mt-5 text-[1.35rem] font-semibold tracking-[-0.02em] text-white">
+          {title}
+        </h3>
+
+        <p className="mt-3 text-[0.96rem] leading-7 text-white/65">
+          {text}
+        </p>
       </div>
     </div>
   );
@@ -741,7 +748,7 @@ export default function Home() {
 
           <div className="mt-6 grid gap-3">
             <StatPill label="Customer ordering" value="Elegant and easy to complete" />
-            <StatPill label="Operations" value="More structured on busy days" />
+            <StatPill label="Operations" value="More structured on Qurbani day" />
             <StatPill label="Collection" value="Clearer and more professional" />
           </div>
 
@@ -844,34 +851,40 @@ export default function Home() {
 </section>
 
       {/* SERVICES */}
-      <section id="services" className="pb-24 pt-4">
-        <div className="mx-auto max-w-6xl px-6 sm:px-10">
-          <div className="mb-10 text-center sm:text-left">
-            <SectionEyebrow>Services</SectionEyebrow>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight text-white">
-              A more complete and more luxurious qurbani experience
-            </h2>
-          </div>
+<section id="services" className="py-18 lg:py-24">
+  <div className="mx-auto max-w-6xl px-6 sm:px-10">
+    <div className="mx-auto mb-12 max-w-3xl text-center">
+      <SectionEyebrow>Services</SectionEyebrow>
+      <h2 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.4rem] lg:text-[2.9rem]">
+        A more refined qurbani experience,
+        <br className="hidden sm:block" />
+        built around service, clarity, and trust.
+      </h2>
+      <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8">
+        Every part of the Northside Qurbani experience is designed to feel smoother,
+        more organised, and more professional for both customers and staff.
+      </p>
+    </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            <FeatureCard
-              title="Customer Ordering"
-              text="Customers can place their qurbani booking through a polished and intuitive online flow that feels simple, modern, and trustworthy."
-              icon={<SparkIcon />}
-            />
-            <FeatureCard
-              title="Operational Management"
-              text="Staff have one clean workspace to manage orders, payment checks, preferences, progress updates, and customer collections."
-              icon={<WorkflowIcon />}
-            />
-            <FeatureCard
-              title="Trusted Delivery"
-              text="Service, care, and better systems come together to create a higher standard of organisation and a more premium overall experience."
-              icon={<ShieldIcon />}
-            />
-          </div>
-        </div>
-      </section>
+    <div className="grid gap-6 md:grid-cols-3 lg:gap-7">
+      <FeatureCard
+        title="Seamless Ordering"
+        text="Customers can place their qurbani booking through a clean, premium online flow that feels simple, trustworthy, and easy to complete."
+        icon={<SparkIcon />}
+      />
+      <FeatureCard
+        title="Structured Operations"
+        text="Staff work from one organised platform for orders, payments, preferences, progress updates, and collection coordination."
+        icon={<WorkflowIcon />}
+      />
+      <FeatureCard
+        title="Trusted Fulfilment"
+        text="Careful service, clear processes, and better systems come together to deliver a more elevated and professional overall experience."
+        icon={<ShieldIcon />}
+      />
+    </div>
+  </div>
+</section>
 
       {/* PLATFORM */}
       <section id="platform" className="pb-24 pt-4">
