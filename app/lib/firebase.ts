@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCLkAWVGoWwmqkWe68Csfth3e1d5M-Kg7o",
-  authDomain: "main-thehifdhjournal-fa34a.firebaseapp.com",
-  projectId: "main-thehifdhjournal-fa34a",
-  storageBucket: "main-thehifdhjournal-fa34a.firebasestorage.app",
-  messagingSenderId: "532135430249",
-  appId: "1:532135430249:web:b7f8f632744883c52d7af8"
+  apiKey: "AIzaSyDmwmnxQJhbzzDmHcvroDN6Errz58EmgOE",
+  authDomain: "northside-qurbani.firebaseapp.com",
+  projectId: "northside-qurbani",
+  storageBucket: "northside-qurbani.firebasestorage.app",
+  messagingSenderId: "522339181318",
+  appId: "1:522339181318:web:b60ee1134380ee1f9bb487"
 };
 
 

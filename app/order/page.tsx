@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 type WeightOption = {
   label: string;
@@ -258,6 +260,8 @@ export default function OrderPage() {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const quantityNumber = Math.max(0, Number(form.quantity) || 0);
 
@@ -269,7 +273,6 @@ export default function OrderPage() {
   const basePricePerSheep = selectedWeight?.price || 0;
   const servicesPerSheep = form.addServices ? 400 : 0;
   const deliveryPerSheep = form.delivery ? 100 : 0;
-
   const pricePerSheep = basePricePerSheep + servicesPerSheep + deliveryPerSheep;
   const totalPrice = quantityNumber * pricePerSheep;
 
@@ -331,13 +334,52 @@ export default function OrderPage() {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    setSubmitError("");
+    setSubmitted(false);
+
     if (!validate()) return;
 
-    // Next step: save this exact pricing + order data to Firestore
-    // so it can also appear in the staff table/dashboard.
-    setSubmitted(true);
+    try {
+      setSubmitting(true);
+
+      await addDoc(collection(db, "orders"), {
+        fullName: form.fullName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        quantity: quantityNumber,
+        preferredWeight: form.preferredWeight,
+        cutPreferences: form.cutPreferences,
+        notes: form.notes.trim(),
+
+        addServices: form.addServices,
+        delivery: form.delivery,
+
+        basePricePerSheep,
+        servicesPerSheep,
+        deliveryPerSheep,
+        pricePerSheep,
+        totalPrice,
+
+        paymentStatus: "pending",
+        processingStatus: "pending",
+        collectionStatus: "pending",
+
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setSubmitted(true);
+      setForm(initialForm);
+      setErrors({});
+    } catch (error) {
+      console.error("Error saving order:", error);
+      setSubmitError("Something went wrong while saving the order. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -654,20 +696,27 @@ export default function OrderPage() {
 
                   <button
                     type="submit"
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px]"
+                    disabled={submitting}
+                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
                   >
-                    Submit Booking
+                    {submitting ? "Submitting..." : "Submit Booking"}
                   </button>
                 </div>
+
+                {submitError ? (
+                  <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-5">
+                    <p className="text-sm font-semibold text-red-200">Could not save booking</p>
+                    <p className="mt-1 text-sm leading-6 text-red-100/80">{submitError}</p>
+                  </div>
+                ) : null}
 
                 {submitted ? (
                   <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-5">
                     <p className="text-sm font-semibold text-emerald-200">
-                      Booking ready
+                      Booking submitted successfully
                     </p>
                     <p className="mt-1 text-sm leading-6 text-emerald-100/80">
-                      Your form has passed validation. The next step is to save this
-                      order, pricing, and total into Firestore so it can also appear in the staff table.
+                      Your booking has been saved successfully.
                     </p>
                   </div>
                 ) : null}
