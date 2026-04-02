@@ -3,40 +3,71 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 
-export default function LoginPage() {
+// CHANGE THIS TO YOUR REAL PRIVATE INVITE CODE
+const STAFF_INVITE_CODE = "NORTHSIDE2026";
+
+export default function StaffRegisterPage() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   function getFriendlyError(message: string) {
-    if (message.includes("auth/invalid-email")) return "Please enter a valid email address.";
-    if (message.includes("auth/user-not-found")) return "No staff account was found with that email.";
-    if (message.includes("auth/wrong-password")) return "The password you entered is incorrect.";
-    if (message.includes("auth/invalid-credential")) return "The email or password entered is incorrect.";
-    if (message.includes("auth/too-many-requests")) return "Too many attempts. Please try again shortly.";
-    return "Unable to sign in right now. Please try again.";
+    if (message.includes("auth/email-already-in-use")) {
+      return "That email is already registered. Please sign in instead.";
+    }
+    if (message.includes("auth/invalid-email")) {
+      return "Please enter a valid email address.";
+    }
+    if (message.includes("auth/weak-password")) {
+      return "Password should be at least 6 characters.";
+    }
+    return "Unable to create the staff account right now. Please try again.";
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password.");
+    if (!fullName.trim() || !email.trim() || !password.trim() || !inviteCode.trim()) {
+      setError("Please complete all fields.");
+      return;
+    }
+
+    if (inviteCode.trim() !== STAFF_INVITE_CODE) {
+      setError("The invite code entered is incorrect.");
       return;
     }
 
     try {
       setSubmitting(true);
-      await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email.trim().toLowerCase(),
+        password
+      );
+
+      const uid = userCredential.user.uid;
+
+      await setDoc(doc(db, "users", uid), {
+        name: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        role: "staff",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
       window.location.assign("/admin");
     } catch (err: any) {
-      console.error("Login error:", err);
+      console.error("Staff registration error:", err);
       setError(getFriendlyError(err?.message || ""));
     } finally {
       setSubmitting(false);
@@ -53,7 +84,6 @@ export default function LoginPage() {
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
@@ -74,16 +104,16 @@ export default function LoginPage() {
               Northside Qurbani
             </div>
             <div className="mt-1 text-sm text-white/55">
-              Staff access
+              Staff registration
             </div>
           </div>
         </Link>
 
         <Link
-          href="/"
+          href="/login"
           className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
         >
-          Back Home
+          Staff Sign In
         </Link>
       </header>
 
@@ -91,25 +121,25 @@ export default function LoginPage() {
         <div className="grid gap-8 xl:grid-cols-12 xl:gap-10">
           <div className="text-center xl:col-span-6 xl:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
-              Staff Sign In
+              Staff Registration
             </div>
 
             <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
-              Access the operations
-              <span className="mt-1 block">dashboard with</span>
-              <span className="mt-1 block">clarity and control.</span>
+              Create your staff
+              <span className="mt-1 block">account with</span>
+              <span className="mt-1 block">secure access.</span>
             </h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 xl:mx-0">
-              Sign in to manage customer bookings, review totals, track payment status,
-              and coordinate processing and collection from one refined workspace.
+              Use the staff invite code to create your login and get immediate access
+              to the operational dashboard.
             </p>
 
             <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3 xl:mx-0">
               {[
-                { title: "Bookings", text: "Review all incoming orders clearly" },
-                { title: "Statuses", text: "Update payment and collection progress" },
-                { title: "Operations", text: "Keep the day organised and smooth" },
+                { title: "Secure", text: "Only authorised staff can register" },
+                { title: "Instant", text: "Access the dashboard immediately" },
+                { title: "Organised", text: "Manage bookings from one place" },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -128,22 +158,33 @@ export default function LoginPage() {
             <div className="mx-auto max-w-xl rounded-[34px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
               <div className="text-center xl:text-left">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                  Staff access
+                  Create staff account
                 </p>
                 <h2 className="mt-3 text-[1.9rem] font-semibold tracking-[-0.03em] text-white sm:text-[2.2rem]">
-                  Sign in to continue
+                  Register to continue
                 </h2>
                 <p className="mt-3 text-[0.98rem] leading-7 text-white/65">
-                  Use your staff credentials to access the dashboard.
+                  Enter your details and the invite code to create your staff login.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} noValidate className="mt-8 grid gap-6">
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-sm font-medium text-white/82"
-                  >
+                  <label htmlFor="fullName" className="mb-2 block text-sm font-medium text-white/82">
+                    Full name
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-white/82">
                     Email address
                   </label>
                   <input
@@ -157,10 +198,7 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-2 block text-sm font-medium text-white/82"
-                  >
+                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-white/82">
                     Password
                   </label>
                   <input
@@ -168,7 +206,21 @@ export default function LoginPage() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="inviteCode" className="mb-2 block text-sm font-medium text-white/82">
+                    Staff invite code
+                  </label>
+                  <input
+                    id="inviteCode"
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="Enter invite code"
                     className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
                   />
                 </div>
@@ -176,7 +228,7 @@ export default function LoginPage() {
                 {error ? (
                   <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-4 text-center xl:text-left">
                     <p className="text-sm font-semibold text-red-200">
-                      Unable to sign in
+                      Unable to create account
                     </p>
                     <p className="mt-1 text-sm leading-6 text-red-100/80">
                       {error}
@@ -186,38 +238,28 @@ export default function LoginPage() {
 
                 <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
                   <Link
-                    href="/"
+                    href="/login"
                     className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
                   >
-                    Back Home
+                    Staff Sign In
                   </Link>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
+                    className="inline-flex h-[44px] min-w-[210px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
                   >
-                    {submitting ? "Signing In..." : "Sign In"}
+                    {submitting ? "Creating Account..." : "Create Staff Account"}
                   </button>
-                </div>
-
-                <div className="text-center xl:text-left">
-                  <Link
-                    href="/staff-register"
-                    className="text-sm font-medium text-[#d8b67e] transition hover:text-white"
-                  >
-                    Need staff access? Create a staff account
-                  </Link>
                 </div>
               </form>
 
               <div className="mt-8 rounded-[24px] border border-white/10 bg-white/5 p-5 text-center xl:text-left">
                 <p className="text-sm font-medium text-white/80">
-                  Access is restricted to authorised staff only
+                  Only authorised staff should have the invite code
                 </p>
                 <p className="mt-2 text-sm leading-6 text-white/55">
-                  Once signed in, staff can manage bookings, review totals, and update
-                  order progress throughout the qurbani process.
+                  Once your account is created, you can sign in normally and access the dashboard immediately.
                 </p>
               </div>
             </div>
