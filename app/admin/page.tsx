@@ -81,16 +81,16 @@ function PaymentBadge({ value }: { value?: string }) {
   );
 }
 
-function WorkflowBadge({ completedAtFarm }: { completedAtFarm?: boolean }) {
+function SlaughteredBadge({ slaughtered }: { slaughtered?: boolean }) {
   return (
     <span
       className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-        completedAtFarm
+        slaughtered
           ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
           : "border-sky-400/20 bg-sky-400/10 text-sky-200"
       }`}
     >
-      {completedAtFarm ? "Completed At Farm" : "Awaiting At Farm"}
+      {slaughtered ? "Slaughtered" : "Not Slaughtered"}
     </span>
   );
 }
@@ -310,11 +310,11 @@ export default function AdminPage() {
 
       let matchesWorkflow = true;
 
-      if (workflowFilter === "awaitingFarm") {
+      if (workflowFilter === "notSlaughtered") {
         matchesWorkflow = !order.slaughtered;
       }
 
-      if (workflowFilter === "completedFarm") {
+      if (workflowFilter === "slaughtered") {
         matchesWorkflow = !!order.slaughtered;
       }
 
@@ -338,7 +338,7 @@ export default function AdminPage() {
   const unpaidCount = orders.filter(
     (o) => (o.paymentStatus || "pending").toLowerCase() !== "paid"
   ).length;
-  const completedAtFarmCount = orders.filter((o) => !!o.slaughtered).length;
+  const slaughteredCount = orders.filter((o) => !!o.slaughtered).length;
   const awaitingDeliveryCount = orders.filter(
     (o) => !!o.slaughtered && !o.delivered
   ).length;
@@ -452,8 +452,8 @@ export default function AdminPage() {
 
               <p className="mx-auto mt-5 max-w-3xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 xl:mx-0">
                 Search the customer quickly, confirm whether they paid, mark the
-                booking complete once the sheep is taken and the name is scratched
-                out, then manage delivery after the farm day.
+                booking as slaughtered once the workers fetch the sheep, then manage
+                delivery after qurbani day.
               </p>
             </div>
 
@@ -525,14 +525,14 @@ export default function AdminPage() {
                       onClick={() => setWorkflowFilter("all")}
                     />
                     <FilterButton
-                      active={workflowFilter === "awaitingFarm"}
-                      label="Awaiting At Farm"
-                      onClick={() => setWorkflowFilter("awaitingFarm")}
+                      active={workflowFilter === "notSlaughtered"}
+                      label="Not Slaughtered"
+                      onClick={() => setWorkflowFilter("notSlaughtered")}
                     />
                     <FilterButton
-                      active={workflowFilter === "completedFarm"}
-                      label="Completed At Farm"
-                      onClick={() => setWorkflowFilter("completedFarm")}
+                      active={workflowFilter === "slaughtered"}
+                      label="Slaughtered"
+                      onClick={() => setWorkflowFilter("slaughtered")}
                     />
                     <FilterButton
                       active={workflowFilter === "awaitingDelivery"}
@@ -579,7 +579,7 @@ export default function AdminPage() {
                 <div className="grid gap-0">
                   {filteredOrders.map((order) => {
                     const busyPayment = updatingField === `${order.id}-paymentStatus`;
-                    const busyFarm = updatingField === `${order.id}-slaughtered`;
+                    const busySlaughtered = updatingField === `${order.id}-slaughtered`;
                     const busyDelivered = updatingField === `${order.id}-delivered`;
 
                     return (
@@ -620,7 +620,7 @@ export default function AdminPage() {
 
                           <div className="flex flex-wrap gap-2 xl:justify-end">
                             <PaymentBadge value={order.paymentStatus} />
-                            <WorkflowBadge completedAtFarm={order.slaughtered} />
+                            <SlaughteredBadge slaughtered={order.slaughtered} />
                             <DeliveryBadge delivered={order.delivered} />
                           </div>
                         </div>
@@ -650,12 +650,8 @@ export default function AdminPage() {
                           <QuickActionButton
                             compact
                             active={!!order.slaughtered}
-                            label={
-                              order.slaughtered
-                                ? "Completed At Farm"
-                                : "Mark Completed At Farm"
-                            }
-                            disabled={busyFarm}
+                            label={order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+                            disabled={busySlaughtered}
                             onClick={(e) => {
                               e.stopPropagation();
                               updateField(order.id, "slaughtered", !order.slaughtered);
@@ -771,12 +767,8 @@ export default function AdminPage() {
                         }
                       />
                       <DetailRow
-                        label="Farm status"
-                        value={
-                          selectedOrder.slaughtered
-                            ? "COMPLETED AT FARM"
-                            : "AWAITING AT FARM"
-                        }
+                        label="Slaughtered"
+                        value={selectedOrder.slaughtered ? "YES" : "NO"}
                       />
                       <DetailRow
                         label="Delivery status"
@@ -821,20 +813,16 @@ export default function AdminPage() {
 
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="text-sm font-medium text-white/82">
-                          Farm-day completion
+                          Slaughter status
                         </div>
                         <div className="mt-2 text-xs leading-5 text-white/45">
-                          Use this once the customer has been found, the sheep has
-                          been taken, and the name has effectively been scratched out.
+                          Use this once the girl has found the customer and told the
+                          workers to fetch the sheep.
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
                             active={!!selectedOrder.slaughtered}
-                            label={
-                              selectedOrder.slaughtered
-                                ? "Completed At Farm"
-                                : "Mark Completed At Farm"
-                            }
+                            label={selectedOrder.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
                             disabled={updatingField === `${selectedOrder.id}-slaughtered`}
                             onClick={(_e) =>
                               updateField(
@@ -889,9 +877,9 @@ export default function AdminPage() {
                     <span className="text-sm font-semibold text-white">{unpaidCount}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <span className="text-sm text-white/65">Completed at farm</span>
+                    <span className="text-sm text-white/65">Slaughtered</span>
                     <span className="text-sm font-semibold text-white">
-                      {completedAtFarmCount}
+                      {slaughteredCount}
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -914,8 +902,8 @@ export default function AdminPage() {
                   Fast flow
                 </div>
                 <div className="mt-3 text-sm leading-6 text-white/65">
-                  Customer arrives with tags → girl searches the name → workers take
-                  the sheep → mark completed at farm → owners later check unpaid and
+                  Customer arrives with tags → girl searches the name → workers fetch
+                  the sheep → mark slaughtered → owners later check unpaid and
                   awaiting-delivery bookings.
                 </div>
               </div>
