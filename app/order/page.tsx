@@ -373,7 +373,7 @@ export default function OrderPage() {
       updatedAt: serverTimestamp(),
     });
 
-    window.location.assign(`/order/success?id=${orderRef.id}`);
+   window.location.assign(`/order/success/${orderRef.id}`);
   } catch (error) {
     console.error("Error saving order:", error);
     setSubmitError("Something went wrong while saving the order. Please try again.");

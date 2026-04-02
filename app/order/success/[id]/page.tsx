@@ -1,11 +1,7 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { db } from "../../../lib/firebase";
 
 type OrderData = {
   fullName?: string;
@@ -65,47 +61,30 @@ function InfoCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function OrderSuccessPage() {
-  const searchParams = useSearchParams();
-  const orderId = searchParams.get("id");
+export default async function OrderSuccessPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
-  const [loading, setLoading] = useState(true);
-  const [order, setOrder] = useState<OrderData | null>(null);
-  const [error, setError] = useState("");
+  let order: OrderData | null = null;
+  let error = "";
 
-  const orderReference = useMemo(() => {
-    if (!orderId) return "—";
-    return `NQ-${orderId.slice(0, 8).toUpperCase()}`;
-  }, [orderId]);
+  try {
+    const snap = await getDoc(doc(db, "orders", id));
 
-  useEffect(() => {
-    async function loadOrder() {
-      if (!orderId) {
-        setError("No booking reference was provided.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const snap = await getDoc(doc(db, "orders", orderId));
-
-        if (!snap.exists()) {
-          setError("We could not find this booking.");
-          setLoading(false);
-          return;
-        }
-
-        setOrder(snap.data() as OrderData);
-      } catch (err) {
-        console.error("Error loading order:", err);
-        setError("Something went wrong while loading the booking.");
-      } finally {
-        setLoading(false);
-      }
+    if (!snap.exists()) {
+      error = "We could not find this booking.";
+    } else {
+      order = snap.data() as OrderData;
     }
+  } catch (err) {
+    console.error("Error loading order:", err);
+    error = "Something went wrong while loading the booking.";
+  }
 
-    loadOrder();
-  }, [orderId]);
+  const orderReference = `NQ-${id.slice(0, 8).toUpperCase()}`;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -149,19 +128,7 @@ export default function OrderSuccessPage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
-        {loading ? (
-          <div className="rounded-[34px] border border-white/10 bg-white/[0.045] p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">
-              Loading booking
-            </p>
-            <h1 className="mt-4 text-[2rem] font-semibold text-white sm:text-[2.4rem]">
-              Retrieving your confirmation
-            </h1>
-            <p className="mt-4 text-white/65">
-              Please wait while we load your booking details.
-            </p>
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="rounded-[34px] border border-red-400/20 bg-red-400/10 p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
             <p className="text-sm uppercase tracking-[0.24em] text-red-200">
               Booking unavailable
