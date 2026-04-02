@@ -366,10 +366,18 @@ export default function OrderPage() {
         pricePerSheep,
         totalPrice,
         paymentStatus: "pending",
-        processingStatus: "pending",
-        collectionStatus: "pending",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+
+tagsIssued: false,
+fetched: false,
+takenForSlaughter: false,
+slaughtered: false,
+processed: false,
+readyForCollection: false,
+collected: false,
+
+createdAt: serverTimestamp(),
+updatedAt: serverTimestamp(),
+      
       });
 
       const savedOrderId = orderRef.id;
