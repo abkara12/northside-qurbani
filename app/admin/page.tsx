@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, MouseEvent } from "react";
 import {
   collection,
   doc,
@@ -31,17 +31,9 @@ type OrderItem = {
   deliveryPerSheep?: number;
   pricePerSheep?: number;
   totalPrice?: number;
-
   paymentStatus?: string;
-
-  tagsIssued?: boolean;
-  fetched?: boolean;
-  takenForSlaughter?: boolean;
   slaughtered?: boolean;
-  processed?: boolean;
-  readyForCollection?: boolean;
-  collected?: boolean;
-
+  delivered?: boolean;
   createdAt?: any;
   updatedAt?: any;
 };
@@ -73,32 +65,6 @@ function orderReference(id: string) {
   return `NQ-${id.slice(0, 8).toUpperCase()}`;
 }
 
-function boolLabel(value?: boolean) {
-  return value ? "Done" : "Pending";
-}
-
-function WorkflowBadge({
-  value,
-  doneText = "Done",
-  pendingText = "Pending",
-}: {
-  value?: boolean;
-  doneText?: string;
-  pendingText?: string;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-        value
-          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-          : "border-amber-400/20 bg-amber-400/10 text-amber-200"
-      }`}
-    >
-      {value ? doneText : pendingText}
-    </span>
-  );
-}
-
 function PaymentBadge({ value }: { value?: string }) {
   const paid = (value || "pending").toLowerCase() === "paid";
 
@@ -111,6 +77,28 @@ function PaymentBadge({ value }: { value?: string }) {
       }`}
     >
       {paid ? "Paid" : "Pending"}
+    </span>
+  );
+}
+
+function SimpleBadge({
+  value,
+  doneText,
+  pendingText,
+}: {
+  value?: boolean;
+  doneText: string;
+  pendingText: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+        value
+          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+          : "border-amber-400/20 bg-amber-400/10 text-amber-200"
+      }`}
+    >
+      {value ? doneText : pendingText}
     </span>
   );
 }
@@ -142,16 +130,20 @@ function FilterButton({
 function SummaryCard({
   label,
   value,
-  subtle,
+  accent = false,
 }: {
   label: string;
   value: string;
-  subtle?: boolean;
+  accent?: boolean;
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl">
       <div className="text-sm text-white/45">{label}</div>
-      <div className={`mt-2 text-xl font-semibold ${subtle ? "text-white" : "text-[#d8b67e]"}`}>
+      <div
+        className={`mt-2 text-xl font-semibold ${
+          accent ? "text-[#d8b67e]" : "text-white"
+        }`}
+      >
         {value}
       </div>
     </div>
@@ -181,23 +173,27 @@ function DetailRow({
   );
 }
 
-function ToggleActionButton({
+function QuickActionButton({
   active,
   label,
   onClick,
   disabled,
+  compact = false,
 }: {
   active?: boolean;
   label: string;
-  onClick: () => void;
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`rounded-full font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        compact ? "px-3 py-1.5 text-[12px]" : "px-4 py-2 text-sm"
+      } ${
         active
           ? "bg-[#c6a268] text-[#161015]"
           : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
@@ -220,7 +216,7 @@ export default function AdminPage() {
   const [workflowFilter, setWorkflowFilter] = useState("all");
 
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
-  const [updatingField, setUpdatingField] = useState<string>("");
+  const [updatingField, setUpdatingField] = useState("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
@@ -298,18 +294,16 @@ export default function AdminPage() {
 
       const matchesPayment =
         paymentFilter === "all" ||
-        (paymentFilter === "paid" && (order.paymentStatus || "pending").toLowerCase() === "paid") ||
-        (paymentFilter === "pending" && (order.paymentStatus || "pending").toLowerCase() !== "paid");
+        (paymentFilter === "paid" &&
+          (order.paymentStatus || "pending").toLowerCase() === "paid") ||
+        (paymentFilter === "pending" &&
+          (order.paymentStatus || "pending").toLowerCase() !== "paid");
 
       let matchesWorkflow = true;
-
-      if (workflowFilter === "tagsPending") matchesWorkflow = !order.tagsIssued;
-      if (workflowFilter === "fetchedPending") matchesWorkflow = !!order.tagsIssued && !order.fetched;
-      if (workflowFilter === "slaughterPending") matchesWorkflow = !!order.fetched && !order.slaughtered;
-      if (workflowFilter === "processingPending") matchesWorkflow = !!order.slaughtered && !order.processed;
-      if (workflowFilter === "readyPending") matchesWorkflow = !!order.processed && !order.readyForCollection;
-      if (workflowFilter === "ready") matchesWorkflow = !!order.readyForCollection && !order.collected;
-      if (workflowFilter === "collected") matchesWorkflow = !!order.collected;
+      if (workflowFilter === "awaitingSlaughter") matchesWorkflow = !order.slaughtered;
+      if (workflowFilter === "slaughtered")
+        matchesWorkflow = !!order.slaughtered && !order.delivered;
+      if (workflowFilter === "delivered") matchesWorkflow = !!order.delivered;
 
       return matchesSearch && matchesPayment && matchesWorkflow;
     });
@@ -317,11 +311,12 @@ export default function AdminPage() {
 
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
-  const paidCount = orders.filter((o) => (o.paymentStatus || "pending") === "paid").length;
-  const tagsIssuedCount = orders.filter((o) => !!o.tagsIssued).length;
-  const slaughteredCount = orders.filter((o) => !!o.slaughtered).length;
-  const readyCount = orders.filter((o) => !!o.readyForCollection && !o.collected).length;
-  const collectedCount = orders.filter((o) => !!o.collected).length;
+  const paidCount = orders.filter(
+    (o) => (o.paymentStatus || "pending").toLowerCase() === "paid"
+  ).length;
+  const unpaidCount = orders.filter(
+    (o) => (o.paymentStatus || "pending").toLowerCase() !== "paid"
+  ).length;
 
   async function updateField(orderId: string, field: keyof OrderItem, value: any) {
     try {
@@ -350,9 +345,15 @@ export default function AdminPage() {
       <main className="min-h-screen bg-[#09070b] text-white">
         <div className="flex min-h-screen items-center justify-center px-6">
           <div className="rounded-[28px] border border-white/10 bg-white/[0.045] px-8 py-6 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">Loading</p>
-            <h1 className="mt-3 text-2xl font-semibold text-white">Preparing dashboard</h1>
-            <p className="mt-3 text-white/65">Please wait while access is verified.</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">
+              Loading
+            </p>
+            <h1 className="mt-3 text-2xl font-semibold text-white">
+              Preparing dashboard
+            </h1>
+            <p className="mt-3 text-white/65">
+              Please wait while access is verified.
+            </p>
           </div>
         </div>
       </main>
@@ -388,9 +389,7 @@ export default function AdminPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Staff dashboard
-            </div>
+            <div className="mt-1 text-sm text-white/55">Staff dashboard</div>
           </div>
         </div>
 
@@ -422,22 +421,25 @@ export default function AdminPage() {
               <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
                 Manage qurbani-day
                 <span className="mt-1 block">operations with</span>
-                <span className="mt-1 block">clarity and control.</span>
+                <span className="mt-1 block">speed and clarity.</span>
               </h1>
 
               <p className="mx-auto mt-5 max-w-3xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 xl:mx-0">
-                Track arrivals, tags, fetching, slaughter, processing, readiness, and collection
-                from one refined operational workspace.
+                A simplified dashboard for quickly finding customers, confirming
+                payment, marking slaughtered, and marking delivered without slowing
+                the team down.
               </p>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <SummaryCard label="Total bookings" value={String(totalOrders)} subtle />
-              <SummaryCard label="Estimated revenue" value={formatZAR(totalRevenue)} />
-              <SummaryCard label="Paid bookings" value={String(paidCount)} subtle />
-              <SummaryCard label="Tags issued" value={String(tagsIssuedCount)} subtle />
-              <SummaryCard label="Slaughtered" value={String(slaughteredCount)} subtle />
-              <SummaryCard label="Ready / Collected" value={`${readyCount} / ${collectedCount}`} subtle />
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <SummaryCard label="Total bookings" value={String(totalOrders)} />
+              <SummaryCard
+                label="Estimated revenue"
+                value={formatZAR(totalRevenue)}
+                accent
+              />
+              <SummaryCard label="Paid bookings" value={String(paidCount)} />
+              <SummaryCard label="Unpaid bookings" value={String(unpaidCount)} />
             </div>
 
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
@@ -456,24 +458,53 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
+                  <div className="mb-2 text-sm font-medium text-white/82">
+                    Payment
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton active={paymentFilter === "all"} label="All" onClick={() => setPaymentFilter("all")} />
-                    <FilterButton active={paymentFilter === "pending"} label="Pending" onClick={() => setPaymentFilter("pending")} />
-                    <FilterButton active={paymentFilter === "paid"} label="Paid" onClick={() => setPaymentFilter("paid")} />
+                    <FilterButton
+                      active={paymentFilter === "all"}
+                      label="All"
+                      onClick={() => setPaymentFilter("all")}
+                    />
+                    <FilterButton
+                      active={paymentFilter === "pending"}
+                      label="Pending"
+                      onClick={() => setPaymentFilter("pending")}
+                    />
+                    <FilterButton
+                      active={paymentFilter === "paid"}
+                      label="Paid"
+                      onClick={() => setPaymentFilter("paid")}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">Workflow</div>
+                  <div className="mb-2 text-sm font-medium text-white/82">
+                    Workflow
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton active={workflowFilter === "all"} label="All" onClick={() => setWorkflowFilter("all")} />
-                    <FilterButton active={workflowFilter === "tagsPending"} label="Awaiting Tags" onClick={() => setWorkflowFilter("tagsPending")} />
-                    <FilterButton active={workflowFilter === "fetchedPending"} label="Awaiting Fetch" onClick={() => setWorkflowFilter("fetchedPending")} />
-                    <FilterButton active={workflowFilter === "slaughterPending"} label="Awaiting Slaughter" onClick={() => setWorkflowFilter("slaughterPending")} />
-                    <FilterButton active={workflowFilter === "processingPending"} label="Awaiting Processing" onClick={() => setWorkflowFilter("processingPending")} />
-                    <FilterButton active={workflowFilter === "ready"} label="Ready" onClick={() => setWorkflowFilter("ready")} />
-                    <FilterButton active={workflowFilter === "collected"} label="Collected" onClick={() => setWorkflowFilter("collected")} />
+                    <FilterButton
+                      active={workflowFilter === "all"}
+                      label="All"
+                      onClick={() => setWorkflowFilter("all")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "awaitingSlaughter"}
+                      label="Awaiting Slaughter"
+                      onClick={() => setWorkflowFilter("awaitingSlaughter")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "slaughtered"}
+                      label="Slaughtered"
+                      onClick={() => setWorkflowFilter("slaughtered")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "delivered"}
+                      label="Delivered"
+                      onClick={() => setWorkflowFilter("delivered")}
+                    />
                   </div>
                 </div>
               </div>
@@ -501,63 +532,145 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div className="grid gap-0">
-                  {filteredOrders.map((order) => (
-                    <button
-                      key={order.id}
-                      type="button"
-                      onClick={() => setSelectedOrder(order)}
-                      className="border-t border-white/10 px-5 py-5 text-left transition hover:bg-white/[0.04] sm:px-6"
-                    >
-                      <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr_0.5fr_0.8fr_0.8fr_0.8fr] xl:items-center xl:gap-4">
-                        <div>
-                          <div className="font-semibold text-white">{order.fullName || "—"}</div>
-                          <div className="mt-1 text-sm text-white/52">{order.phone || "—"}</div>
+                  {filteredOrders.map((order) => {
+                    const busyPayment = updatingField === `${order.id}-paymentStatus`;
+                    const busySlaughtered = updatingField === `${order.id}-slaughtered`;
+                    const busyDelivered = updatingField === `${order.id}-delivered`;
+
+                    return (
+                      <div
+                        key={order.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedOrder(order)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedOrder(order);
+                          }
+                        }}
+                        className="cursor-pointer border-t border-white/10 px-5 py-5 text-left transition hover:bg-white/[0.04] sm:px-6"
+                      >
+                        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr_0.45fr_0.75fr_0.75fr_0.75fr] xl:items-center xl:gap-4">
+                          <div>
+                            <div className="font-semibold text-white">
+                              {order.fullName || "—"}
+                            </div>
+                            <div className="mt-1 text-sm text-white/52">
+                              {order.phone || "—"}
+                            </div>
+                          </div>
+
+                          <div className="text-sm font-medium text-[#d8b67e]">
+                            {orderReference(order.id)}
+                          </div>
+
+                          <div className="text-sm text-white">{order.quantity || "—"}</div>
+
+                          <div className="text-sm font-semibold text-white">
+                            {formatZAR(order.totalPrice)}
+                          </div>
+
+                          <div>
+                            <PaymentBadge value={order.paymentStatus} />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 xl:justify-end">
+                            <SimpleBadge
+                              value={order.slaughtered}
+                              doneText="Slaughtered"
+                              pendingText="Not Slaughtered"
+                            />
+                            <SimpleBadge
+                              value={order.delivered}
+                              doneText="Delivered"
+                              pendingText="Not Delivered"
+                            />
+                          </div>
                         </div>
 
-                        <div className="text-sm font-medium text-[#d8b67e]">
-                          {orderReference(order.id)}
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <QuickActionButton
+                            compact
+                            active={(order.paymentStatus || "pending").toLowerCase() === "paid"}
+                            label={
+                              (order.paymentStatus || "pending").toLowerCase() === "paid"
+                                ? "Paid"
+                                : "Mark Paid"
+                            }
+                            disabled={busyPayment}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateField(
+                                order.id,
+                                "paymentStatus",
+                                (order.paymentStatus || "pending").toLowerCase() === "paid"
+                                  ? "pending"
+                                  : "paid"
+                              );
+                            }}
+                          />
+
+                          <QuickActionButton
+                            compact
+                            active={!!order.slaughtered}
+                            label={order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+                            disabled={busySlaughtered}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateField(order.id, "slaughtered", !order.slaughtered);
+                            }}
+                          />
+
+                          <QuickActionButton
+                            compact
+                            active={!!order.delivered}
+                            label={order.delivered ? "Delivered" : "Mark Delivered"}
+                            disabled={busyDelivered}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateField(order.id, "delivered", !order.delivered);
+                            }}
+                          />
                         </div>
 
-                        <div className="text-sm text-white">{order.quantity || "—"}</div>
+                        <div className="mt-4 grid gap-2 xl:hidden">
+                          <div className="text-sm text-white/58">
+                            Reference:{" "}
+                            <span className="font-medium text-[#d8b67e]">
+                              {orderReference(order.id)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-white/58">
+                            Quantity:{" "}
+                            <span className="font-medium text-white">
+                              {order.quantity || "—"}
+                            </span>
+                          </div>
+                          <div className="text-sm text-white/58">
+                            Total due:{" "}
+                            <span className="font-semibold text-white">
+                              {formatZAR(order.totalPrice)}
+                            </span>
+                          </div>
 
-                        <div className="text-sm font-semibold text-white">
-                          {formatZAR(order.totalPrice)}
-                        </div>
-
-                        <div>
-                          <PaymentBadge value={order.paymentStatus} />
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 xl:justify-end">
-                          <WorkflowBadge value={order.tagsIssued} doneText="Tagged" pendingText="No Tags" />
-                          <WorkflowBadge value={order.slaughtered} doneText="Slaughtered" pendingText="Not Slaughtered" />
-                          <WorkflowBadge value={order.readyForCollection} doneText="Ready" pendingText="Not Ready" />
-                          <WorkflowBadge value={order.collected} doneText="Collected" pendingText="Not Collected" />
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <PaymentBadge value={order.paymentStatus} />
+                            <SimpleBadge
+                              value={order.slaughtered}
+                              doneText="Slaughtered"
+                              pendingText="Not Slaughtered"
+                            />
+                            <SimpleBadge
+                              value={order.delivered}
+                              doneText="Delivered"
+                              pendingText="Not Delivered"
+                            />
+                          </div>
                         </div>
                       </div>
-
-                      <div className="mt-4 grid gap-2 xl:hidden">
-                        <div className="text-sm text-white/58">
-                          Reference: <span className="font-medium text-[#d8b67e]">{orderReference(order.id)}</span>
-                        </div>
-                        <div className="text-sm text-white/58">
-                          Quantity: <span className="font-medium text-white">{order.quantity || "—"}</span>
-                        </div>
-                        <div className="text-sm text-white/58">
-                          Total due: <span className="font-semibold text-white">{formatZAR(order.totalPrice)}</span>
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <PaymentBadge value={order.paymentStatus} />
-                          <WorkflowBadge value={order.tagsIssued} doneText="Tagged" pendingText="No Tags" />
-                          <WorkflowBadge value={order.fetched} doneText="Fetched" pendingText="Not Fetched" />
-                          <WorkflowBadge value={order.slaughtered} doneText="Slaughtered" pendingText="Not Slaughtered" />
-                          <WorkflowBadge value={order.readyForCollection} doneText="Ready" pendingText="Not Ready" />
-                          <WorkflowBadge value={order.collected} doneText="Collected" pendingText="Not Collected" />
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -574,7 +687,7 @@ export default function AdminPage() {
                 </h2>
                 <p className="mt-2 text-center text-sm leading-6 text-white/60 xl:text-left">
                   {selectedOrder
-                    ? "Review the full order and update qurbani-day workflow steps below."
+                    ? "Review the booking and update the most important qurbani-day actions below."
                     : "Select a booking from the list to review its details."}
                 </p>
 
@@ -588,14 +701,27 @@ export default function AdminPage() {
                     </div>
 
                     <div className="mt-6">
-                      <DetailRow label="Customer name" value={selectedOrder.fullName || "—"} />
+                      <DetailRow
+                        label="Customer name"
+                        value={selectedOrder.fullName || "—"}
+                      />
                       <DetailRow label="Phone" value={selectedOrder.phone || "—"} />
                       <DetailRow label="Email" value={selectedOrder.email || "—"} />
-                      <DetailRow label="Quantity" value={String(selectedOrder.quantity || "—")} />
-                      <DetailRow label="Weight range" value={selectedOrder.preferredWeight || "—"} />
+                      <DetailRow
+                        label="Quantity"
+                        value={String(selectedOrder.quantity || "—")}
+                      />
+                      <DetailRow
+                        label="Weight range"
+                        value={selectedOrder.preferredWeight || "—"}
+                      />
                       <DetailRow
                         label="Cutting preferences"
-                        value={selectedOrder.cutPreferences?.length ? selectedOrder.cutPreferences.join(", ") : "—"}
+                        value={
+                          selectedOrder.cutPreferences?.length
+                            ? selectedOrder.cutPreferences.join(", ")
+                            : "—"
+                        }
                       />
                       <DetailRow
                         label="Service package"
@@ -605,21 +731,34 @@ export default function AdminPage() {
                         label="Delivery"
                         value={selectedOrder.delivery ? "Included" : "Not added"}
                       />
-                      <DetailRow label="Total due" value={formatZAR(selectedOrder.totalPrice)} strong />
-                      <DetailRow label="Payment status" value={(selectedOrder.paymentStatus || "pending").toUpperCase()} />
-                      <DetailRow label="Tags issued" value={boolLabel(selectedOrder.tagsIssued)} />
-                      <DetailRow label="Fetched" value={boolLabel(selectedOrder.fetched)} />
-                      <DetailRow label="Taken for slaughter" value={boolLabel(selectedOrder.takenForSlaughter)} />
-                      <DetailRow label="Slaughtered" value={boolLabel(selectedOrder.slaughtered)} />
-                      <DetailRow label="Processed" value={boolLabel(selectedOrder.processed)} />
-                      <DetailRow label="Ready for collection" value={boolLabel(selectedOrder.readyForCollection)} />
-                      <DetailRow label="Collected" value={boolLabel(selectedOrder.collected)} />
-                      <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
+                      <DetailRow
+                        label="Total due"
+                        value={formatZAR(selectedOrder.totalPrice)}
+                        strong
+                      />
+                      <DetailRow
+                        label="Payment status"
+                        value={(selectedOrder.paymentStatus || "pending").toUpperCase()}
+                      />
+                      <DetailRow
+                        label="Slaughtered"
+                        value={selectedOrder.slaughtered ? "DONE" : "PENDING"}
+                      />
+                      <DetailRow
+                        label="Delivered"
+                        value={selectedOrder.delivered ? "DONE" : "PENDING"}
+                      />
+                      <DetailRow
+                        label="Created"
+                        value={formatDate(selectedOrder.createdAt)}
+                      />
                     </div>
 
                     {selectedOrder.notes ? (
                       <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">Additional notes</div>
+                        <div className="text-sm font-medium text-white/82">
+                          Additional notes
+                        </div>
                         <div className="mt-2 text-sm leading-6 text-white/68">
                           {selectedOrder.notes}
                         </div>
@@ -628,81 +767,51 @@ export default function AdminPage() {
 
                     <div className="mt-6 grid gap-4">
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">Payment status</div>
+                        <div className="text-sm font-medium text-white/82">
+                          Payment status
+                        </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {["pending", "paid"].map((value) => (
-                            <ToggleActionButton
+                            <QuickActionButton
                               key={value}
                               active={(selectedOrder.paymentStatus || "pending") === value}
                               label={value === "paid" ? "Mark Paid" : "Mark Pending"}
                               disabled={updatingField === `${selectedOrder.id}-paymentStatus`}
-                              onClick={() => updateField(selectedOrder.id, "paymentStatus", value)}
+                              onClick={(_e) =>
+                                updateField(selectedOrder.id, "paymentStatus", value)
+                              }
                             />
                           ))}
                         </div>
                       </div>
 
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">Qurbani-day workflow</div>
+                        <div className="text-sm font-medium text-white/82">
+                          Qurbani-day actions
+                        </div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <ToggleActionButton
-                            active={!!selectedOrder.tagsIssued}
-                            label="Tags Issued"
-                            disabled={updatingField === `${selectedOrder.id}-tagsIssued`}
-                            onClick={() => updateField(selectedOrder.id, "tagsIssued", !selectedOrder.tagsIssued)}
-                          />
-                          <ToggleActionButton
-                            active={!!selectedOrder.fetched}
-                            label="Fetched"
-                            disabled={updatingField === `${selectedOrder.id}-fetched`}
-                            onClick={() => updateField(selectedOrder.id, "fetched", !selectedOrder.fetched)}
-                          />
-                          <ToggleActionButton
-                            active={!!selectedOrder.takenForSlaughter}
-                            label="Taken for Slaughter"
-                            disabled={updatingField === `${selectedOrder.id}-takenForSlaughter`}
-                            onClick={() =>
-                              updateField(
-                                selectedOrder.id,
-                                "takenForSlaughter",
-                                !selectedOrder.takenForSlaughter
-                              )
-                            }
-                          />
-                          <ToggleActionButton
+                          <QuickActionButton
                             active={!!selectedOrder.slaughtered}
                             label="Slaughtered"
                             disabled={updatingField === `${selectedOrder.id}-slaughtered`}
-                            onClick={() =>
-                              updateField(selectedOrder.id, "slaughtered", !selectedOrder.slaughtered)
-                            }
-                          />
-                          <ToggleActionButton
-                            active={!!selectedOrder.processed}
-                            label="Processed"
-                            disabled={updatingField === `${selectedOrder.id}-processed`}
-                            onClick={() =>
-                              updateField(selectedOrder.id, "processed", !selectedOrder.processed)
-                            }
-                          />
-                          <ToggleActionButton
-                            active={!!selectedOrder.readyForCollection}
-                            label="Ready for Collection"
-                            disabled={updatingField === `${selectedOrder.id}-readyForCollection`}
-                            onClick={() =>
+                            onClick={(_e) =>
                               updateField(
                                 selectedOrder.id,
-                                "readyForCollection",
-                                !selectedOrder.readyForCollection
+                                "slaughtered",
+                                !selectedOrder.slaughtered
                               )
                             }
                           />
-                          <ToggleActionButton
-                            active={!!selectedOrder.collected}
-                            label="Collected"
-                            disabled={updatingField === `${selectedOrder.id}-collected`}
-                            onClick={() =>
-                              updateField(selectedOrder.id, "collected", !selectedOrder.collected)
+                          <QuickActionButton
+                            active={!!selectedOrder.delivered}
+                            label="Delivered"
+                            disabled={updatingField === `${selectedOrder.id}-delivered`}
+                            onClick={(_e) =>
+                              updateField(
+                                selectedOrder.id,
+                                "delivered",
+                                !selectedOrder.delivered
+                              )
                             }
                           />
                         </div>
@@ -710,6 +819,16 @@ export default function AdminPage() {
                     </div>
                   </>
                 ) : null}
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
+                  Quick flow
+                </div>
+                <div className="mt-3 text-sm leading-6 text-white/65">
+                  Search the customer, confirm payment, mark slaughtered, then mark
+                  delivered. Keep it simple and fast on the day.
+                </div>
               </div>
             </div>
           </div>
