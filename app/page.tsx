@@ -849,7 +849,7 @@ export default function Home() {
         built around service, clarity, and trust.
       </h2>
       <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8">
-        Every part of the Northside Qurbani experience is designed to Every part of the experience is designed to feel smooth, organised, and easy to navigate for both customers and staff.
+       Every part of the Northside Qurbani experience is designed to feel smooth, organised, and easy to navigate for both customers and staff.
       </p>
     </div>
 
@@ -929,7 +929,7 @@ export default function Home() {
       <div className="grid items-center gap-10 lg:grid-cols-12">
         <div className="text-center lg:col-span-7 lg:text-left">
           <p className="text-[11px] uppercase tracking-[0.28em] text-[#d8b67e]">
-            Why Northside stands apart
+            Why Northside Qurbani stands apart
           </p>
 
           <h2 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.35rem] lg:text-[2.9rem]">
