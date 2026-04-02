@@ -345,44 +345,44 @@ export default function OrderPage() {
   }
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSubmitError("");
+  e.preventDefault();
+  setSubmitError("");
 
-    if (!validate()) return;
+  if (!validate()) return;
 
-    try {
-      setSubmitting(true);
+  try {
+    setSubmitting(true);
 
-      const orderRef = await addDoc(collection(db, "orders"), {
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        quantity: quantityNumber,
-        preferredWeight: form.preferredWeight,
-        cutPreferences: form.cutPreferences,
-        notes: form.notes.trim(),
-        addServices: form.addServices,
-        delivery: form.delivery,
-        basePricePerSheep,
-        servicesPerSheep,
-        deliveryPerSheep,
-        pricePerSheep,
-        totalPrice,
-        paymentStatus: "pending",
-        processingStatus: "pending",
-        collectionStatus: "pending",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+    const orderRef = await addDoc(collection(db, "orders"), {
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      quantity: quantityNumber,
+      preferredWeight: form.preferredWeight,
+      cutPreferences: form.cutPreferences,
+      notes: form.notes.trim(),
+      addServices: form.addServices,
+      delivery: form.delivery,
+      basePricePerSheep,
+      servicesPerSheep,
+      deliveryPerSheep,
+      pricePerSheep,
+      totalPrice,
+      paymentStatus: "pending",
+      processingStatus: "pending",
+      collectionStatus: "pending",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-      router.push(`/order/success?id=${orderRef.id}`);
-    } catch (error) {
-      console.error("Error saving order:", error);
-      setSubmitError("Something went wrong while saving the order. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    window.location.href = `/order/success?id=${orderRef.id}`;
+  } catch (error) {
+    console.error("Error saving order:", error);
+    setSubmitError("Something went wrong while saving the order. Please try again.");
+  } finally {
+    setSubmitting(false);
   }
+}
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -470,9 +470,10 @@ export default function OrderPage() {
             </div>
 
             <form
-              onSubmit={handleSubmit}
-              className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
-            >
+  onSubmit={handleSubmit}
+  noValidate
+  className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
+>
               <div className="grid gap-8">
                 <div>
                   <div className="mb-5 text-center lg:text-left">
