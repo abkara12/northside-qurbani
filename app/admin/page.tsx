@@ -76,29 +76,35 @@ function PaymentBadge({ value }: { value?: string }) {
           : "border-amber-400/20 bg-amber-400/10 text-amber-200"
       }`}
     >
-      {paid ? "Paid" : "Pending"}
+      {paid ? "Paid" : "Unpaid"}
     </span>
   );
 }
 
-function SimpleBadge({
-  value,
-  doneText,
-  pendingText,
-}: {
-  value?: boolean;
-  doneText: string;
-  pendingText: string;
-}) {
+function WorkflowBadge({ completedAtFarm }: { completedAtFarm?: boolean }) {
   return (
     <span
       className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-        value
+        completedAtFarm
           ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-          : "border-amber-400/20 bg-amber-400/10 text-amber-200"
+          : "border-sky-400/20 bg-sky-400/10 text-sky-200"
       }`}
     >
-      {value ? doneText : pendingText}
+      {completedAtFarm ? "Completed At Farm" : "Awaiting At Farm"}
+    </span>
+  );
+}
+
+function DeliveryBadge({ delivered }: { delivered?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+        delivered
+          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+          : "border-violet-400/20 bg-violet-400/10 text-violet-200"
+      }`}
+    >
+      {delivered ? "Delivered" : "Awaiting Delivery"}
     </span>
   );
 }
@@ -131,10 +137,12 @@ function SummaryCard({
   label,
   value,
   accent = false,
+  helper,
 }: {
   label: string;
   value: string;
   accent?: boolean;
+  helper?: string;
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl">
@@ -146,6 +154,7 @@ function SummaryCard({
       >
         {value}
       </div>
+      {helper ? <div className="mt-1 text-xs text-white/40">{helper}</div> : null}
     </div>
   );
 }
@@ -292,18 +301,30 @@ export default function AdminPage() {
         order.email?.toLowerCase().includes(term) ||
         orderReference(order.id).toLowerCase().includes(term);
 
+      const status = (order.paymentStatus || "pending").toLowerCase();
+
       const matchesPayment =
         paymentFilter === "all" ||
-        (paymentFilter === "paid" &&
-          (order.paymentStatus || "pending").toLowerCase() === "paid") ||
-        (paymentFilter === "pending" &&
-          (order.paymentStatus || "pending").toLowerCase() !== "paid");
+        (paymentFilter === "paid" && status === "paid") ||
+        (paymentFilter === "unpaid" && status !== "paid");
 
       let matchesWorkflow = true;
-      if (workflowFilter === "awaitingSlaughter") matchesWorkflow = !order.slaughtered;
-      if (workflowFilter === "slaughtered")
+
+      if (workflowFilter === "awaitingFarm") {
+        matchesWorkflow = !order.slaughtered;
+      }
+
+      if (workflowFilter === "completedFarm") {
+        matchesWorkflow = !!order.slaughtered;
+      }
+
+      if (workflowFilter === "awaitingDelivery") {
         matchesWorkflow = !!order.slaughtered && !order.delivered;
-      if (workflowFilter === "delivered") matchesWorkflow = !!order.delivered;
+      }
+
+      if (workflowFilter === "delivered") {
+        matchesWorkflow = !!order.delivered;
+      }
 
       return matchesSearch && matchesPayment && matchesWorkflow;
     });
@@ -317,6 +338,11 @@ export default function AdminPage() {
   const unpaidCount = orders.filter(
     (o) => (o.paymentStatus || "pending").toLowerCase() !== "paid"
   ).length;
+  const completedAtFarmCount = orders.filter((o) => !!o.slaughtered).length;
+  const awaitingDeliveryCount = orders.filter(
+    (o) => !!o.slaughtered && !o.delivered
+  ).length;
+  const deliveredCount = orders.filter((o) => !!o.delivered).length;
 
   async function updateField(orderId: string, field: keyof OrderItem, value: any) {
     try {
@@ -389,7 +415,7 @@ export default function AdminPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">Staff dashboard</div>
+            <div className="mt-1 text-sm text-white/55">Admin dashboard</div>
           </div>
         </div>
 
@@ -415,38 +441,46 @@ export default function AdminPage() {
           <div className="xl:col-span-8">
             <div className="text-center xl:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
-                Operations dashboard
+                Farm operations dashboard
               </div>
 
               <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
-                Manage qurbani-day
-                <span className="mt-1 block">operations with</span>
-                <span className="mt-1 block">speed and clarity.</span>
+                Fast qurbani-day
+                <span className="mt-1 block">search, mark,</span>
+                <span className="mt-1 block">and finish.</span>
               </h1>
 
               <p className="mx-auto mt-5 max-w-3xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 xl:mx-0">
-                A simplified dashboard for quickly finding customers, confirming
-                payment, marking slaughtered, and marking delivered without slowing
-                the team down.
+                Search the customer quickly, confirm whether they paid, mark the
+                booking complete once the sheep is taken and the name is scratched
+                out, then manage delivery after the farm day.
               </p>
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <SummaryCard label="Total bookings" value={String(totalOrders)} />
               <SummaryCard
-                label="Estimated revenue"
+                label="Expected revenue"
                 value={formatZAR(totalRevenue)}
                 accent
               />
-              <SummaryCard label="Paid bookings" value={String(paidCount)} />
-              <SummaryCard label="Unpaid bookings" value={String(unpaidCount)} />
+              <SummaryCard
+                label="Unpaid bookings"
+                value={String(unpaidCount)}
+                helper={`${paidCount} paid`}
+              />
+              <SummaryCard
+                label="Awaiting delivery"
+                value={String(awaitingDeliveryCount)}
+                helper={`${deliveredCount} delivered`}
+              />
             </div>
 
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-              <div className="grid gap-4 xl:grid-cols-[1.2fr_auto_auto] xl:items-center">
+              <div className="grid gap-4 xl:grid-cols-[1.3fr_auto_auto] xl:items-center">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">
-                    Search bookings
+                    Search customer or booking
                   </label>
                   <input
                     type="text"
@@ -468,9 +502,9 @@ export default function AdminPage() {
                       onClick={() => setPaymentFilter("all")}
                     />
                     <FilterButton
-                      active={paymentFilter === "pending"}
-                      label="Pending"
-                      onClick={() => setPaymentFilter("pending")}
+                      active={paymentFilter === "unpaid"}
+                      label="Unpaid"
+                      onClick={() => setPaymentFilter("unpaid")}
                     />
                     <FilterButton
                       active={paymentFilter === "paid"}
@@ -491,14 +525,19 @@ export default function AdminPage() {
                       onClick={() => setWorkflowFilter("all")}
                     />
                     <FilterButton
-                      active={workflowFilter === "awaitingSlaughter"}
-                      label="Awaiting Slaughter"
-                      onClick={() => setWorkflowFilter("awaitingSlaughter")}
+                      active={workflowFilter === "awaitingFarm"}
+                      label="Awaiting At Farm"
+                      onClick={() => setWorkflowFilter("awaitingFarm")}
                     />
                     <FilterButton
-                      active={workflowFilter === "slaughtered"}
-                      label="Slaughtered"
-                      onClick={() => setWorkflowFilter("slaughtered")}
+                      active={workflowFilter === "completedFarm"}
+                      label="Completed At Farm"
+                      onClick={() => setWorkflowFilter("completedFarm")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "awaitingDelivery"}
+                      label="Awaiting Delivery"
+                      onClick={() => setWorkflowFilter("awaitingDelivery")}
                     />
                     <FilterButton
                       active={workflowFilter === "delivered"}
@@ -512,13 +551,19 @@ export default function AdminPage() {
 
             <div className="mt-8 overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.045] shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
               <div className="border-b border-white/10 px-5 py-5 sm:px-6">
-                <div className="text-center sm:text-left">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
-                    Live bookings
-                  </p>
-                  <h2 className="mt-2 text-[1.5rem] font-semibold text-white">
-                    Qurbani-day management
-                  </h2>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="text-center sm:text-left">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
+                      Live bookings
+                    </p>
+                    <h2 className="mt-2 text-[1.5rem] font-semibold text-white">
+                      Farm-day queue
+                    </h2>
+                  </div>
+
+                  <div className="text-xs text-white/45 sm:text-right">
+                    Click a row to view details and update it fast
+                  </div>
                 </div>
               </div>
 
@@ -534,7 +579,7 @@ export default function AdminPage() {
                 <div className="grid gap-0">
                   {filteredOrders.map((order) => {
                     const busyPayment = updatingField === `${order.id}-paymentStatus`;
-                    const busySlaughtered = updatingField === `${order.id}-slaughtered`;
+                    const busyFarm = updatingField === `${order.id}-slaughtered`;
                     const busyDelivered = updatingField === `${order.id}-delivered`;
 
                     return (
@@ -551,7 +596,7 @@ export default function AdminPage() {
                         }}
                         className="cursor-pointer border-t border-white/10 px-5 py-5 text-left transition hover:bg-white/[0.04] sm:px-6"
                       >
-                        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr_0.45fr_0.75fr_0.75fr_0.75fr] xl:items-center xl:gap-4">
+                        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr_0.4fr_0.7fr_1.15fr] xl:items-center xl:gap-4">
                           <div>
                             <div className="font-semibold text-white">
                               {order.fullName || "—"}
@@ -565,27 +610,18 @@ export default function AdminPage() {
                             {orderReference(order.id)}
                           </div>
 
-                          <div className="text-sm text-white">{order.quantity || "—"}</div>
+                          <div className="text-sm text-white">
+                            {order.quantity || "—"} sheep
+                          </div>
 
                           <div className="text-sm font-semibold text-white">
                             {formatZAR(order.totalPrice)}
                           </div>
 
-                          <div>
-                            <PaymentBadge value={order.paymentStatus} />
-                          </div>
-
                           <div className="flex flex-wrap gap-2 xl:justify-end">
-                            <SimpleBadge
-                              value={order.slaughtered}
-                              doneText="Slaughtered"
-                              pendingText="Not Slaughtered"
-                            />
-                            <SimpleBadge
-                              value={order.delivered}
-                              doneText="Delivered"
-                              pendingText="Not Delivered"
-                            />
+                            <PaymentBadge value={order.paymentStatus} />
+                            <WorkflowBadge completedAtFarm={order.slaughtered} />
+                            <DeliveryBadge delivered={order.delivered} />
                           </div>
                         </div>
 
@@ -614,8 +650,12 @@ export default function AdminPage() {
                           <QuickActionButton
                             compact
                             active={!!order.slaughtered}
-                            label={order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
-                            disabled={busySlaughtered}
+                            label={
+                              order.slaughtered
+                                ? "Completed At Farm"
+                                : "Mark Completed At Farm"
+                            }
+                            disabled={busyFarm}
                             onClick={(e) => {
                               e.stopPropagation();
                               updateField(order.id, "slaughtered", !order.slaughtered);
@@ -653,20 +693,6 @@ export default function AdminPage() {
                               {formatZAR(order.totalPrice)}
                             </span>
                           </div>
-
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <PaymentBadge value={order.paymentStatus} />
-                            <SimpleBadge
-                              value={order.slaughtered}
-                              doneText="Slaughtered"
-                              pendingText="Not Slaughtered"
-                            />
-                            <SimpleBadge
-                              value={order.delivered}
-                              doneText="Delivered"
-                              pendingText="Not Delivered"
-                            />
-                          </div>
                         </div>
                       </div>
                     );
@@ -680,14 +706,14 @@ export default function AdminPage() {
             <div className="space-y-6 xl:sticky xl:top-6">
               <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                 <p className="text-center text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] xl:text-left">
-                  Order details
+                  Booking details
                 </p>
                 <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white xl:text-left">
                   {selectedOrder ? "Selected booking" : "No booking selected"}
                 </h2>
                 <p className="mt-2 text-center text-sm leading-6 text-white/60 xl:text-left">
                   {selectedOrder
-                    ? "Review the booking and update the most important qurbani-day actions below."
+                    ? "Use this panel for the girl at the desk and for the owners to review payment and delivery status."
                     : "Select a booking from the list to review its details."}
                 </p>
 
@@ -709,7 +735,7 @@ export default function AdminPage() {
                       <DetailRow label="Email" value={selectedOrder.email || "—"} />
                       <DetailRow
                         label="Quantity"
-                        value={String(selectedOrder.quantity || "—")}
+                        value={`${selectedOrder.quantity || "—"} sheep`}
                       />
                       <DetailRow
                         label="Weight range"
@@ -737,16 +763,24 @@ export default function AdminPage() {
                         strong
                       />
                       <DetailRow
-                        label="Payment status"
-                        value={(selectedOrder.paymentStatus || "pending").toUpperCase()}
+                        label="Payment"
+                        value={
+                          (selectedOrder.paymentStatus || "pending").toLowerCase() === "paid"
+                            ? "PAID"
+                            : "UNPAID"
+                        }
                       />
                       <DetailRow
-                        label="Slaughtered"
-                        value={selectedOrder.slaughtered ? "DONE" : "PENDING"}
+                        label="Farm status"
+                        value={
+                          selectedOrder.slaughtered
+                            ? "COMPLETED AT FARM"
+                            : "AWAITING AT FARM"
+                        }
                       />
                       <DetailRow
-                        label="Delivered"
-                        value={selectedOrder.delivered ? "DONE" : "PENDING"}
+                        label="Delivery status"
+                        value={selectedOrder.delivered ? "DELIVERED" : "AWAITING DELIVERY"}
                       />
                       <DetailRow
                         label="Created"
@@ -768,14 +802,14 @@ export default function AdminPage() {
                     <div className="mt-6 grid gap-4">
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="text-sm font-medium text-white/82">
-                          Payment status
+                          Payment
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {["pending", "paid"].map((value) => (
                             <QuickActionButton
                               key={value}
                               active={(selectedOrder.paymentStatus || "pending") === value}
-                              label={value === "paid" ? "Mark Paid" : "Mark Pending"}
+                              label={value === "paid" ? "Mark Paid" : "Mark Unpaid"}
                               disabled={updatingField === `${selectedOrder.id}-paymentStatus`}
                               onClick={(_e) =>
                                 updateField(selectedOrder.id, "paymentStatus", value)
@@ -787,12 +821,20 @@ export default function AdminPage() {
 
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="text-sm font-medium text-white/82">
-                          Qurbani-day actions
+                          Farm-day completion
+                        </div>
+                        <div className="mt-2 text-xs leading-5 text-white/45">
+                          Use this once the customer has been found, the sheep has
+                          been taken, and the name has effectively been scratched out.
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
                             active={!!selectedOrder.slaughtered}
-                            label="Slaughtered"
+                            label={
+                              selectedOrder.slaughtered
+                                ? "Completed At Farm"
+                                : "Mark Completed At Farm"
+                            }
                             disabled={updatingField === `${selectedOrder.id}-slaughtered`}
                             onClick={(_e) =>
                               updateField(
@@ -802,9 +844,21 @@ export default function AdminPage() {
                               )
                             }
                           />
+                        </div>
+                      </div>
+
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                        <div className="text-sm font-medium text-white/82">
+                          Delivery
+                        </div>
+                        <div className="mt-2 text-xs leading-5 text-white/45">
+                          Use this in the next few days when the sliced sheep is
+                          delivered.
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
                             active={!!selectedOrder.delivered}
-                            label="Delivered"
+                            label={selectedOrder.delivered ? "Delivered" : "Mark Delivered"}
                             disabled={updatingField === `${selectedOrder.id}-delivered`}
                             onClick={(_e) =>
                               updateField(
@@ -823,11 +877,46 @@ export default function AdminPage() {
 
               <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
-                  Quick flow
+                  End of day overview
+                </div>
+                <div className="mt-4 grid gap-3">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-sm text-white/65">Paid</span>
+                    <span className="text-sm font-semibold text-white">{paidCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-sm text-white/65">Unpaid</span>
+                    <span className="text-sm font-semibold text-white">{unpaidCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-sm text-white/65">Completed at farm</span>
+                    <span className="text-sm font-semibold text-white">
+                      {completedAtFarmCount}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-sm text-white/65">Awaiting delivery</span>
+                    <span className="text-sm font-semibold text-white">
+                      {awaitingDeliveryCount}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-sm text-white/65">Delivered</span>
+                    <span className="text-sm font-semibold text-white">
+                      {deliveredCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
+                  Fast flow
                 </div>
                 <div className="mt-3 text-sm leading-6 text-white/65">
-                  Search the customer, confirm payment, mark slaughtered, then mark
-                  delivered. Keep it simple and fast on the day.
+                  Customer arrives with tags → girl searches the name → workers take
+                  the sheep → mark completed at farm → owners later check unpaid and
+                  awaiting-delivery bookings.
                 </div>
               </div>
             </div>
