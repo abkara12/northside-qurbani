@@ -38,12 +38,12 @@ function SummaryRow({
   strong?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-white/10 py-3 last:border-b-0">
+    <div className="flex flex-col gap-1 border-b border-white/10 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <span className={`text-sm ${strong ? "text-white/76" : "text-white/45"}`}>
         {label}
       </span>
       <span
-        className={`text-right text-sm ${
+        className={`text-sm break-words sm:max-w-[60%] sm:text-right ${
           strong ? "font-semibold text-white" : "font-medium text-white"
         }`}
       >
@@ -127,7 +127,7 @@ export default async function OrderSuccessPage({
         </Link>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
+      <section className="mx-auto max-w-6xl overflow-x-hidden px-5 pb-16 pt-2 sm:px-8 lg:px-10 lg:pb-24 lg:pt-4">
         {error ? (
           <div className="rounded-[34px] border border-red-400/20 bg-red-400/10 p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
             <p className="text-sm uppercase tracking-[0.24em] text-red-200">
@@ -155,28 +155,24 @@ export default async function OrderSuccessPage({
             </div>
           </div>
         ) : (
-          <div className="grid gap-8 xl:grid-cols-12">
+          <div className="grid gap-6 xl:grid-cols-12 xl:gap-8">
             <div className="xl:col-span-7">
               <div className="rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-200">
                   Booking received
                 </div>
 
-                <h1 className="mt-5 text-center text-[2.1rem] font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-[2.7rem] lg:text-left">
-                  Your booking has been
-                  <span className="mt-1 block">received successfully.</span>
-                </h1>
+<h1 className="mt-5 text-center text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.5rem] lg:text-left lg:text-[2.7rem]">                </h1>
 
-                <p className="mt-4 text-center text-[1rem] leading-7 text-emerald-50/80 sm:text-[1.05rem] sm:leading-8 lg:text-left">
-                  Thank you. Your qurbani booking has been submitted and recorded successfully.
+<p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/80 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">                  Thank you. Your qurbani booking has been submitted and recorded successfully.
                   Please keep your booking reference for future queries.
                 </p>
 
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
                   <p className="text-sm text-white/50">Booking reference</p>
-                  <p className="mt-2 text-[1.4rem] font-semibold tracking-[0.08em] text-[#d8b67e]">
-                    {orderReference}
-                  </p>
+                  <p className="mt-2 break-all text-[1.2rem] font-semibold tracking-[0.08em] text-[#d8b67e] sm:text-[1.4rem]">
+  {orderReference}
+</p>
                 </div>
 
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
@@ -187,7 +183,7 @@ export default async function OrderSuccessPage({
                   </p>
                 </div>
 
-                <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row lg:items-start">
+                <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:items-start">
                   <Link
                     href="/order"
                     className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
@@ -206,7 +202,7 @@ export default async function OrderSuccessPage({
             </div>
 
             <div className="xl:col-span-5">
-              <div className="space-y-6 xl:sticky xl:top-6">
+              <div className="space-y-5 xl:sticky xl:top-6">
                 <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                   <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
                     Booking summary

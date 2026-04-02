@@ -432,14 +432,13 @@ export default function OrderPage() {
               Place Order
             </div>
 
-            <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
-              Complete your qurbani
-              <span className="mt-1 block">booking with clarity</span>
-              <span className="mt-1 block">and confidence.</span>
-            </h1>
+            <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
+  Complete your qurbani
+  <span className="mt-1 block">booking with clarity</span>
+  <span className="mt-1 block">and confidence.</span>
+</h1>
 
-            <p className="mt-5 max-w-2xl text-[1rem] leading-7 text-center text-white/68 sm:text-[1.05rem] sm:leading-8 lg:text-left">
-              Submit your booking through a clear and carefully guided process designed
+<p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">              Submit your booking through a clear and carefully guided process designed
               to make ordering feel simple, reassuring, and smooth from start to finish.
             </p>
 
