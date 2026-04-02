@@ -26,8 +26,8 @@ const cutPreferenceOptions = [
   "Whole leg",
   "Liver",
   "Back legs sliced",
-  "Front leg whole",
-  "Front leg sliced",
+  "Front legs whole",
+  "Front legs sliced",
 ];
 
 type FormData = {
@@ -578,7 +578,7 @@ export default function OrderPage() {
                     <div className="sm:col-span-2">
                       <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
                         <p className="text-sm font-medium text-white/80">
-                          Optional service package
+                            Service package
                         </p>
                         <p className="mt-1 text-sm leading-6 text-white/55">
                           Skinning, cleaning, storage, slicing, and packaging —{" "}
@@ -630,7 +630,7 @@ export default function OrderPage() {
                     <div className="sm:col-span-2">
                       <div className="mb-2 text-center lg:text-left">
                         <Label htmlFor="cutPreferences" required>
-                          Cutting preferences
+                          Slicing preferences
                         </Label>
                         <p className="text-sm leading-6 text-white/50">
                           Select as many options as required.
@@ -803,8 +803,8 @@ export default function OrderPage() {
                 <div className="mt-4 grid gap-3">
                   <SmallInfoCard>Live total pricing shown before submission</SmallInfoCard>
                   <SmallInfoCard>Weight-based sheep pricing in kilograms</SmallInfoCard>
-                  <SmallInfoCard>Optional services at R400 per sheep</SmallInfoCard>
-                  <SmallInfoCard>Optional delivery at R100 per sheep</SmallInfoCard>
+                  <SmallInfoCard>Skinning, slicing, cleaning, storage and packaging services at R400 per sheep</SmallInfoCard>
+                  <SmallInfoCard>Delivery at R100 per sheep</SmallInfoCard>
                 </div>
               </div>
 
@@ -814,7 +814,7 @@ export default function OrderPage() {
                 </p>
                 <div className="mt-4 grid gap-3">
                   <SmallInfoCard>Clear booking flow from start to finish</SmallInfoCard>
-                  <SmallInfoCard>Multiple cutting preferences can be selected</SmallInfoCard>
+                  <SmallInfoCard>Multiple slicing preferences can be selected</SmallInfoCard>
                   <SmallInfoCard>Live summary keeps the total visible throughout</SmallInfoCard>
                 </div>
               </div>

@@ -158,9 +158,11 @@ export default async function OrderSuccessPage({
           <div className="grid gap-6 xl:grid-cols-12 xl:gap-8">
             <div className="xl:col-span-7">
               <div className="rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-200">
-                  Booking received
-                </div>
+                <div className="flex justify-center lg:justify-start">
+  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-200">
+    Booking received
+  </div>
+</div>
 
 <h1 className="mt-5 text-center text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.5rem] lg:text-left lg:text-[2.7rem]">                </h1>
 
@@ -218,7 +220,7 @@ export default async function OrderSuccessPage({
                     <SummaryRow label="Quantity" value={order?.quantity ? String(order.quantity) : "—"} />
                     <SummaryRow label="Weight range" value={order?.preferredWeight || "—"} />
                     <SummaryRow
-                      label="Cutting preferences"
+                      label="Slicing preferences"
                       value={order?.cutPreferences?.length ? order.cutPreferences.join(", ") : "—"}
                     />
                     <SummaryRow
