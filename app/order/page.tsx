@@ -1,8 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+
+type WeightOption = {
+  label: string;
+  price: number;
+};
+
+const weightOptions: WeightOption[] = [
+  { label: "35–39 kg — R2750", price: 2750 },
+  { label: "40–45 kg — R3150", price: 3150 },
+  { label: "46–50 kg — R3500", price: 3500 },
+  { label: "51–55 kg — R3850", price: 3850 },
+  { label: "56–60 kg — R4200", price: 4200 },
+];
+
+const cutPreferenceOptions = [
+  "Curry packs",
+  "Chops",
+  "Ribs",
+  "Whole leg",
+  "Liver",
+  "Back legs sliced",
+  "Front leg whole",
+  "Front leg sliced",
+];
 
 type FormData = {
   fullName: string;
@@ -10,9 +34,9 @@ type FormData = {
   email: string;
   quantity: string;
   preferredWeight: string;
-  collectionDay: string;
-  collectionTime: string;
-  cutPreference: string;
+  addServices: boolean;
+  delivery: boolean;
+  cutPreferences: string[];
   notes: string;
   agree: boolean;
 };
@@ -23,39 +47,22 @@ const initialForm: FormData = {
   fullName: "",
   phone: "",
   email: "",
-  quantity: "",
+  quantity: "1",
   preferredWeight: "",
-  collectionDay: "",
-  collectionTime: "",
-  cutPreference: "",
+  addServices: false,
+  delivery: false,
+  cutPreferences: [],
   notes: "",
   agree: false,
 };
 
-const quantityOptions = ["1", "2", "3", "4", "5+"];
-const weightOptions = [
-  "No preference",
-  "Smaller side",
-  "Medium",
-  "Larger side",
-];
-const collectionDayOptions = [
-  "Day 1",
-  "Day 2",
-  "Day 3",
-];
-const collectionTimeOptions = [
-  "Morning",
-  "Afternoon",
-  "Evening",
-  "Flexible",
-];
-const cutOptions = [
-  "Standard cut",
-  "Smaller portions",
-  "Larger portions",
-  "Leave as large cuts",
-];
+function formatZAR(value: number) {
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: "ZAR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 function Label({
   htmlFor,
@@ -83,6 +90,7 @@ function Input({
   onChange,
   placeholder,
   type = "text",
+  min,
   error,
 }: {
   id: string;
@@ -90,6 +98,7 @@ function Input({
   onChange: (value: string) => void;
   placeholder: string;
   type?: string;
+  min?: number;
   error?: string;
 }) {
   return (
@@ -97,6 +106,7 @@ function Input({
       <input
         id={id}
         type={type}
+        min={min}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -187,17 +197,60 @@ function TextArea({
 function SummaryRow({
   label,
   value,
+  strong = false,
 }: {
   label: string;
   value: string;
+  strong?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-white/10 py-3 last:border-b-0">
-      <span className="text-sm text-white/45">{label}</span>
-      <span className="text-right text-sm font-medium text-white">
+      <span className={`text-sm ${strong ? "text-white/75" : "text-white/45"}`}>
+        {label}
+      </span>
+      <span
+        className={`text-right text-sm ${
+          strong ? "font-semibold text-white" : "font-medium text-white"
+        }`}
+      >
         {value || "—"}
       </span>
     </div>
+  );
+}
+
+function CutPreferenceCard({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+        checked
+          ? "border-[#c6a268]/60 bg-[#c6a268]/10 text-white"
+          : "border-white/10 bg-white/[0.05] text-white/75 hover:bg-white/[0.07]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span>{label}</span>
+        <span
+          className={`grid h-5 w-5 place-items-center rounded-full border text-[11px] ${
+            checked
+              ? "border-[#c6a268] bg-[#c6a268] text-[#161015]"
+              : "border-white/20 text-transparent"
+          }`}
+        >
+          ✓
+        </span>
+      </div>
+    </button>
   );
 }
 
@@ -206,24 +259,48 @@ export default function OrderPage() {
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
 
+  const quantityNumber = Math.max(0, Number(form.quantity) || 0);
+
+  const selectedWeight = useMemo(
+    () => weightOptions.find((w) => w.label === form.preferredWeight) || null,
+    [form.preferredWeight]
+  );
+
+  const basePricePerSheep = selectedWeight?.price || 0;
+  const servicesPerSheep = form.addServices ? 400 : 0;
+  const deliveryPerSheep = form.delivery ? 100 : 0;
+
+  const pricePerSheep = basePricePerSheep + servicesPerSheep + deliveryPerSheep;
+  const totalPrice = quantityNumber * pricePerSheep;
+
   const filledCount = useMemo(() => {
     const fields = [
       form.fullName,
       form.phone,
       form.quantity,
       form.preferredWeight,
-      form.collectionDay,
-      form.collectionTime,
-      form.cutPreference,
     ];
-    return fields.filter(Boolean).length;
+    return fields.filter(Boolean).length + (form.cutPreferences.length > 0 ? 1 : 0);
   }, [form]);
 
-  const progress = Math.round((filledCount / 7) * 100);
+  const progress = Math.round((filledCount / 5) * 100);
 
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  function toggleCutPreference(value: string) {
+    setForm((prev) => {
+      const exists = prev.cutPreferences.includes(value);
+      return {
+        ...prev,
+        cutPreferences: exists
+          ? prev.cutPreferences.filter((item) => item !== value)
+          : [...prev.cutPreferences, value],
+      };
+    });
+    setErrors((prev) => ({ ...prev, cutPreferences: undefined }));
   }
 
   function validate() {
@@ -231,12 +308,24 @@ export default function OrderPage() {
 
     if (!form.fullName.trim()) nextErrors.fullName = "Please enter your full name.";
     if (!form.phone.trim()) nextErrors.phone = "Please enter your phone number.";
-    if (!form.quantity) nextErrors.quantity = "Please select quantity.";
-    if (!form.preferredWeight) nextErrors.preferredWeight = "Please select a preference.";
-    if (!form.collectionDay) nextErrors.collectionDay = "Please select a collection day.";
-    if (!form.collectionTime) nextErrors.collectionTime = "Please select a collection time.";
-    if (!form.cutPreference) nextErrors.cutPreference = "Please select a cut preference.";
-    if (!form.agree) nextErrors.agree = "Please confirm before submitting.";
+
+    if (!form.quantity.trim()) {
+      nextErrors.quantity = "Please enter quantity.";
+    } else if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1) {
+      nextErrors.quantity = "Please enter a valid quantity.";
+    }
+
+    if (!form.preferredWeight) {
+      nextErrors.preferredWeight = "Please select a weight range.";
+    }
+
+    if (form.cutPreferences.length === 0) {
+      nextErrors.cutPreferences = "Please choose at least one cutting preference.";
+    }
+
+    if (!form.agree) {
+      nextErrors.agree = "Please confirm before submitting.";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -246,7 +335,8 @@ export default function OrderPage() {
     e.preventDefault();
     if (!validate()) return;
 
-    // Replace this with your Firestore / backend submission logic next.
+    // Next step: save this exact pricing + order data to Firestore
+    // so it can also appear in the staff table/dashboard.
     setSubmitted(true);
   }
 
@@ -285,20 +375,12 @@ export default function OrderPage() {
           </div>
         </Link>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            Back Home
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-[#4a2a3b] px-5 text-sm font-medium text-white transition hover:bg-[#3c2130]"
-          >
-            Staff Sign In
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
+        >
+          Back Home
+        </Link>
       </header>
 
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
@@ -315,8 +397,8 @@ export default function OrderPage() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-[1rem] leading-7 text-white/68 sm:text-[1.05rem] sm:leading-8">
-              Fill in the details below and submit your booking through a clear,
-              premium ordering experience designed to make the process simple and smooth.
+              Fill in the details below to submit your order through a clear,
+              premium booking experience designed to feel simple and smooth on every device.
             </p>
 
             <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
@@ -326,7 +408,7 @@ export default function OrderPage() {
                     Booking progress
                   </p>
                   <p className="mt-1 text-sm text-white/55">
-                    Complete the details below to submit your order.
+                    Complete the details below to finalise your order.
                   </p>
                 </div>
                 <div className="text-right">
@@ -418,12 +500,13 @@ export default function OrderPage() {
                       <Label htmlFor="quantity" required>
                         Quantity
                       </Label>
-                      <Select
+                      <Input
                         id="quantity"
+                        type="number"
+                        min={1}
                         value={form.quantity}
                         onChange={(value) => updateField("quantity", value)}
-                        options={quantityOptions}
-                        placeholder="Select quantity"
+                        placeholder="Enter quantity"
                         error={errors.quantity}
                       />
                     </div>
@@ -436,52 +519,90 @@ export default function OrderPage() {
                         id="preferredWeight"
                         value={form.preferredWeight}
                         onChange={(value) => updateField("preferredWeight", value)}
-                        options={weightOptions}
-                        placeholder="Select weight preference"
+                        options={weightOptions.map((w) => w.label)}
+                        placeholder="Select weight range"
                         error={errors.preferredWeight}
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="collectionDay" required>
-                        Collection day
-                      </Label>
-                      <Select
-                        id="collectionDay"
-                        value={form.collectionDay}
-                        onChange={(value) => updateField("collectionDay", value)}
-                        options={collectionDayOptions}
-                        placeholder="Select collection day"
-                        error={errors.collectionDay}
-                      />
-                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                        <p className="text-sm font-medium text-white/80">
+                          Optional service package
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-white/55">
+                          Skinning, cleaning, storage, slicing, and packaging —{" "}
+                          <span className="font-medium text-[#d8b67e]">
+                            R400 per sheep
+                          </span>
+                        </p>
 
-                    <div>
-                      <Label htmlFor="collectionTime" required>
-                        Collection time
-                      </Label>
-                      <Select
-                        id="collectionTime"
-                        value={form.collectionTime}
-                        onChange={(value) => updateField("collectionTime", value)}
-                        options={collectionTimeOptions}
-                        placeholder="Select collection time"
-                        error={errors.collectionTime}
-                      />
+                        <label className="mt-4 flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={form.addServices}
+                            onChange={(e) => updateField("addServices", e.target.checked)}
+                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                          />
+                          <span className="text-sm text-white/75">
+                            Add the service package to this order
+                          </span>
+                        </label>
+                      </div>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <Label htmlFor="cutPreference" required>
-                        Cutting preference
-                      </Label>
-                      <Select
-                        id="cutPreference"
-                        value={form.cutPreference}
-                        onChange={(value) => updateField("cutPreference", value)}
-                        options={cutOptions}
-                        placeholder="Select cutting preference"
-                        error={errors.cutPreference}
-                      />
+                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                        <p className="text-sm font-medium text-white/80">
+                          Delivery
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-white/55">
+                          Delivery is charged at{" "}
+                          <span className="font-medium text-[#d8b67e]">
+                            R100 per sheep
+                          </span>
+                        </p>
+
+                        <label className="mt-4 flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={form.delivery}
+                            onChange={(e) => updateField("delivery", e.target.checked)}
+                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                          />
+                          <span className="text-sm text-white/75">
+                            Add delivery to this order
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <div className="mb-2">
+                        <Label htmlFor="cutPreferences" required>
+                          Cutting preferences
+                        </Label>
+                        <p className="text-sm leading-6 text-white/50">
+                          Select as many options as required.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {cutPreferenceOptions.map((item) => (
+                          <CutPreferenceCard
+                            key={item}
+                            label={item}
+                            checked={form.cutPreferences.includes(item)}
+                            onToggle={() => toggleCutPreference(item)}
+                          />
+                        ))}
+                      </div>
+
+                      {errors.cutPreferences ? (
+                        <p className="mt-2 text-xs text-red-300">
+                          {errors.cutPreferences}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="sm:col-span-2">
@@ -492,7 +613,7 @@ export default function OrderPage() {
                         id="notes"
                         value={form.notes}
                         onChange={(value) => updateField("notes", value)}
-                        placeholder="Add any additional notes or requests"
+                        placeholder="Add any additional notes or special requests"
                         error={errors.notes}
                       />
                     </div>
@@ -545,8 +666,8 @@ export default function OrderPage() {
                       Booking ready
                     </p>
                     <p className="mt-1 text-sm leading-6 text-emerald-100/80">
-                      Your form has passed validation. The next step is to connect this
-                      submit action to your backend or Firestore so the booking is saved.
+                      Your form has passed validation. The next step is to save this
+                      order, pricing, and total into Firestore so it can also appear in the staff table.
                     </p>
                   </div>
                 ) : null}
@@ -555,7 +676,7 @@ export default function OrderPage() {
           </div>
 
           <div className="xl:col-span-5">
-            <div className="sticky top-6 space-y-6">
+            <div className="space-y-6 xl:sticky xl:top-6">
               <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
                   Booking summary
@@ -564,30 +685,81 @@ export default function OrderPage() {
                   Review your details
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-white/60">
-                  As you complete the form, your booking summary will update here.
+                  Your quantity, pricing, selected services, and total update live as you complete the form.
                 </p>
 
                 <div className="mt-6">
                   <SummaryRow label="Full name" value={form.fullName} />
                   <SummaryRow label="Phone" value={form.phone} />
-                  <SummaryRow label="Quantity" value={form.quantity} />
-                  <SummaryRow label="Weight" value={form.preferredWeight} />
-                  <SummaryRow label="Collection day" value={form.collectionDay} />
-                  <SummaryRow label="Collection time" value={form.collectionTime} />
-                  <SummaryRow label="Cutting preference" value={form.cutPreference} />
+                  <SummaryRow label="Quantity" value={form.quantity || "—"} />
+                  <SummaryRow label="Weight range" value={form.preferredWeight} />
+                  <SummaryRow
+                    label="Cutting preferences"
+                    value={
+                      form.cutPreferences.length
+                        ? form.cutPreferences.join(", ")
+                        : "—"
+                    }
+                  />
+                  <SummaryRow
+                    label="Service package"
+                    value={form.addServices ? "Included" : "Not added"}
+                  />
+                  <SummaryRow
+                    label="Delivery"
+                    value={form.delivery ? "Included" : "Not added"}
+                  />
+                </div>
+
+                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
+                  <div className="space-y-1">
+                    <SummaryRow
+                      label="Base price per sheep"
+                      value={basePricePerSheep ? formatZAR(basePricePerSheep) : "—"}
+                    />
+                    <SummaryRow
+                      label="Service package per sheep"
+                      value={form.addServices ? formatZAR(400) : formatZAR(0)}
+                    />
+                    <SummaryRow
+                      label="Delivery per sheep"
+                      value={form.delivery ? formatZAR(100) : formatZAR(0)}
+                    />
+                    <SummaryRow
+                      label="Total per sheep"
+                      value={pricePerSheep ? formatZAR(pricePerSheep) : "—"}
+                      strong
+                    />
+                  </div>
+
+                  <div className="mt-4 h-px bg-white/10" />
+
+                  <div className="mt-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-white/50">Estimated total due</p>
+                      <p className="mt-1 text-xs text-white/40">
+                        Based on the quantity and options selected above
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-semibold text-[#d8b67e]">
+                        {totalPrice ? formatZAR(totalPrice) : "—"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                  Why this experience feels different
+                  Included pricing logic
                 </p>
                 <div className="mt-4 grid gap-3">
                   {[
-                    "Clear, guided booking flow",
-                    "Structured order capture",
-                    "Premium customer experience",
-                    "Designed for mobile and desktop",
+                    "Live total pricing for customers",
+                    "Weight-based sheep pricing",
+                    "Optional services at R400 per sheep",
+                    "Optional delivery at R100 per sheep",
                   ].map((item) => (
                     <div
                       key={item}
@@ -601,11 +773,11 @@ export default function OrderPage() {
 
               <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                  Need staff access?
+                  Staff access
                 </p>
                 <p className="mt-3 text-sm leading-6 text-white/65">
-                  Staff can sign in separately to manage bookings, view order information,
-                  and coordinate updates throughout the process.
+                  Staff can sign in separately to manage bookings, view order details,
+                  and later see the calculated pricing inside the staff table/dashboard.
                 </p>
                 <Link
                   href="/login"
