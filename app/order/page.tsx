@@ -58,6 +58,23 @@ const initialForm: FormData = {
   agree: false,
 };
 
+type SavedOrderSummary = {
+  fullName: string;
+  phone: string;
+  email: string;
+  quantity: number;
+  preferredWeight: string;
+  cutPreferences: string[];
+  notes: string;
+  addServices: boolean;
+  delivery: boolean;
+  basePricePerSheep: number;
+  servicesPerSheep: number;
+  deliveryPerSheep: number;
+  pricePerSheep: number;
+  totalPrice: number;
+};
+
 function formatZAR(value: number) {
   return new Intl.NumberFormat("en-ZA", {
     style: "currency",
@@ -78,7 +95,7 @@ function Label({
   return (
     <label
       htmlFor={htmlFor}
-      className="mb-2 block text-sm font-medium text-white/80"
+      className="mb-2 block text-sm font-medium text-white/82"
     >
       {children}
       {required ? <span className="ml-1 text-[#d8b67e]">*</span> : null}
@@ -207,7 +224,7 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-white/10 py-3 last:border-b-0">
-      <span className={`text-sm ${strong ? "text-white/75" : "text-white/45"}`}>
+      <span className={`text-sm ${strong ? "text-white/76" : "text-white/45"}`}>
         {label}
       </span>
       <span
@@ -256,12 +273,21 @@ function CutPreferenceCard({
   );
 }
 
+function SmallInfoCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
+      {children}
+    </div>
+  );
+}
+
 export default function OrderPage() {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [savedOrder, setSavedOrder] = useState<SavedOrderSummary | null>(null);
 
   const quantityNumber = Math.max(0, Number(form.quantity) || 0);
 
@@ -306,6 +332,15 @@ export default function OrderPage() {
     setErrors((prev) => ({ ...prev, cutPreferences: undefined }));
   }
 
+  function resetFormForAnotherOrder() {
+    setForm(initialForm);
+    setErrors({});
+    setSubmitted(false);
+    setSubmitError("");
+    setSavedOrder(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function validate() {
     const nextErrors: Errors = {};
 
@@ -342,38 +377,39 @@ export default function OrderPage() {
 
     if (!validate()) return;
 
+    const orderPayload: SavedOrderSummary = {
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      quantity: quantityNumber,
+      preferredWeight: form.preferredWeight,
+      cutPreferences: form.cutPreferences,
+      notes: form.notes.trim(),
+      addServices: form.addServices,
+      delivery: form.delivery,
+      basePricePerSheep,
+      servicesPerSheep,
+      deliveryPerSheep,
+      pricePerSheep,
+      totalPrice,
+    };
+
     try {
       setSubmitting(true);
 
       await addDoc(collection(db, "orders"), {
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        quantity: quantityNumber,
-        preferredWeight: form.preferredWeight,
-        cutPreferences: form.cutPreferences,
-        notes: form.notes.trim(),
-
-        addServices: form.addServices,
-        delivery: form.delivery,
-
-        basePricePerSheep,
-        servicesPerSheep,
-        deliveryPerSheep,
-        pricePerSheep,
-        totalPrice,
-
+        ...orderPayload,
         paymentStatus: "pending",
         processingStatus: "pending",
         collectionStatus: "pending",
-
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
+      setSavedOrder(orderPayload);
       setSubmitted(true);
-      setForm(initialForm);
       setErrors({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Error saving order:", error);
       setSubmitError("Something went wrong while saving the order. Please try again.");
@@ -439,289 +475,354 @@ export default function OrderPage() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-[1rem] leading-7 text-white/68 sm:text-[1.05rem] sm:leading-8">
-              Fill in the details below to submit your order through a clear,
-              premium booking experience designed to feel simple and smooth on every device.
+              Submit your booking through a clear and carefully guided process designed
+              to make ordering feel simple, reassuring, and smooth from start to finish.
             </p>
 
-            <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
-                    Booking progress
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    Complete the details below to finalise your order.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-semibold text-white">{progress}%</div>
-                  <div className="text-xs text-white/45">Completed</div>
-                </div>
-              </div>
-
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#c6a268_0%,#e3c794_100%)] transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
-            >
-              <div className="grid gap-8">
-                <div>
-                  <div className="mb-5">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Customer details
-                    </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Your information
-                    </h2>
+            {!submitted ? (
+              <>
+                <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
+                        Booking progress
+                      </p>
+                      <p className="mt-1 text-sm text-white/55">
+                        Complete the details below to finalise your order.
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-white">{progress}%</div>
+                      <div className="text-xs text-white/45">Completed</div>
+                    </div>
                   </div>
 
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="fullName" required>
-                        Full name
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={form.fullName}
-                        onChange={(value) => updateField("fullName", value)}
-                        placeholder="Enter your full name"
-                        error={errors.fullName}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone" required>
-                        Phone number
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={form.phone}
-                        onChange={(value) => updateField("phone", value)}
-                        placeholder="Enter your phone number"
-                        error={errors.phone}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">
-                        Email address <span className="text-white/35">(optional)</span>
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={form.email}
-                        onChange={(value) => updateField("email", value)}
-                        placeholder="Enter your email address"
-                        error={errors.email}
-                      />
-                    </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-[linear-gradient(90deg,#c6a268_0%,#e3c794_100%)] transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
                 </div>
 
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <div className="mb-5">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Order details
-                    </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Booking preferences
-                    </h2>
-                  </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
+                <form
+                  onSubmit={handleSubmit}
+                  className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
+                >
+                  <div className="grid gap-8">
                     <div>
-                      <Label htmlFor="quantity" required>
-                        Quantity
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min={1}
-                        value={form.quantity}
-                        onChange={(value) => updateField("quantity", value)}
-                        placeholder="Enter quantity"
-                        error={errors.quantity}
-                      />
+                      <div className="mb-5">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                          Customer details
+                        </p>
+                        <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                          Your information
+                        </h2>
+                      </div>
+
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="fullName" required>
+                            Full name
+                          </Label>
+                          <Input
+                            id="fullName"
+                            value={form.fullName}
+                            onChange={(value) => updateField("fullName", value)}
+                            placeholder="Enter your full name"
+                            error={errors.fullName}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="phone" required>
+                            Phone number
+                          </Label>
+                          <Input
+                            id="phone"
+                            value={form.phone}
+                            onChange={(value) => updateField("phone", value)}
+                            placeholder="Enter your phone number"
+                            error={errors.phone}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="email">
+                            Email address <span className="text-white/35">(optional)</span>
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={form.email}
+                            onChange={(value) => updateField("email", value)}
+                            placeholder="Enter your email address"
+                            error={errors.email}
+                          />
+                        </div>
+                      </div>
                     </div>
+
+                    <div className="h-px bg-white/10" />
 
                     <div>
-                      <Label htmlFor="preferredWeight" required>
-                        Preferred weight
-                      </Label>
-                      <Select
-                        id="preferredWeight"
-                        value={form.preferredWeight}
-                        onChange={(value) => updateField("preferredWeight", value)}
-                        options={weightOptions.map((w) => w.label)}
-                        placeholder="Select weight range"
-                        error={errors.preferredWeight}
-                      />
+                      <div className="mb-5">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                          Order details
+                        </p>
+                        <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                          Booking preferences
+                        </h2>
+                      </div>
+
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="quantity" required>
+                            Quantity
+                          </Label>
+                          <Input
+                            id="quantity"
+                            type="number"
+                            min={1}
+                            value={form.quantity}
+                            onChange={(value) => updateField("quantity", value)}
+                            placeholder="Enter quantity"
+                            error={errors.quantity}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="preferredWeight" required>
+                            Preferred weight
+                          </Label>
+                          <Select
+                            id="preferredWeight"
+                            value={form.preferredWeight}
+                            onChange={(value) => updateField("preferredWeight", value)}
+                            options={weightOptions.map((w) => w.label)}
+                            placeholder="Select weight range"
+                            error={errors.preferredWeight}
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                            <p className="text-sm font-medium text-white/80">
+                              Optional service package
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-white/55">
+                              Skinning, cleaning, storage, slicing, and packaging —{" "}
+                              <span className="font-medium text-[#d8b67e]">
+                                R400 per sheep
+                              </span>
+                            </p>
+
+                            <label className="mt-4 flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={form.addServices}
+                                onChange={(e) => updateField("addServices", e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                              />
+                              <span className="text-sm text-white/75">
+                                Add the service package to this order
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                            <p className="text-sm font-medium text-white/80">
+                              Delivery
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-white/55">
+                              Delivery is charged at{" "}
+                              <span className="font-medium text-[#d8b67e]">
+                                R100 per sheep
+                              </span>
+                            </p>
+
+                            <label className="mt-4 flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={form.delivery}
+                                onChange={(e) => updateField("delivery", e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                              />
+                              <span className="text-sm text-white/75">
+                                Add delivery to this order
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <div className="mb-2">
+                            <Label htmlFor="cutPreferences" required>
+                              Cutting preferences
+                            </Label>
+                            <p className="text-sm leading-6 text-white/50">
+                              Select as many options as required.
+                            </p>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {cutPreferenceOptions.map((item) => (
+                              <CutPreferenceCard
+                                key={item}
+                                label={item}
+                                checked={form.cutPreferences.includes(item)}
+                                onToggle={() => toggleCutPreference(item)}
+                              />
+                            ))}
+                          </div>
+
+                          {errors.cutPreferences ? (
+                            <p className="mt-2 text-xs text-red-300">
+                              {errors.cutPreferences}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="notes">
+                            Additional notes <span className="text-white/35">(optional)</span>
+                          </Label>
+                          <TextArea
+                            id="notes"
+                            value={form.notes}
+                            onChange={(value) => updateField("notes", value)}
+                            placeholder="Add any additional notes or special requests"
+                            error={errors.notes}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                        <p className="text-sm font-medium text-white/80">
-                          Optional service package
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-white/55">
-                          Skinning, cleaning, storage, slicing, and packaging —{" "}
-                          <span className="font-medium text-[#d8b67e]">
-                            R400 per sheep
-                          </span>
-                        </p>
+                    <div className="h-px bg-white/10" />
 
-                        <label className="mt-4 flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={form.addServices}
-                            onChange={(e) => updateField("addServices", e.target.checked)}
-                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                          />
-                          <span className="text-sm text-white/75">
-                            Add the service package to this order
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                        <p className="text-sm font-medium text-white/80">
-                          Delivery
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-white/55">
-                          Delivery is charged at{" "}
-                          <span className="font-medium text-[#d8b67e]">
-                            R100 per sheep
-                          </span>
-                        </p>
-
-                        <label className="mt-4 flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={form.delivery}
-                            onChange={(e) => updateField("delivery", e.target.checked)}
-                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                          />
-                          <span className="text-sm text-white/75">
-                            Add delivery to this order
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <div className="mb-2">
-                        <Label htmlFor="cutPreferences" required>
-                          Cutting preferences
-                        </Label>
-                        <p className="text-sm leading-6 text-white/50">
-                          Select as many options as required.
-                        </p>
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {cutPreferenceOptions.map((item) => (
-                          <CutPreferenceCard
-                            key={item}
-                            label={item}
-                            checked={form.cutPreferences.includes(item)}
-                            onToggle={() => toggleCutPreference(item)}
-                          />
-                        ))}
-                      </div>
-
-                      {errors.cutPreferences ? (
-                        <p className="mt-2 text-xs text-red-300">
-                          {errors.cutPreferences}
-                        </p>
+                    <div>
+                      <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <input
+                          type="checkbox"
+                          checked={form.agree}
+                          onChange={(e) => updateField("agree", e.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                        />
+                        <div>
+                          <p className="text-sm text-white/80">
+                            I confirm that the information provided above is correct.
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            Please review your details carefully before submitting your booking.
+                          </p>
+                        </div>
+                      </label>
+                      {errors.agree ? (
+                        <p className="mt-2 text-xs text-red-300">{errors.agree}</p>
                       ) : null}
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="notes">
-                        Additional notes <span className="text-white/35">(optional)</span>
-                      </Label>
-                      <TextArea
-                        id="notes"
-                        value={form.notes}
-                        onChange={(value) => updateField("notes", value)}
-                        placeholder="Add any additional notes or special requests"
-                        error={errors.notes}
-                      />
+                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                      <Link
+                        href="/"
+                        className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
+                      >
+                        Back Home
+                      </Link>
+
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
+                      >
+                        {submitting ? "Submitting..." : "Submit Booking"}
+                      </button>
                     </div>
+
+                    {submitError ? (
+                      <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-5">
+                        <p className="text-sm font-semibold text-red-200">
+                          Could not save booking
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-red-100/80">
+                          {submitError}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="mt-8 rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-200">
+                  Booking received
+                </div>
+
+                <h2 className="mt-5 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.4rem]">
+                  Your booking has been
+                  <span className="mt-1 block">received successfully.</span>
+                </h2>
+
+                <p className="mt-4 max-w-2xl text-[1rem] leading-7 text-emerald-50/80 sm:text-[1.05rem] sm:leading-8">
+                  Thank you. Your qurbani booking has been submitted and recorded successfully.
+                  Please review your booking summary below.
+                </p>
+
+                <div className="mt-8 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                  <div className="grid gap-2">
+                    <SummaryRow label="Full name" value={savedOrder?.fullName || "—"} />
+                    <SummaryRow label="Phone" value={savedOrder?.phone || "—"} />
+                    <SummaryRow label="Email" value={savedOrder?.email || "—"} />
+                    <SummaryRow label="Quantity" value={savedOrder ? String(savedOrder.quantity) : "—"} />
+                    <SummaryRow label="Weight range" value={savedOrder?.preferredWeight || "—"} />
+                    <SummaryRow
+                      label="Cutting preferences"
+                      value={savedOrder?.cutPreferences?.length ? savedOrder.cutPreferences.join(", ") : "—"}
+                    />
+                    <SummaryRow
+                      label="Service package"
+                      value={savedOrder?.addServices ? "Included" : "Not added"}
+                    />
+                    <SummaryRow
+                      label="Delivery"
+                      value={savedOrder?.delivery ? "Included" : "Not added"}
+                    />
+                    <SummaryRow
+                      label="Total due"
+                      value={savedOrder ? formatZAR(savedOrder.totalPrice) : "—"}
+                      strong
+                    />
                   </div>
                 </div>
 
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <input
-                      type="checkbox"
-                      checked={form.agree}
-                      onChange={(e) => updateField("agree", e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                    />
-                    <div>
-                      <p className="text-sm text-white/80">
-                        I confirm that the information provided above is correct.
-                      </p>
-                      <p className="mt-1 text-xs text-white/45">
-                        Please review your details carefully before submitting your booking.
-                      </p>
-                    </div>
-                  </label>
-                  {errors.agree ? (
-                    <p className="mt-2 text-xs text-red-300">{errors.agree}</p>
-                  ) : null}
+                <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
+                  <p className="text-sm font-medium text-white/82">What happens next?</p>
+                  <p className="mt-2 text-sm leading-6 text-white/65">
+                    If any further clarification is needed, the team will contact you using
+                    the details provided above.
+                  </p>
                 </div>
 
-                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={resetFormForAnotherOrder}
+                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px]"
+                  >
+                    Place Another Order
+                  </button>
+
                   <Link
                     href="/"
                     className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
                   >
                     Back Home
                   </Link>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
-                  >
-                    {submitting ? "Submitting..." : "Submit Booking"}
-                  </button>
                 </div>
-
-                {submitError ? (
-                  <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-5">
-                    <p className="text-sm font-semibold text-red-200">Could not save booking</p>
-                    <p className="mt-1 text-sm leading-6 text-red-100/80">{submitError}</p>
-                  </div>
-                ) : null}
-
-                {submitted ? (
-                  <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-5">
-                    <p className="text-sm font-semibold text-emerald-200">
-                      Booking submitted successfully
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-emerald-100/80">
-                      Your booking has been saved successfully.
-                    </p>
-                  </div>
-                ) : null}
               </div>
-            </form>
+            )}
           </div>
 
           <div className="xl:col-span-5">
@@ -801,39 +902,25 @@ export default function OrderPage() {
 
               <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                  Included pricing logic
+                  Included pricing
                 </p>
                 <div className="mt-4 grid gap-3">
-                  {[
-                    "Live total pricing for customers",
-                    "Weight-based sheep pricing",
-                    "Optional services at R400 per sheep",
-                    "Optional delivery at R100 per sheep",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75"
-                    >
-                      {item}
-                    </div>
-                  ))}
+                  <SmallInfoCard>Live total pricing shown before submission</SmallInfoCard>
+                  <SmallInfoCard>Weight-based sheep pricing in kilograms</SmallInfoCard>
+                  <SmallInfoCard>Optional service package at R400 per sheep</SmallInfoCard>
+                  <SmallInfoCard>Optional delivery at R100 per sheep</SmallInfoCard>
                 </div>
               </div>
 
               <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                  Staff access
+                  Booking confidence
                 </p>
-                <p className="mt-3 text-sm leading-6 text-white/65">
-                  Staff can sign in separately to manage bookings, view order details,
-                  and later see the calculated pricing inside the staff table/dashboard.
-                </p>
-                <Link
-                  href="/login"
-                  className="mt-5 inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
-                >
-                  Staff Sign In
-                </Link>
+                <div className="mt-4 grid gap-3">
+                  <SmallInfoCard>Clear booking flow from start to finish</SmallInfoCard>
+                  <SmallInfoCard>Multiple cutting preferences can be selected</SmallInfoCard>
+                  <SmallInfoCard>Live summary keeps the total visible throughout</SmallInfoCard>
+                </div>
               </div>
             </div>
           </div>
