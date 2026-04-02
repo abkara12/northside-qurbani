@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -266,7 +265,6 @@ function SmallInfoCard({ children }: { children: React.ReactNode }) {
 }
 
 export default function OrderPage() {
-  const router = useRouter();
 
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<Errors>({});
