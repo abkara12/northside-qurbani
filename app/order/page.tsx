@@ -265,7 +265,6 @@ function SmallInfoCard({ children }: { children: React.ReactNode }) {
 }
 
 export default function OrderPage() {
-
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -342,45 +341,53 @@ export default function OrderPage() {
     return Object.keys(nextErrors).length === 0;
   }
 
- async function handleSubmit(e: FormEvent) {
-  e.preventDefault();
-  setSubmitError("");
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitError("");
 
-  if (!validate()) return;
+    if (!validate()) return;
 
-  try {
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    const orderRef = await addDoc(collection(db, "orders"), {
-      fullName: form.fullName.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      quantity: quantityNumber,
-      preferredWeight: form.preferredWeight,
-      cutPreferences: form.cutPreferences,
-      notes: form.notes.trim(),
-      addServices: form.addServices,
-      delivery: form.delivery,
-      basePricePerSheep,
-      servicesPerSheep,
-      deliveryPerSheep,
-      pricePerSheep,
-      totalPrice,
-      paymentStatus: "pending",
-      processingStatus: "pending",
-      collectionStatus: "pending",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      const orderRef = await addDoc(collection(db, "orders"), {
+        fullName: form.fullName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        quantity: quantityNumber,
+        preferredWeight: form.preferredWeight,
+        cutPreferences: form.cutPreferences,
+        notes: form.notes.trim(),
+        addServices: form.addServices,
+        delivery: form.delivery,
+        basePricePerSheep,
+        servicesPerSheep,
+        deliveryPerSheep,
+        pricePerSheep,
+        totalPrice,
+        paymentStatus: "pending",
+        processingStatus: "pending",
+        collectionStatus: "pending",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
 
-   window.location.assign(`/order/success/${orderRef.id}`);
-  } catch (error) {
-    console.error("Error saving order:", error);
-    setSubmitError("Something went wrong while saving the order. Please try again.");
-  } finally {
-    setSubmitting(false);
+      const savedOrderId = orderRef.id;
+      const savedOrderReference = `NQ-${savedOrderId.slice(0, 8).toUpperCase()}`;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("northside_last_order_id", savedOrderId);
+        localStorage.setItem("northside_last_order_reference", savedOrderReference);
+      }
+
+      window.location.assign(`/order/success/${savedOrderId}`);
+    } catch (error) {
+      console.error("Error saving order:", error);
+      setSubmitError("Something went wrong while saving the order. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
-}
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -433,12 +440,13 @@ export default function OrderPage() {
             </div>
 
             <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
-  Complete your qurbani
-  <span className="mt-1 block">booking with clarity</span>
-  <span className="mt-1 block">and confidence.</span>
-</h1>
+              Complete your qurbani
+              <span className="mt-1 block">booking with clarity</span>
+              <span className="mt-1 block">and confidence.</span>
+            </h1>
 
-<p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">              Submit your booking through a clear and carefully guided process designed
+            <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+              Submit your booking through a clear and carefully guided process designed
               to make ordering feel simple, reassuring, and smooth from start to finish.
             </p>
 
@@ -467,10 +475,10 @@ export default function OrderPage() {
             </div>
 
             <form
-  onSubmit={handleSubmit}
-  noValidate
-  className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
->
+              onSubmit={handleSubmit}
+              noValidate
+              className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
+            >
               <div className="grid gap-8">
                 <div>
                   <div className="mb-5 text-center lg:text-left">
@@ -737,11 +745,7 @@ export default function OrderPage() {
                   <SummaryRow label="Weight range" value={form.preferredWeight} />
                   <SummaryRow
                     label="Cutting preferences"
-                    value={
-                      form.cutPreferences.length
-                        ? form.cutPreferences.join(", ")
-                        : "—"
-                    }
+                    value={form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"}
                   />
                   <SummaryRow
                     label="Service package"
