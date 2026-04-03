@@ -852,7 +852,7 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#171018] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
+            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#141016] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute right-[-4rem] top-[-4rem] h-40 w-40 rounded-full bg-[#c6a268]/14 blur-3xl" />
                 <div className="absolute bottom-[-4rem] left-[-4rem] h-36 w-36 rounded-full bg-[#f5efe6]/8 blur-3xl" />
@@ -1066,7 +1066,7 @@ export default function Home() {
       {/* PREMIUM STRIP */}
       <section className="py-18 lg:py-24">
         <div className="mx-auto max-w-6xl px-6 sm:px-10">
-          <div className="overflow-hidden rounded-[40px] border border-white/10 bg-[#171018] p-8 text-white shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-10 lg:p-12">
+          <div className="overflow-hidden rounded-[40px] border border-white/10 bg-[#141016] p-8 text-white shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-10 lg:p-12">
             <div className="grid items-center gap-10 lg:grid-cols-12">
               <div className="text-center lg:col-span-7 lg:text-left">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-[#d8b67e]">

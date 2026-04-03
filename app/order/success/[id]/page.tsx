@@ -205,7 +205,7 @@ export default async function OrderSuccessPage({
 
             <div className="xl:col-span-5">
               <div className="space-y-5 xl:sticky xl:top-6">
-                <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+                <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                   <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
                     Booking summary
                   </p>
