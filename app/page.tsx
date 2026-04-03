@@ -393,11 +393,7 @@ function MenuRow({
           ) : null}
         </div>
 
-        <div
-          className={`grid h-10 w-10 place-items-center rounded-full transition-all duration-300 ${
-            variant === "primary" ? "bg-white/10 text-[#d8b67e]" : "bg-white/10 text-[#d8b67e]"
-          }`}
-        >
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-[#d8b67e] transition-all duration-300">
           <ArrowIcon />
         </div>
       </div>
@@ -509,12 +505,13 @@ export default function Home() {
     }
   }, []);
 
- function closeMenu() {
-  setMenuState("closed");
-  setTimeout(() => {
-    setMobileOpen(false);
-  }, 650);
-}
+  function closeMenu() {
+    setMenuState("closed");
+    setTimeout(() => {
+      setMobileOpen(false);
+    }, 650);
+  }
+
   return (
     <main id="top" className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
       <InstallAppPrompt />
@@ -529,8 +526,10 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
         <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
+
       {/* NAVBAR */}
-<header className="relative z-40 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">        <div className="flex items-center gap-3">
+      <header className="relative z-40 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">
+        <div className="flex items-center gap-3">
           <div className="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:h-[78px] sm:w-[78px]">
             <Image
               src="/logo4.png"
@@ -598,41 +597,147 @@ export default function Home() {
         </div>
 
         <button
-  type="button"
-  onClick={() => {
-    setMobileOpen(true);
-    setMenuState("open");
-  }}
-  className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
-  aria-label="Open menu"
->
-  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
-  <MenuIcon />
-</button>
+          type="button"
+          onClick={() => {
+            setMobileOpen(true);
+            setMenuState("open");
+          }}
+          className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
+          aria-label="Open menu"
+        >
+          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
+          <MenuIcon />
+        </button>
       </header>
-      {mobileOpen && (
-  <div className="fixed inset-0 z-[100]">
-    <div
-      onClick={closeMenu}
-      className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-[650ms] ease-out ${
-        menuState === "open" ? "opacity-100" : "opacity-0"
-      }`}
-    />
 
-    <div
-      className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
-        menuState === "open" ? "translate-x-0" : "translate-x-full"
-      }`}
-    >
-      {/* menu content */}
-    </div>
-  </div>
-)}
+      {/* MOBILE MENU */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[100]">
+          <div
+            onClick={closeMenu}
+            className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-[650ms] ease-out ${
+              menuState === "open" ? "opacity-100" : "opacity-0"
+            }`}
+          />
+
+          <div
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+              menuState === "open" ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
+            <div className="relative flex h-full flex-col p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-sm">
+                    <Image
+                      src="/logo4.png"
+                      alt="Northside Qurbani"
+                      width={58}
+                      height={58}
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold leading-tight text-white">
+                      Northside Qurbani
+                    </div>
+                    <div className="text-xs text-white/55">Menu</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm transition hover:bg-white/10"
+                  aria-label="Close menu"
+                >
+                  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
+                  <CloseIcon />
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-3">
+                <MenuRow href="/" label="Home" sub="Return to homepage" onClick={closeMenu} />
+                <MenuRow href="#about" label="About" sub="Who we are and what we do" onClick={closeMenu} />
+                <MenuRow href="#services" label="Services" sub="Our premium offering" onClick={closeMenu} />
+                <MenuRow href="#platform" label="Platform" sub="How the system works" onClick={closeMenu} />
+                <MenuRow href="#faq" label="FAQ" sub="Common questions" onClick={closeMenu} />
+
+                <div className="my-1 h-px bg-white/10" />
+
+                {user ? (
+                  <MenuRow
+                    href="/admin"
+                    label="Dashboard"
+                    sub="Manage operations and updates"
+                    onClick={closeMenu}
+                    variant="primary"
+                  />
+                ) : savedOrder ? (
+                  <>
+                    <MenuRow
+                      href={`/order/success/${savedOrder.id}`}
+                      label="View My Order"
+                      sub={`Reference: ${savedOrder.reference}`}
+                      onClick={closeMenu}
+                      variant="primary"
+                    />
+                    <MenuRow
+                      href="/order"
+                      label="Place Another Order"
+                      sub="Submit an additional qurbani booking"
+                      onClick={closeMenu}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <MenuRow
+                      href="/login"
+                      label="Staff Sign In"
+                      sub="Access the operations dashboard"
+                      onClick={closeMenu}
+                    />
+                    <MenuRow
+                      href="/order"
+                      label="Place Order"
+                      sub="Submit your qurbani booking"
+                      onClick={closeMenu}
+                      variant="primary"
+                    />
+                  </>
+                )}
+              </div>
+
+              <div className="mt-auto pt-6">
+                <div className="rounded-[28px] border border-white/10 bg-white/5 px-5 py-4">
+                  <div className="text-xs uppercase tracking-[0.25em] text-[#d8b67e]">Quick tip</div>
+                  <div className="mt-1 text-sm text-white/70">
+                    Add the app to your home screen for faster use on the day.
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-xs text-white/45">
+                  <span>© {new Date().getFullYear()} Northside Qurbani</span>
+                  <button
+                    type="button"
+                    onClick={closeMenu}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white transition hover:bg-white/10"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* HERO */}
-<section className="mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-6 pb-8 pt-1 sm:px-10 sm:pb-12 lg:min-h-[calc(100svh-100px)] lg:pb-14 lg:pt-1">        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
+      <section className="mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-6 pb-8 pt-1 sm:px-10 sm:pb-12 lg:min-h-[calc(100svh-100px)] lg:pb-14 lg:pt-1">
+        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
           <div className="text-center lg:col-span-7 lg:text-left">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
+            <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
               Northside Qurbani
             </div>
 
@@ -755,7 +860,7 @@ export default function Home() {
       </section>
 
       {/* ABOUT / BRAND STORY */}
-      <section className="mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:py-24">
+      <section id="about" className="mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:py-24">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div className="text-center lg:text-left">
             <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-[#d8b67e]">
@@ -1116,7 +1221,7 @@ export default function Home() {
                     </a>
                     {user ? (
                       <a href="/admin" className="block text-sm text-white/65 transition hover:text-white">
-                         Staff Dashboard
+                        Staff Dashboard
                       </a>
                     ) : savedOrder ? (
                       <a href={`/order/success/${savedOrder.id}`} className="block text-sm text-white/65 transition hover:text-white">
