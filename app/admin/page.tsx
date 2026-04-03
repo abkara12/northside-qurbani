@@ -340,17 +340,14 @@ export default function AdminPage() {
     });
 
     return [...next].sort((a, b) => {
-      const aPriority =
-        (a.delivered ? 100 : 0) +
-        (a.slaughtered ? 10 : 0) +
-        ((a.paymentStatus || "pending").toLowerCase() === "paid" ? 1 : 0);
+      const nameA = (a.fullName || "").trim();
+      const nameB = (b.fullName || "").trim();
 
-      const bPriority =
-        (b.delivered ? 100 : 0) +
-        (b.slaughtered ? 10 : 0) +
-        ((b.paymentStatus || "pending").toLowerCase() === "paid" ? 1 : 0);
+      if (!nameA && !nameB) return 0;
+      if (!nameA) return 1;
+      if (!nameB) return -1;
 
-      return aPriority - bPriority;
+      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
     });
   }, [orders, search, paymentFilter, workflowFilter]);
 

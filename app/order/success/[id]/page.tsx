@@ -160,7 +160,7 @@ export default async function OrderSuccessPage({
               <div className="rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
                 <div className="flex justify-center lg:justify-start">
   <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-200">
-    Booking received
+    Booking received Successfully
   </div>
 </div>
 

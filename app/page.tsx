@@ -416,42 +416,12 @@ type SavedOrderState = {
 };
 
 function OrderAccessButtons({
-  savedOrder,
   className = "",
   primaryLarge = false,
 }: {
-  savedOrder: SavedOrderState | null;
   className?: string;
   primaryLarge?: boolean;
 }) {
-  if (savedOrder) {
-    return (
-      <div className={className}>
-        <Link
-          href={`/order/success/${savedOrder.id}`}
-          className={`inline-flex items-center justify-center rounded-full bg-[#c6a268] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] ${
-            primaryLarge
-              ? "h-[44px] min-w-[182px] px-6 text-[14px] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
-              : "h-11 px-6 text-sm"
-          }`}
-        >
-          View My Order
-        </Link>
-
-        <Link
-          href="/order"
-          className={`inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 ${
-            primaryLarge
-              ? "h-[40px] min-w-[156px] px-5 text-[13px] sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-              : "h-11 px-5 text-sm"
-          }`}
-        >
-          Place Another Order
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className={className}>
       <Link
@@ -472,22 +442,22 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuState, setMenuState] = useState<"open" | "closed">("closed");
   const [user, setUser] = useState<User | null>(null);
-  const [, setIsAdmin] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrderState | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      setIsAdmin(false);
+      setIsStaff(false);
 
       if (!u) return;
 
       try {
         const snap = await getDoc(doc(db, "users", u.uid));
         const role = snap.exists() ? (snap.data() as any).role : null;
-        setIsAdmin(role === "admin" || role === "staff");
+        setIsStaff(role === "admin" || role === "staff");
       } catch {
-        setIsAdmin(false);
+        setIsStaff(false);
       }
     });
 
@@ -556,7 +526,7 @@ export default function Home() {
             FAQ
           </a>
 
-          {user ? (
+          {isStaff ? (
             <Link
               href="/admin"
               className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
@@ -666,7 +636,7 @@ export default function Home() {
 
                 <div className="my-1 h-px bg-white/10" />
 
-                {user ? (
+                {isStaff ? (
                   <MenuRow
                     href="/admin"
                     label="Dashboard"
@@ -752,30 +722,48 @@ export default function Home() {
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
-              <OrderAccessButtons
-                savedOrder={savedOrder}
-                primaryLarge
-                className="flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3"
-              />
-
-              {user ? (
+              {isStaff ? (
                 <Link
                   href="/admin"
-                  className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
                 >
-                  Open Staff Dashboard
+                  Staff Dashboard
                 </Link>
-              ) : !savedOrder ? (
-                <Link
-                  href="/login"
-                  className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                >
-                  Staff Sign In
-                </Link>
-              ) : null}
+              ) : (
+                <>
+                  <OrderAccessButtons
+                    primaryLarge
+                    className="flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3"
+                  />
+
+                  {!savedOrder ? (
+                    <Link
+                      href="/login"
+                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                    >
+                      Staff Sign In
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href={`/order/success/${savedOrder.id}`}
+                        className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                      >
+                        View My Order
+                      </Link>
+                      <Link
+                        href="/order"
+                        className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                      >
+                        Place Another Order
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
-            {savedOrder ? (
+            {!isStaff && savedOrder ? (
               <div className="mx-auto mt-4 max-w-[34rem] rounded-[24px] border border-white/10 bg-white/[0.045] px-5 py-4 text-center shadow-[0_14px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:mx-0 lg:text-left">
                 <div className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
                   Your previous booking is saved
@@ -1117,7 +1105,7 @@ export default function Home() {
                   A trusted qurbani service presented through a clear, refined, and easy-to-use digital experience.
                 </p>
 
-                {savedOrder ? (
+                {!isStaff && savedOrder ? (
                   <div className="mx-auto mt-5 max-w-xl rounded-[22px] border border-white/10 bg-white/5 px-5 py-4 text-center lg:mx-0 lg:text-left">
                     <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
                       Your previous booking is saved
@@ -1133,20 +1121,46 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col items-center justify-center gap-2.5 lg:col-span-4 lg:items-end lg:justify-end lg:gap-3">
-                <OrderAccessButtons
-                  savedOrder={savedOrder}
-                  primaryLarge
-                  className="flex flex-col items-center gap-2.5 lg:items-end lg:gap-3"
-                />
-
-                {!savedOrder ? (
+                {isStaff ? (
                   <Link
-                    href="/login"
-                    className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                    href="/admin"
+                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                   >
-                    Staff Sign In
+                    Staff Dashboard
                   </Link>
-                ) : null}
+                ) : savedOrder ? (
+                  <>
+                    <Link
+                      href={`/order/success/${savedOrder.id}`}
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                    >
+                      View My Order
+                    </Link>
+
+                    <Link
+                      href="/order"
+                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                    >
+                      Place Another Order
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/order"
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                    >
+                      Place Your Order
+                    </Link>
+
+                    <Link
+                      href="/login"
+                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                    >
+                      Staff Sign In
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1216,10 +1230,12 @@ export default function Home() {
                 <div>
                   <div className="mb-4 text-[0.92rem] font-semibold text-white">Order</div>
                   <div className="space-y-3">
-                    <a href="/order" className="block text-sm text-white/65 transition hover:text-white">
-                      Place Order
-                    </a>
-                    {user ? (
+                    {!isStaff ? (
+                      <a href="/order" className="block text-sm text-white/65 transition hover:text-white">
+                        Place Order
+                      </a>
+                    ) : null}
+                    {isStaff ? (
                       <a href="/admin" className="block text-sm text-white/65 transition hover:text-white">
                         Staff Dashboard
                       </a>
@@ -1245,7 +1261,7 @@ export default function Home() {
                       Premium qurbani coordination presented through a refined platform designed to support clarity, trust, and a smooth overall experience.
                     </div>
 
-                    {savedOrder ? (
+                    {!isStaff && savedOrder ? (
                       <div className="mt-3 text-sm font-semibold text-[#d8b67e]">
                         Saved booking reference: {savedOrder.reference}
                       </div>
@@ -1253,7 +1269,14 @@ export default function Home() {
                   </div>
 
                   <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:items-center">
-                    {savedOrder ? (
+                    {isStaff ? (
+                      <a
+                        href="/admin"
+                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      >
+                        Staff Dashboard
+                      </a>
+                    ) : savedOrder ? (
                       <>
                         <a
                           href={`/order/success/${savedOrder.id}`}
@@ -1301,6 +1324,37 @@ export default function Home() {
             <span>Northside Qurbani • {new Date().getFullYear()}</span>
           </div>
         </div>
+
+        <footer className="mt-20 border-t border-white/10 bg-white/[0.02]">
+  <div className="mx-auto max-w-7xl px-6 py-8 sm:px-10">
+    
+    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+      
+      {/* LEFT */}
+      <div className="text-xs text-white/40">
+        © {new Date().getFullYear()} Northside Qurbani
+      </div>
+
+      {/* RIGHT — YOUR EXPOSURE */}
+      <a
+        href="https://wa.me/27662385090"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center gap-2 text-xs text-white/40 transition hover:text-[#d8b67e]"
+      >
+        <span>Website by</span>
+        <span className="font-medium text-white/70 group-hover:text-[#d8b67e]">
+          AK Web Design
+        </span>
+
+        {/* subtle arrow */}
+        <span className="transition group-hover:translate-x-1">→</span>
+      </a>
+
+    </div>
+
+  </div>
+</footer>
       </footer>
     </main>
   );
