@@ -70,7 +70,7 @@ function PaymentBadge({ value }: { value?: string }) {
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
         paid
           ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
           : "border-amber-400/20 bg-amber-400/10 text-amber-200"
@@ -84,13 +84,13 @@ function PaymentBadge({ value }: { value?: string }) {
 function SlaughteredBadge({ slaughtered }: { slaughtered?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
         slaughtered
           ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
           : "border-sky-400/20 bg-sky-400/10 text-sky-200"
       }`}
     >
-      {slaughtered ? "Slaughtered" : "Not Slaughtered"}
+      {slaughtered ? "Slaughtered" : "Pending Slaughter"}
     </span>
   );
 }
@@ -98,7 +98,7 @@ function SlaughteredBadge({ slaughtered }: { slaughtered?: boolean }) {
 function DeliveryBadge({ delivered }: { delivered?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
         delivered
           ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
           : "border-violet-400/20 bg-violet-400/10 text-violet-200"
@@ -124,7 +124,7 @@ function FilterButton({
       onClick={onClick}
       className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition ${
         active
-          ? "bg-[#c6a268] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.2)]"
+          ? "bg-[#c6a268] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
           : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
       }`}
     >
@@ -136,25 +136,25 @@ function FilterButton({
 function SummaryCard({
   label,
   value,
-  accent = false,
   helper,
+  accent = false,
 }: {
   label: string;
   value: string;
-  accent?: boolean;
   helper?: string;
+  accent?: boolean;
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl">
       <div className="text-sm text-white/45">{label}</div>
       <div
-        className={`mt-2 text-xl font-semibold ${
+        className={`mt-2 text-[1.35rem] font-semibold ${
           accent ? "text-[#d8b67e]" : "text-white"
         }`}
       >
         {value}
       </div>
-      {helper ? <div className="mt-1 text-xs text-white/40">{helper}</div> : null}
+      {helper ? <div className="mt-1 text-xs text-white/42">{helper}</div> : null}
     </div>
   );
 }
@@ -201,7 +201,7 @@ function QuickActionButton({
       disabled={disabled}
       onClick={onClick}
       className={`rounded-full font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
-        compact ? "px-3 py-1.5 text-[12px]" : "px-4 py-2 text-sm"
+        compact ? "px-3.5 py-2 text-[12px]" : "px-4 py-2 text-sm"
       } ${
         active
           ? "bg-[#c6a268] text-[#161015]"
@@ -293,7 +293,7 @@ export default function AdminPage() {
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
 
-    return orders.filter((order) => {
+    const next = orders.filter((order) => {
       const matchesSearch =
         !term ||
         order.fullName?.toLowerCase().includes(term) ||
@@ -327,6 +327,20 @@ export default function AdminPage() {
       }
 
       return matchesSearch && matchesPayment && matchesWorkflow;
+    });
+
+    return [...next].sort((a, b) => {
+      const aPriority =
+        (a.delivered ? 100 : 0) +
+        (a.slaughtered ? 10 : 0) +
+        ((a.paymentStatus || "pending").toLowerCase() === "paid" ? 1 : 0);
+
+      const bPriority =
+        (b.delivered ? 100 : 0) +
+        (b.slaughtered ? 10 : 0) +
+        ((b.paymentStatus || "pending").toLowerCase() === "paid" ? 1 : 0);
+
+      return aPriority - bPriority;
     });
   }, [orders, search, paymentFilter, workflowFilter]);
 
@@ -372,13 +386,13 @@ export default function AdminPage() {
         <div className="flex min-h-screen items-center justify-center px-6">
           <div className="rounded-[28px] border border-white/10 bg-white/[0.045] px-8 py-6 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
             <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">
-              Loading
+              Northside Qurbani
             </p>
             <h1 className="mt-3 text-2xl font-semibold text-white">
-              Preparing dashboard
+              Opening farm-day screen
             </h1>
             <p className="mt-3 text-white/65">
-              Please wait while access is verified.
+              Please wait while access is being checked.
             </p>
           </div>
         </div>
@@ -415,7 +429,9 @@ export default function AdminPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">Admin dashboard</div>
+            <div className="mt-1 text-sm text-white/55">
+              Farm day control screen
+            </div>
           </div>
         </div>
 
@@ -441,19 +457,19 @@ export default function AdminPage() {
           <div className="xl:col-span-8">
             <div className="text-center xl:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
-                Farm operations dashboard
+                Northside Qurbani Farm Day
               </div>
 
               <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
-                Fast qurbani-day
-                <span className="mt-1 block">search, mark,</span>
-                <span className="mt-1 block">and finish.</span>
+                Move each customer
+                <span className="mt-1 block">through the farm</span>
+                <span className="mt-1 block">quickly and clearly.</span>
               </h1>
 
               <p className="mx-auto mt-5 max-w-3xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 xl:mx-0">
-                Search the customer quickly, confirm whether they paid, mark the
-                booking as slaughtered once the workers fetch the sheep, then manage
-                delivery after qurbani day.
+                Search the customer, confirm the booking, tell the workers to fetch
+                the sheep, then mark it as slaughtered. After farm day, use the same
+                screen to check unpaid customers and track deliveries.
               </p>
             </div>
 
@@ -465,7 +481,7 @@ export default function AdminPage() {
                 accent
               />
               <SummaryCard
-                label="Unpaid bookings"
+                label="Unpaid customers"
                 value={String(unpaidCount)}
                 helper={`${paidCount} paid`}
               />
@@ -480,21 +496,19 @@ export default function AdminPage() {
               <div className="grid gap-4 xl:grid-cols-[1.3fr_auto_auto] xl:items-center">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">
-                    Search customer or booking
+                    Search customer or booking reference
                   </label>
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by name, phone, email, or booking reference"
+                    placeholder="Search by name, phone, email, or reference"
                     className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
                   />
                 </div>
 
                 <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">
-                    Payment
-                  </div>
+                  <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
                   <div className="flex flex-wrap gap-2">
                     <FilterButton
                       active={paymentFilter === "all"}
@@ -515,9 +529,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">
-                    Workflow
-                  </div>
+                  <div className="mb-2 text-sm font-medium text-white/82">Workflow</div>
                   <div className="flex flex-wrap gap-2">
                     <FilterButton
                       active={workflowFilter === "all"}
@@ -526,7 +538,7 @@ export default function AdminPage() {
                     />
                     <FilterButton
                       active={workflowFilter === "notSlaughtered"}
-                      label="Not Slaughtered"
+                      label="Pending Slaughter"
                       onClick={() => setWorkflowFilter("notSlaughtered")}
                     />
                     <FilterButton
@@ -549,38 +561,41 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.045] shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              <div className="border-b border-white/10 px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="text-center sm:text-left">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
-                      Live bookings
-                    </p>
-                    <h2 className="mt-2 text-[1.5rem] font-semibold text-white">
-                      Farm-day queue
-                    </h2>
-                  </div>
+            <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="text-center sm:text-left">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
+                    Today&apos;s queue
+                  </p>
+                  <h2 className="mt-2 text-[1.5rem] font-semibold text-white">
+                    Northside Qurbani customer list
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-white/60">
+                    Active customers are shown first so the desk can work through the
+                    line faster.
+                  </p>
+                </div>
 
-                  <div className="text-xs text-white/45 sm:text-right">
-                    Click a row to view details and update it fast
-                  </div>
+                <div className="text-xs text-white/45 sm:text-right">
+                  Tap a customer card to open the booking on the right
                 </div>
               </div>
 
               {loadingOrders ? (
-                <div className="px-6 py-10 text-center text-white/65">
-                  Loading bookings...
-                </div>
+                <div className="py-10 text-center text-white/65">Loading bookings...</div>
               ) : filteredOrders.length === 0 ? (
-                <div className="px-6 py-10 text-center text-white/65">
-                  No bookings match the current filters.
+                <div className="py-10 text-center text-white/65">
+                  No customers match the current filters.
                 </div>
               ) : (
-                <div className="grid gap-0">
+                <div className="mt-6 grid gap-4">
                   {filteredOrders.map((order) => {
                     const busyPayment = updatingField === `${order.id}-paymentStatus`;
                     const busySlaughtered = updatingField === `${order.id}-slaughtered`;
                     const busyDelivered = updatingField === `${order.id}-delivered`;
+
+                    const isSelected = selectedOrder?.id === order.id;
+                    const isMuted = !!order.slaughtered && !!order.delivered;
 
                     return (
                       <div
@@ -594,38 +609,53 @@ export default function AdminPage() {
                             setSelectedOrder(order);
                           }
                         }}
-                        className="cursor-pointer border-t border-white/10 px-5 py-5 text-left transition hover:bg-white/[0.04] sm:px-6"
+                        className={`cursor-pointer rounded-[28px] border p-5 text-left transition sm:p-6 ${
+                          isSelected
+                            ? "border-[#c6a268]/60 bg-white/[0.08] shadow-[0_20px_44px_rgba(0,0,0,0.18)]"
+                            : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                        } ${isMuted ? "opacity-75" : "opacity-100"}`}
                       >
-                        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr_0.4fr_0.7fr_1.15fr] xl:items-center xl:gap-4">
-                          <div>
-                            <div className="font-semibold text-white">
-                              {order.fullName || "—"}
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-[1.1rem] font-semibold text-white sm:text-[1.2rem]">
+                                {order.fullName || "Unnamed Customer"}
+                              </h3>
+                              {isSelected ? (
+                                <span className="rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#e1c089]">
+                                  Selected
+                                </span>
+                              ) : null}
                             </div>
-                            <div className="mt-1 text-sm text-white/52">
-                              {order.phone || "—"}
+
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/60">
+                              <span>{order.phone || "No phone number"}</span>
+                              <span className="text-white/30">•</span>
+                              <span>{order.quantity || 0} sheep</span>
+                              <span className="text-white/30">•</span>
+                              <span>{orderReference(order.id)}</span>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <PaymentBadge value={order.paymentStatus} />
+                              <SlaughteredBadge slaughtered={order.slaughtered} />
+                              <DeliveryBadge delivered={order.delivered} />
                             </div>
                           </div>
 
-                          <div className="text-sm font-medium text-[#d8b67e]">
-                            {orderReference(order.id)}
-                          </div>
-
-                          <div className="text-sm text-white">
-                            {order.quantity || "—"} sheep
-                          </div>
-
-                          <div className="text-sm font-semibold text-white">
-                            {formatZAR(order.totalPrice)}
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 xl:justify-end">
-                            <PaymentBadge value={order.paymentStatus} />
-                            <SlaughteredBadge slaughtered={order.slaughtered} />
-                            <DeliveryBadge delivered={order.delivered} />
+                          <div className="shrink-0 text-left lg:text-right">
+                            <div className="text-xs uppercase tracking-[0.22em] text-white/38">
+                              Total
+                            </div>
+                            <div className="mt-1 text-[1.1rem] font-semibold text-white">
+                              {formatZAR(order.totalPrice)}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <div className="my-5 h-px w-full bg-white/10" />
+
+                        <div className="flex flex-wrap gap-2">
                           <QuickActionButton
                             compact
                             active={(order.paymentStatus || "pending").toLowerCase() === "paid"}
@@ -669,27 +699,6 @@ export default function AdminPage() {
                             }}
                           />
                         </div>
-
-                        <div className="mt-4 grid gap-2 xl:hidden">
-                          <div className="text-sm text-white/58">
-                            Reference:{" "}
-                            <span className="font-medium text-[#d8b67e]">
-                              {orderReference(order.id)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-white/58">
-                            Quantity:{" "}
-                            <span className="font-medium text-white">
-                              {order.quantity || "—"}
-                            </span>
-                          </div>
-                          <div className="text-sm text-white/58">
-                            Total due:{" "}
-                            <span className="font-semibold text-white">
-                              {formatZAR(order.totalPrice)}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     );
                   })}
@@ -702,21 +711,21 @@ export default function AdminPage() {
             <div className="space-y-6 xl:sticky xl:top-6">
               <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#171018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                 <p className="text-center text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] xl:text-left">
-                  Booking details
+                  Customer booking
                 </p>
                 <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white xl:text-left">
-                  {selectedOrder ? "Selected booking" : "No booking selected"}
+                  {selectedOrder ? "Selected customer" : "Select a customer"}
                 </h2>
                 <p className="mt-2 text-center text-sm leading-6 text-white/60 xl:text-left">
                   {selectedOrder
-                    ? "Use this panel for the girl at the desk and for the owners to review payment and delivery status."
-                    : "Select a booking from the list to review its details."}
+                    ? "Use this side panel to confirm payment, mark slaughtered, and track delivery for Northside Qurbani."
+                    : "Choose a customer from the queue to view the booking details here."}
                 </p>
 
                 {selectedOrder ? (
                   <>
                     <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                      <div className="text-sm text-white/45">Booking reference</div>
+                      <div className="text-sm text-white/45">Northside reference</div>
                       <div className="mt-2 break-all text-[1.2rem] font-semibold tracking-[0.08em] text-[#d8b67e] sm:text-[1.35rem]">
                         {orderReference(selectedOrder.id)}
                       </div>
@@ -730,8 +739,8 @@ export default function AdminPage() {
                       <DetailRow label="Phone" value={selectedOrder.phone || "—"} />
                       <DetailRow label="Email" value={selectedOrder.email || "—"} />
                       <DetailRow
-                        label="Quantity"
-                        value={`${selectedOrder.quantity || "—"} sheep`}
+                        label="Number of sheep"
+                        value={`${selectedOrder.quantity || "—"}`}
                       />
                       <DetailRow
                         label="Weight range"
@@ -775,7 +784,7 @@ export default function AdminPage() {
                         value={selectedOrder.delivered ? "DELIVERED" : "AWAITING DELIVERY"}
                       />
                       <DetailRow
-                        label="Created"
+                        label="Booking created"
                         value={formatDate(selectedOrder.createdAt)}
                       />
                     </div>
@@ -783,7 +792,7 @@ export default function AdminPage() {
                     {selectedOrder.notes ? (
                       <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="text-sm font-medium text-white/82">
-                          Additional notes
+                          Notes for this booking
                         </div>
                         <div className="mt-2 text-sm leading-6 text-white/68">
                           {selectedOrder.notes}
@@ -795,6 +804,9 @@ export default function AdminPage() {
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="text-sm font-medium text-white/82">
                           Payment
+                        </div>
+                        <div className="mt-2 text-xs leading-5 text-white/45">
+                          Mark the customer as paid once payment is confirmed.
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {["pending", "paid"].map((value) => (
@@ -816,8 +828,8 @@ export default function AdminPage() {
                           Slaughter status
                         </div>
                         <div className="mt-2 text-xs leading-5 text-white/45">
-                          Use this once the girl has found the customer and told the
-                          workers to fetch the sheep.
+                          Use this once the desk has found the customer and the workers
+                          have been told to fetch the sheep.
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
@@ -840,8 +852,8 @@ export default function AdminPage() {
                           Delivery
                         </div>
                         <div className="mt-2 text-xs leading-5 text-white/45">
-                          Use this in the next few days when the sliced sheep is
-                          delivered.
+                          Use this after farm day when the sliced sheep is delivered to
+                          the customer.
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
@@ -865,7 +877,7 @@ export default function AdminPage() {
 
               <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
-                  End of day overview
+                  Northside overview
                 </div>
                 <div className="mt-4 grid gap-3">
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -899,12 +911,12 @@ export default function AdminPage() {
 
               <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
-                  Fast flow
+                  Northside Qurbani workflow
                 </div>
                 <div className="mt-3 text-sm leading-6 text-white/65">
-                  Customer arrives with tags → girl searches the name → workers fetch
-                  the sheep → mark slaughtered → owners later check unpaid and
-                  awaiting-delivery bookings.
+                  Customer arrives with tags → desk searches the customer → workers are
+                  told to fetch the sheep → booking is marked slaughtered → unpaid and
+                  undelivered customers are followed up afterwards.
                 </div>
               </div>
             </div>
