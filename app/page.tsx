@@ -110,7 +110,7 @@ function InstallAppPrompt() {
   if (standalone || !open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={handleClose} />
 
       <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#191118]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
@@ -529,8 +529,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
       {/* NAVBAR */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">
-        <div className="flex items-center gap-3">
+<header className="relative z-40 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">        <div className="flex items-center gap-3">
           <div className="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:h-[78px] sm:w-[78px]">
             <Image
               src="/logo4.png"
@@ -603,8 +602,7 @@ export default function Home() {
             setMobileOpen(true);
             requestAnimationFrame(() => setMenuState("open"));
           }}
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
-          aria-label="Open menu"
+className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"          aria-label="Open menu"
         >
           <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
           <MenuIcon />
@@ -612,8 +610,7 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <section className="mx-auto flex min-h-[calc(100svh-96px)] max-w-7xl items-center px-6 pb-10 pt-2 sm:px-10 sm:pb-14 lg:min-h-[calc(100svh-108px)] lg:pb-16 lg:pt-2">
-        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
+<section className="mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-6 pb-8 pt-1 sm:px-10 sm:pb-12 lg:min-h-[calc(100svh-100px)] lg:pb-14 lg:pt-1">        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
           <div className="text-center lg:col-span-7 lg:text-left">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
               Northside Qurbani
