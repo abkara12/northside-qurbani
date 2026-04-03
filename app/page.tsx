@@ -743,7 +743,7 @@ export default function Home() {
               Northside Qurbani
             </div>
 
-            <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.02] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
+            <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.1] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
               Elevating the Qurbani experience,
               <span className="mt-1 block">with clarity,</span>
               <span className="mt-1 block">care, and organisation.</span>
