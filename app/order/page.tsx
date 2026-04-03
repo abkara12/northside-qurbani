@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -11,12 +11,26 @@ type WeightOption = {
   price: number;
 };
 
+type WeightSelectionRow = {
+  id: string;
+  weightLabel: string;
+  quantity: string;
+};
+
+type WeightBreakdownItem = {
+  id: string;
+  label: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+};
+
 const weightOptions: WeightOption[] = [
-  { label: "35–39 kg — R2750", price: 2750 },
-  { label: "40–45 kg — R3150", price: 3150 },
-  { label: "46–50 kg — R3500", price: 3500 },
-  { label: "51–55 kg — R3850", price: 3850 },
-  { label: "56–60 kg — R4200", price: 4200 },
+  { label: "35–39 kg", price: 2750 },
+  { label: "40–45 kg", price: 3150 },
+  { label: "46–50 kg", price: 3500 },
+  { label: "51–55 kg", price: 3850 },
+  { label: "56–60 kg", price: 4200 },
 ];
 
 const cutPreferenceOptions = [
@@ -30,12 +44,20 @@ const cutPreferenceOptions = [
   "Front legs sliced",
 ];
 
+const BANK_DETAILS = {
+  accountName: "Northside Qurbani",
+  bankName: "REPLACE WITH BANK NAME",
+  accountNumber: "REPLACE WITH ACCOUNT NUMBER",
+  accountType: "Business Cheque",
+  branchCode: "REPLACE WITH BRANCH CODE",
+  referenceHint: "Use your phone number or name as payment reference",
+};
+
 type FormData = {
   fullName: string;
   phone: string;
   email: string;
-  quantity: string;
-  preferredWeight: string;
+  weightSelections: WeightSelectionRow[];
   addServices: boolean;
   delivery: boolean;
   cutPreferences: string[];
@@ -43,14 +65,27 @@ type FormData = {
   agree: boolean;
 };
 
-type Errors = Partial<Record<keyof FormData, string>>;
+type Errors = {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  weightSelections?: string;
+  cutPreferences?: string;
+  notes?: string;
+  agree?: string;
+};
 
 const initialForm: FormData = {
   fullName: "",
   phone: "",
   email: "",
-  quantity: "1",
-  preferredWeight: "",
+  weightSelections: [
+    {
+      id: crypto.randomUUID(),
+      weightLabel: "",
+      quantity: "1",
+    },
+  ],
   addServices: false,
   delivery: false,
   cutPreferences: [],
@@ -71,8 +106,8 @@ function Label({
   children,
   required = false,
 }: {
-  htmlFor: string;
-  children: React.ReactNode;
+  htmlFor?: string;
+  children: ReactNode;
   required?: boolean;
 }) {
   return (
@@ -256,10 +291,80 @@ function CutPreferenceCard({
   );
 }
 
-function SmallInfoCard({ children }: { children: React.ReactNode }) {
+function SmallInfoCard({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/75 lg:text-left">
       {children}
+    </div>
+  );
+}
+
+function BookingRowCard({
+  index,
+  row,
+  onWeightChange,
+  onQuantityChange,
+  onRemove,
+  canRemove,
+  error,
+}: {
+  index: number;
+  row: WeightSelectionRow;
+  onWeightChange: (value: string) => void;
+  onQuantityChange: (value: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+  error?: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-white">Selection {index + 1}</p>
+          <p className="mt-1 text-xs text-white/45">Choose a weight range and quantity.</p>
+        </div>
+
+        {canRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white transition hover:bg-white/10"
+          >
+            Remove
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor={`weight-${row.id}`} required>
+            Weight range
+          </Label>
+          <Select
+            id={`weight-${row.id}`}
+            value={row.weightLabel}
+            onChange={onWeightChange}
+            options={weightOptions.map((w) => `${w.label} — ${formatZAR(w.price)}`)}
+            placeholder="Select weight range"
+            error={error}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={`quantity-${row.id}`} required>
+            Number of sheep
+          </Label>
+          <Input
+            id={`quantity-${row.id}`}
+            type="number"
+            min={1}
+            value={row.quantity}
+            onChange={onQuantityChange}
+            placeholder="Enter quantity"
+            error={error}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -270,34 +375,97 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const quantityNumber = Math.max(0, Number(form.quantity) || 0);
+  const parsedSelections = useMemo(() => {
+    return form.weightSelections.map((row) => {
+      const selectedOption =
+        weightOptions.find(
+          (option) => `${option.label} — ${formatZAR(option.price)}` === row.weightLabel
+        ) || null;
 
-  const selectedWeight = useMemo(
-    () => weightOptions.find((w) => w.label === form.preferredWeight) || null,
-    [form.preferredWeight]
+      const quantity = Math.max(0, Number(row.quantity) || 0);
+      const price = selectedOption?.price || 0;
+      const subtotal = price * quantity;
+
+      return {
+        ...row,
+        quantityNumber: quantity,
+        selectedOption,
+        subtotal,
+      };
+    });
+  }, [form.weightSelections]);
+
+  const quantityNumber = parsedSelections.reduce(
+    (sum, row) => sum + row.quantityNumber,
+    0
   );
 
-  const basePricePerSheep = selectedWeight?.price || 0;
+  const weightBreakdown: WeightBreakdownItem[] = parsedSelections
+    .filter((row) => row.selectedOption && row.quantityNumber > 0)
+    .map((row) => ({
+      id: row.id,
+      label: row.selectedOption!.label,
+      price: row.selectedOption!.price,
+      quantity: row.quantityNumber,
+      subtotal: row.subtotal,
+    }));
+
+  const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
   const servicesPerSheep = form.addServices ? 400 : 0;
   const deliveryPerSheep = form.delivery ? 100 : 0;
-  const pricePerSheep = basePricePerSheep + servicesPerSheep + deliveryPerSheep;
-  const totalPrice = quantityNumber * pricePerSheep;
+  const servicesTotal = quantityNumber * servicesPerSheep;
+  const deliveryTotal = quantityNumber * deliveryPerSheep;
+  const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+
+  const legacyPreferredWeight = weightBreakdown.map((row) => `${row.label} x${row.quantity}`).join(", ");
 
   const filledCount = useMemo(() => {
-    const fields = [
-      form.fullName,
-      form.phone,
-      form.quantity,
-      form.preferredWeight,
-    ];
-    return fields.filter(Boolean).length + (form.cutPreferences.length > 0 ? 1 : 0);
-  }, [form]);
+    const base =
+      (form.fullName ? 1 : 0) +
+      (form.phone ? 1 : 0) +
+      (weightBreakdown.length > 0 ? 1 : 0) +
+      (form.cutPreferences.length > 0 ? 1 : 0);
 
-  const progress = Math.round((filledCount / 5) * 100);
+    return base;
+  }, [form.fullName, form.phone, form.cutPreferences.length, weightBreakdown.length]);
+
+  const progress = Math.round((filledCount / 4) * 100);
 
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  function updateWeightRow(id: string, patch: Partial<WeightSelectionRow>) {
+    setForm((prev) => ({
+      ...prev,
+      weightSelections: prev.weightSelections.map((row) =>
+        row.id === id ? { ...row, ...patch } : row
+      ),
+    }));
+    setErrors((prev) => ({ ...prev, weightSelections: undefined }));
+  }
+
+  function addWeightRow() {
+    setForm((prev) => ({
+      ...prev,
+      weightSelections: [
+        ...prev.weightSelections,
+        {
+          id: crypto.randomUUID(),
+          weightLabel: "",
+          quantity: "1",
+        },
+      ],
+    }));
+  }
+
+  function removeWeightRow(id: string) {
+    setForm((prev) => ({
+      ...prev,
+      weightSelections: prev.weightSelections.filter((row) => row.id !== id),
+    }));
+    setErrors((prev) => ({ ...prev, weightSelections: undefined }));
   }
 
   function toggleCutPreference(value: string) {
@@ -319,14 +487,16 @@ export default function OrderPage() {
     if (!form.fullName.trim()) nextErrors.fullName = "Please enter your full name.";
     if (!form.phone.trim()) nextErrors.phone = "Please enter your phone number.";
 
-    if (!form.quantity.trim()) {
-      nextErrors.quantity = "Please enter quantity.";
-    } else if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1) {
-      nextErrors.quantity = "Please enter a valid quantity.";
-    }
+    const hasValidWeightSelections =
+      form.weightSelections.length > 0 &&
+      form.weightSelections.every((row) => {
+        const qty = Number(row.quantity);
+        return row.weightLabel && Number.isInteger(qty) && qty >= 1;
+      });
 
-    if (!form.preferredWeight) {
-      nextErrors.preferredWeight = "Please select a weight range.";
+    if (!hasValidWeightSelections) {
+      nextErrors.weightSelections =
+        "Please complete each sheep selection with a valid weight range and quantity.";
     }
 
     if (form.cutPreferences.length === 0) {
@@ -355,29 +525,23 @@ export default function OrderPage() {
         phone: form.phone.trim(),
         email: form.email.trim(),
         quantity: quantityNumber,
-        preferredWeight: form.preferredWeight,
+        preferredWeight: legacyPreferredWeight,
+        weightBreakdown,
         cutPreferences: form.cutPreferences,
         notes: form.notes.trim(),
         addServices: form.addServices,
         delivery: form.delivery,
-        basePricePerSheep,
+        basePriceTotal,
         servicesPerSheep,
+        servicesTotal,
         deliveryPerSheep,
-        pricePerSheep,
+        deliveryTotal,
         totalPrice,
         paymentStatus: "pending",
-
-tagsIssued: false,
-fetched: false,
-takenForSlaughter: false,
-slaughtered: false,
-processed: false,
-readyForCollection: false,
-collected: false,
-
-createdAt: serverTimestamp(),
-updatedAt: serverTimestamp(),
-      
+        slaughtered: false,
+        delivered: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
 
       const savedOrderId = orderRef.id;
@@ -405,9 +569,6 @@ updatedAt: serverTimestamp(),
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
         <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.26] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
@@ -426,9 +587,7 @@ updatedAt: serverTimestamp(),
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Premium qurbani service
-            </div>
+            <div className="mt-1 text-sm text-white/55">Premium qurbani service</div>
           </div>
         </Link>
 
@@ -454,8 +613,7 @@ updatedAt: serverTimestamp(),
             </h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-              Submit your booking through a clear and carefully guided process designed
-              to make ordering feel simple, reassuring, and smooth from start to finish.
+              Submit your booking with the exact sheep quantities and weight ranges you want.
             </p>
 
             <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
@@ -463,9 +621,6 @@ updatedAt: serverTimestamp(),
                 <div className="text-center lg:text-left">
                   <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
                     Booking progress
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    Complete the details below to finalise your order.
                   </p>
                 </div>
                 <div className="text-right">
@@ -546,6 +701,48 @@ updatedAt: serverTimestamp(),
                 <div>
                   <div className="mb-5 text-center lg:text-left">
                     <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                      Sheep selection
+                    </p>
+                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                      Quantity and weight ranges
+                    </h2>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {form.weightSelections.map((row, index) => (
+                      <BookingRowCard
+                        key={row.id}
+                        index={index}
+                        row={row}
+                        onWeightChange={(value) => updateWeightRow(row.id, { weightLabel: value })}
+                        onQuantityChange={(value) => updateWeightRow(row.id, { quantity: value })}
+                        onRemove={() => removeWeightRow(row.id)}
+                        canRemove={form.weightSelections.length > 1}
+                        error={errors.weightSelections}
+                      />
+                    ))}
+                  </div>
+
+                  {errors.weightSelections ? (
+                    <p className="mt-3 text-xs text-red-300">{errors.weightSelections}</p>
+                  ) : null}
+
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={addWeightRow}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                    >
+                      Add another weight category
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-px bg-white/10" />
+
+                <div>
+                  <div className="mb-5 text-center lg:text-left">
+                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
                       Order details
                     </p>
                     <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
@@ -554,45 +751,12 @@ updatedAt: serverTimestamp(),
                   </div>
 
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="quantity" required>
-                        Quantity
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min={1}
-                        value={form.quantity}
-                        onChange={(value) => updateField("quantity", value)}
-                        placeholder="Enter quantity"
-                        error={errors.quantity}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="preferredWeight" required>
-                        Preferred weight
-                      </Label>
-                      <Select
-                        id="preferredWeight"
-                        value={form.preferredWeight}
-                        onChange={(value) => updateField("preferredWeight", value)}
-                        options={weightOptions.map((w) => w.label)}
-                        placeholder="Select weight range"
-                        error={errors.preferredWeight}
-                      />
-                    </div>
-
                     <div className="sm:col-span-2">
                       <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                        <p className="text-sm font-medium text-white/80">
-                            Service package
-                        </p>
+                        <p className="text-sm font-medium text-white/80">Service package</p>
                         <p className="mt-1 text-sm leading-6 text-white/55">
-                          Skinning, cleaning, storage, slicing, and packaging —{" "}
-                          <span className="font-medium text-[#d8b67e]">
-                            R400 per sheep
-                          </span>
+                          Skinning, cleaning, storage, slicing, and packaging —
+                          <span className="font-medium text-[#d8b67e]"> R400 per sheep</span>
                         </p>
 
                         <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
@@ -611,14 +775,10 @@ updatedAt: serverTimestamp(),
 
                     <div className="sm:col-span-2">
                       <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                        <p className="text-sm font-medium text-white/80">
-                          Delivery
-                        </p>
+                        <p className="text-sm font-medium text-white/80">Delivery</p>
                         <p className="mt-1 text-sm leading-6 text-white/55">
-                          Delivery is charged at{" "}
-                          <span className="font-medium text-[#d8b67e]">
-                            R100 per sheep
-                          </span>
+                          Delivery is charged at
+                          <span className="font-medium text-[#d8b67e]"> R100 per sheep</span>
                         </p>
 
                         <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
@@ -681,6 +841,30 @@ updatedAt: serverTimestamp(),
                 <div className="h-px bg-white/10" />
 
                 <div>
+                  <div className="mb-4 text-center lg:text-left">
+                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                      Banking details
+                    </p>
+                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                      Payment details
+                    </h2>
+                  </div>
+
+                  <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <SummaryRow label="Account name" value={BANK_DETAILS.accountName} />
+                      <SummaryRow label="Bank" value={BANK_DETAILS.bankName} />
+                      <SummaryRow label="Account number" value={BANK_DETAILS.accountNumber} />
+                      <SummaryRow label="Account type" value={BANK_DETAILS.accountType} />
+                      <SummaryRow label="Branch code" value={BANK_DETAILS.branchCode} />
+                      <SummaryRow label="Reference" value={BANK_DETAILS.referenceHint} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-px bg-white/10" />
+
+                <div>
                   <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                     <input
                       type="checkbox"
@@ -691,9 +875,6 @@ updatedAt: serverTimestamp(),
                     <div>
                       <p className="text-sm text-white/80">
                         I confirm that the information provided above is correct.
-                      </p>
-                      <p className="mt-1 text-xs text-white/45">
-                        Please review your details carefully before submitting your booking.
                       </p>
                     </div>
                   </label>
@@ -742,15 +923,34 @@ updatedAt: serverTimestamp(),
                 <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white lg:text-left">
                   Review your details
                 </h2>
-                <p className="mt-2 text-center text-sm leading-6 text-white/60 lg:text-left">
-                  Your quantity, pricing, selected services, and total update live as you complete the form.
-                </p>
 
                 <div className="mt-6">
                   <SummaryRow label="Full name" value={form.fullName} />
                   <SummaryRow label="Phone" value={form.phone} />
-                  <SummaryRow label="Quantity" value={form.quantity || "—"} />
-                  <SummaryRow label="Weight range" value={form.preferredWeight} />
+
+                  <div className="border-b border-white/10 py-3">
+                    <div className="mb-2 text-sm text-white/45">Sheep selected</div>
+                    {weightBreakdown.length ? (
+                      <div className="space-y-2">
+                        {weightBreakdown.map((row) => (
+                          <div
+                            key={row.id}
+                            className="flex items-start justify-between gap-4 text-sm"
+                          >
+                            <span className="text-white">
+                              {row.quantity} × {row.label}
+                            </span>
+                            <span className="font-medium text-white">
+                              {formatZAR(row.subtotal)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-white">—</div>
+                    )}
+                  </div>
+
                   <SummaryRow
                     label="Cutting preferences"
                     value={form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"}
@@ -766,64 +966,36 @@ updatedAt: serverTimestamp(),
                 </div>
 
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <div className="space-y-1">
-                    <SummaryRow
-                      label="Base price per sheep"
-                      value={basePricePerSheep ? formatZAR(basePricePerSheep) : "—"}
-                    />
-                    <SummaryRow
-                      label="Service package per sheep"
-                      value={form.addServices ? formatZAR(400) : formatZAR(0)}
-                    />
-                    <SummaryRow
-                      label="Delivery per sheep"
-                      value={form.delivery ? formatZAR(100) : formatZAR(0)}
-                    />
-                    <SummaryRow
-                      label="Total per sheep"
-                      value={pricePerSheep ? formatZAR(pricePerSheep) : "—"}
-                      strong
-                    />
-                  </div>
-
-                  <div className="mt-4 h-px bg-white/10" />
-
-                  <div className="mt-4 flex items-start justify-between gap-4">
-                    <div className="text-center lg:text-left">
-                      <p className="text-sm text-white/50">Estimated total due</p>
-                      <p className="mt-1 text-xs text-white/40">
-                        Based on the quantity and options selected above
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-semibold text-[#d8b67e]">
-                        {totalPrice ? formatZAR(totalPrice) : "—"}
-                      </div>
-                    </div>
-                  </div>
+                  <SummaryRow label="Total sheep" value={String(quantityNumber)} />
+                  <SummaryRow
+                    label="Base sheep total"
+                    value={basePriceTotal ? formatZAR(basePriceTotal) : "—"}
+                  />
+                  <SummaryRow
+                    label="Service total"
+                    value={servicesTotal ? formatZAR(servicesTotal) : formatZAR(0)}
+                  />
+                  <SummaryRow
+                    label="Delivery total"
+                    value={deliveryTotal ? formatZAR(deliveryTotal) : formatZAR(0)}
+                  />
+                  <SummaryRow
+                    label="Total due"
+                    value={totalPrice ? formatZAR(totalPrice) : "—"}
+                    strong
+                  />
                 </div>
               </div>
 
               <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                  Included pricing
+                  Payment
                 </p>
                 <div className="mt-4 grid gap-3">
-                  <SmallInfoCard>Live total pricing shown before submission</SmallInfoCard>
-                  <SmallInfoCard>Weight-based sheep pricing in kilograms</SmallInfoCard>
-                  <SmallInfoCard>Skinning, slicing, cleaning, storage and packaging services at R400 per sheep</SmallInfoCard>
-                  <SmallInfoCard>Delivery at R100 per sheep</SmallInfoCard>
-                </div>
-              </div>
-
-              <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                  Booking confidence
-                </p>
-                <div className="mt-4 grid gap-3">
-                  <SmallInfoCard>Clear booking flow from start to finish</SmallInfoCard>
-                  <SmallInfoCard>Multiple slicing preferences can be selected</SmallInfoCard>
-                  <SmallInfoCard>Live summary keeps the total visible throughout</SmallInfoCard>
+                  <SmallInfoCard>{BANK_DETAILS.accountName}</SmallInfoCard>
+                  <SmallInfoCard>{BANK_DETAILS.bankName}</SmallInfoCard>
+                  <SmallInfoCard>{BANK_DETAILS.accountNumber}</SmallInfoCard>
+                  <SmallInfoCard>{BANK_DETAILS.referenceHint}</SmallInfoCard>
                 </div>
               </div>
             </div>

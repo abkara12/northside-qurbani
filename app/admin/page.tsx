@@ -15,6 +15,14 @@ import {
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 
+type WeightBreakdownItem = {
+  id: string;
+  label: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+};
+
 type OrderItem = {
   id: string;
   fullName?: string;
@@ -22,14 +30,16 @@ type OrderItem = {
   email?: string;
   quantity?: number;
   preferredWeight?: string;
+  weightBreakdown?: WeightBreakdownItem[];
   cutPreferences?: string[];
   notes?: string;
   addServices?: boolean;
   delivery?: boolean;
-  basePricePerSheep?: number;
   servicesPerSheep?: number;
+  servicesTotal?: number;
   deliveryPerSheep?: number;
-  pricePerSheep?: number;
+  deliveryTotal?: number;
+  basePriceTotal?: number;
   totalPrice?: number;
   paymentStatus?: string;
   slaughtered?: boolean;
@@ -66,6 +76,12 @@ function orderReference(id: string) {
 }
 
 function sheepSummary(order: OrderItem) {
+  if (order.weightBreakdown?.length) {
+    return order.weightBreakdown
+      .map((row) => `${row.quantity} × ${row.label}`)
+      .join(" • ");
+  }
+
   const qty = order.quantity || 0;
   const weight = order.preferredWeight?.trim();
 
@@ -147,23 +163,15 @@ function SummaryCard({
   label,
   value,
   helper,
-  accent = false,
 }: {
   label: string;
   value: string;
   helper?: string;
-  accent?: boolean;
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl">
       <div className="text-sm text-white/45">{label}</div>
-      <div
-        className={`mt-2 text-[1.35rem] font-semibold ${
-          accent ? "text-[#d8b67e]" : "text-white"
-        }`}
-      >
-        {value}
-      </div>
+      <div className="mt-2 text-[1.35rem] font-semibold text-white">{value}</div>
       {helper ? <div className="mt-1 text-xs text-white/42">{helper}</div> : null}
     </div>
   );
@@ -309,7 +317,8 @@ export default function AdminPage() {
         order.fullName?.toLowerCase().includes(term) ||
         order.phone?.toLowerCase().includes(term) ||
         order.email?.toLowerCase().includes(term) ||
-        orderReference(order.id).toLowerCase().includes(term);
+        orderReference(order.id).toLowerCase().includes(term) ||
+        sheepSummary(order).toLowerCase().includes(term);
 
       const status = (order.paymentStatus || "pending").toLowerCase();
 
@@ -320,21 +329,12 @@ export default function AdminPage() {
 
       let matchesWorkflow = true;
 
-      if (workflowFilter === "notSlaughtered") {
-        matchesWorkflow = !order.slaughtered;
-      }
-
-      if (workflowFilter === "slaughtered") {
-        matchesWorkflow = !!order.slaughtered;
-      }
-
+      if (workflowFilter === "notSlaughtered") matchesWorkflow = !order.slaughtered;
+      if (workflowFilter === "slaughtered") matchesWorkflow = !!order.slaughtered;
       if (workflowFilter === "awaitingDelivery") {
         matchesWorkflow = !!order.slaughtered && !order.delivered;
       }
-
-      if (workflowFilter === "delivered") {
-        matchesWorkflow = !!order.delivered;
-      }
+      if (workflowFilter === "delivered") matchesWorkflow = !!order.delivered;
 
       return matchesSearch && matchesPayment && matchesWorkflow;
     });
@@ -414,8 +414,6 @@ export default function AdminPage() {
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
         <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.26] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
       </div>
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
@@ -435,9 +433,7 @@ export default function AdminPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Farm register
-            </div>
+            <div className="mt-1 text-sm text-white/55">Farm register</div>
           </div>
         </div>
 
@@ -496,7 +492,7 @@ export default function AdminPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name, phone, email, or reference"
+                    placeholder="Name, phone, email, reference, or weight"
                     className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
                   />
                 </div>
@@ -504,52 +500,20 @@ export default function AdminPage() {
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton
-                      active={paymentFilter === "all"}
-                      label="All"
-                      onClick={() => setPaymentFilter("all")}
-                    />
-                    <FilterButton
-                      active={paymentFilter === "unpaid"}
-                      label="Unpaid"
-                      onClick={() => setPaymentFilter("unpaid")}
-                    />
-                    <FilterButton
-                      active={paymentFilter === "paid"}
-                      label="Paid"
-                      onClick={() => setPaymentFilter("paid")}
-                    />
+                    <FilterButton active={paymentFilter === "all"} label="All" onClick={() => setPaymentFilter("all")} />
+                    <FilterButton active={paymentFilter === "unpaid"} label="Unpaid" onClick={() => setPaymentFilter("unpaid")} />
+                    <FilterButton active={paymentFilter === "paid"} label="Paid" onClick={() => setPaymentFilter("paid")} />
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Status</div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton
-                      active={workflowFilter === "all"}
-                      label="All"
-                      onClick={() => setWorkflowFilter("all")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "notSlaughtered"}
-                      label="Pending"
-                      onClick={() => setWorkflowFilter("notSlaughtered")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "slaughtered"}
-                      label="Slaughtered"
-                      onClick={() => setWorkflowFilter("slaughtered")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "awaitingDelivery"}
-                      label="Awaiting Delivery"
-                      onClick={() => setWorkflowFilter("awaitingDelivery")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "delivered"}
-                      label="Delivered"
-                      onClick={() => setWorkflowFilter("delivered")}
-                    />
+                    <FilterButton active={workflowFilter === "all"} label="All" onClick={() => setWorkflowFilter("all")} />
+                    <FilterButton active={workflowFilter === "notSlaughtered"} label="Pending" onClick={() => setWorkflowFilter("notSlaughtered")} />
+                    <FilterButton active={workflowFilter === "slaughtered"} label="Slaughtered" onClick={() => setWorkflowFilter("slaughtered")} />
+                    <FilterButton active={workflowFilter === "awaitingDelivery"} label="Awaiting Delivery" onClick={() => setWorkflowFilter("awaitingDelivery")} />
+                    <FilterButton active={workflowFilter === "delivered"} label="Delivered" onClick={() => setWorkflowFilter("delivered")} />
                   </div>
                 </div>
               </div>
@@ -649,11 +613,7 @@ export default function AdminPage() {
                           <QuickActionButton
                             compact
                             active={(order.paymentStatus || "pending").toLowerCase() === "paid"}
-                            label={
-                              (order.paymentStatus || "pending").toLowerCase() === "paid"
-                                ? "Paid"
-                                : "Mark Paid"
-                            }
+                            label={(order.paymentStatus || "pending").toLowerCase() === "paid" ? "Paid" : "Mark Paid"}
                             disabled={busyPayment}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -717,16 +677,10 @@ export default function AdminPage() {
                     </div>
 
                     <div className="mt-6">
-                      <DetailRow
-                        label="Customer name"
-                        value={selectedOrder.fullName || "—"}
-                      />
+                      <DetailRow label="Customer name" value={selectedOrder.fullName || "—"} />
                       <DetailRow label="Phone" value={selectedOrder.phone || "—"} />
                       <DetailRow label="Email" value={selectedOrder.email || "—"} />
-                      <DetailRow
-                        label="Sheep"
-                        value={sheepSummary(selectedOrder)}
-                      />
+                      <DetailRow label="Sheep" value={sheepSummary(selectedOrder)} />
                       <DetailRow
                         label="Cutting preferences"
                         value={
@@ -764,17 +718,33 @@ export default function AdminPage() {
                         label="Delivery status"
                         value={selectedOrder.delivered ? "DELIVERED" : "AWAITING DELIVERY"}
                       />
-                      <DetailRow
-                        label="Created"
-                        value={formatDate(selectedOrder.createdAt)}
-                      />
+                      <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
                     </div>
+
+                    {selectedOrder.weightBreakdown?.length ? (
+                      <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
+                        <div className="text-sm font-medium text-white/82">Weight breakdown</div>
+                        <div className="mt-3 space-y-3">
+                          {selectedOrder.weightBreakdown.map((row) => (
+                            <div
+                              key={row.id}
+                              className="flex items-start justify-between gap-3 text-sm"
+                            >
+                              <span className="text-white">
+                                {row.quantity} × {row.label}
+                              </span>
+                              <span className="font-medium text-white">
+                                {formatZAR(row.subtotal)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
 
                     {selectedOrder.notes ? (
                       <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">
-                          Notes
-                        </div>
+                        <div className="text-sm font-medium text-white/82">Notes</div>
                         <div className="mt-2 text-sm leading-6 text-white/68">
                           {selectedOrder.notes}
                         </div>
@@ -783,9 +753,7 @@ export default function AdminPage() {
 
                     <div className="mt-6 grid gap-4">
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">
-                          Payment
-                        </div>
+                        <div className="text-sm font-medium text-white/82">Payment</div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {["pending", "paid"].map((value) => (
                             <QuickActionButton
@@ -802,9 +770,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">
-                          Slaughter status
-                        </div>
+                        <div className="text-sm font-medium text-white/82">Slaughter status</div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
                             active={!!selectedOrder.slaughtered}
@@ -822,9 +788,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-medium text-white/82">
-                          Delivery
-                        </div>
+                        <div className="text-sm font-medium text-white/82">Delivery</div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <QuickActionButton
                             active={!!selectedOrder.delivered}
@@ -860,21 +824,15 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-sm text-white/65">Slaughtered</span>
-                    <span className="text-sm font-semibold text-white">
-                      {slaughteredCount}
-                    </span>
+                    <span className="text-sm font-semibold text-white">{slaughteredCount}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-sm text-white/65">Awaiting delivery</span>
-                    <span className="text-sm font-semibold text-white">
-                      {awaitingDeliveryCount}
-                    </span>
+                    <span className="text-sm font-semibold text-white">{awaitingDeliveryCount}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-sm text-white/65">Delivered</span>
-                    <span className="text-sm font-semibold text-white">
-                      {deliveredCount}
-                    </span>
+                    <span className="text-sm font-semibold text-white">{deliveredCount}</span>
                   </div>
                 </div>
               </div>
