@@ -50,7 +50,7 @@ const BANK_DETAILS = {
   accountNumber: "REPLACE WITH ACCOUNT NUMBER",
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Use your phone number or name as payment reference",
+  referenceHint: "Use your phone number or full name",
 };
 
 type FormData = {
@@ -299,6 +299,90 @@ function SmallInfoCard({ children }: { children: ReactNode }) {
   );
 }
 
+function CopyField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
+          <p className="mt-2 break-all text-sm font-medium text-white">{value}</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CopyAllBankDetails({
+  accountName,
+  bankName,
+  accountNumber,
+  accountType,
+  branchCode,
+  referenceHint,
+}: {
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  accountType: string;
+  branchCode: string;
+  referenceHint: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopyAll() {
+    const text = `Account Name: ${accountName}
+Bank: ${bankName}
+Account Number: ${accountNumber}
+Account Type: ${accountType}
+Branch Code: ${branchCode}
+Reference: ${referenceHint}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error("Copy all failed:", error);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopyAll}
+      className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
+    >
+      {copied ? "Copied All Details" : "Copy All Banking Details"}
+    </button>
+  );
+}
+
 function BookingRowCard({
   index,
   row,
@@ -417,7 +501,9 @@ export default function OrderPage() {
   const deliveryTotal = quantityNumber * deliveryPerSheep;
   const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
 
-  const legacyPreferredWeight = weightBreakdown.map((row) => `${row.label} x${row.quantity}`).join(", ");
+  const legacyPreferredWeight = weightBreakdown
+    .map((row) => `${row.label} x${row.quantity}`)
+    .join(", ");
 
   const filledCount = useMemo(() => {
     const base =
@@ -846,18 +932,32 @@ export default function OrderPage() {
                       Banking details
                     </p>
                     <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Payment details
+                      EFT payment details
                     </h2>
+                    <p className="mt-2 text-sm leading-6 text-white/55">
+                      Copy the details below directly into your banking app.
+                    </p>
                   </div>
 
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                    <div className="mb-5 flex justify-center lg:justify-start">
+                      <CopyAllBankDetails
+                        accountName={BANK_DETAILS.accountName}
+                        bankName={BANK_DETAILS.bankName}
+                        accountNumber={BANK_DETAILS.accountNumber}
+                        accountType={BANK_DETAILS.accountType}
+                        branchCode={BANK_DETAILS.branchCode}
+                        referenceHint={BANK_DETAILS.referenceHint}
+                      />
+                    </div>
+
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <SummaryRow label="Account name" value={BANK_DETAILS.accountName} />
-                      <SummaryRow label="Bank" value={BANK_DETAILS.bankName} />
-                      <SummaryRow label="Account number" value={BANK_DETAILS.accountNumber} />
-                      <SummaryRow label="Account type" value={BANK_DETAILS.accountType} />
-                      <SummaryRow label="Branch code" value={BANK_DETAILS.branchCode} />
-                      <SummaryRow label="Reference" value={BANK_DETAILS.referenceHint} />
+                      <CopyField label="Account name" value={BANK_DETAILS.accountName} />
+                      <CopyField label="Bank" value={BANK_DETAILS.bankName} />
+                      <CopyField label="Account number" value={BANK_DETAILS.accountNumber} />
+                      <CopyField label="Account type" value={BANK_DETAILS.accountType} />
+                      <CopyField label="Branch code" value={BANK_DETAILS.branchCode} />
+                      <CopyField label="Reference" value={BANK_DETAILS.referenceHint} />
                     </div>
                   </div>
                 </div>
@@ -991,11 +1091,36 @@ export default function OrderPage() {
                 <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
                   Payment
                 </p>
+
+                <div className="mt-4 flex justify-center lg:justify-start">
+                  <CopyAllBankDetails
+                    accountName={BANK_DETAILS.accountName}
+                    bankName={BANK_DETAILS.bankName}
+                    accountNumber={BANK_DETAILS.accountNumber}
+                    accountType={BANK_DETAILS.accountType}
+                    branchCode={BANK_DETAILS.branchCode}
+                    referenceHint={BANK_DETAILS.referenceHint}
+                  />
+                </div>
+
                 <div className="mt-4 grid gap-3">
-                  <SmallInfoCard>{BANK_DETAILS.accountName}</SmallInfoCard>
-                  <SmallInfoCard>{BANK_DETAILS.bankName}</SmallInfoCard>
-                  <SmallInfoCard>{BANK_DETAILS.accountNumber}</SmallInfoCard>
-                  <SmallInfoCard>{BANK_DETAILS.referenceHint}</SmallInfoCard>
+                  <CopyField label="Account name" value={BANK_DETAILS.accountName} />
+                  <CopyField label="Bank" value={BANK_DETAILS.bankName} />
+                  <CopyField label="Account number" value={BANK_DETAILS.accountNumber} />
+                  <CopyField label="Branch code" value={BANK_DETAILS.branchCode} />
+                  <CopyField label="Reference" value={BANK_DETAILS.referenceHint} />
+                </div>
+              </div>
+
+              <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                  Included pricing
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <SmallInfoCard>Multiple weight categories can be booked in one order</SmallInfoCard>
+                  <SmallInfoCard>Skinning, slicing, cleaning, storage and packaging at R400 per sheep</SmallInfoCard>
+                  <SmallInfoCard>Delivery at R100 per sheep</SmallInfoCard>
+                  <SmallInfoCard>Live total shown before submission</SmallInfoCard>
                 </div>
               </div>
             </div>
