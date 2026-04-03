@@ -113,7 +113,7 @@ function InstallAppPrompt() {
     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#191118]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#171018]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c6a268]/18 blur-3xl" />
           <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#f5efe6]/8 blur-3xl" />
@@ -184,7 +184,7 @@ function InstallAppPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#191118] transition hover:brightness-105 disabled:opacity-60"
+                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#171018] transition hover:brightness-105 disabled:opacity-60"
                 disabled={!deferred}
               >
                 Install
@@ -644,7 +644,7 @@ export default function Home() {
           />
 
           <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#171018]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
               menuState === "open" ? "translate-x-0" : "translate-x-full"
             }`}
           >
