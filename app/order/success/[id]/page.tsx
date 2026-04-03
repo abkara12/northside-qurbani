@@ -103,8 +103,8 @@ export default async function OrderSuccessPage({
             <Image
               src="/logo4.png"
               alt="Northside Qurbani"
-              width={56}
-              height={56}
+              width={65}
+              height={65}
               className="object-contain"
               priority
             />

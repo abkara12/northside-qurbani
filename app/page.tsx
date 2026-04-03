@@ -504,8 +504,8 @@ export default function Home() {
             <Image
               src="/logo4.png"
               alt="Northside Qurbani"
-              width={58}
-              height={58}
+              width={65}
+              height={65}
               className="object-contain sm:h-[62px] sm:w-[62px]"
               priority
             />
@@ -602,8 +602,8 @@ export default function Home() {
                     <Image
                       src="/logo4.png"
                       alt="Northside Qurbani"
-                      width={58}
-                      height={58}
+                      width={65}
+                      height={65}
                       className="object-contain"
                       priority
                     />
@@ -1177,8 +1177,8 @@ export default function Home() {
                   <Image
                     src="/logo4.png"
                     alt="Northside Qurbani"
-                    width={58}
-                    height={58}
+                    width={65}
+                    height={65}
                     className="object-contain"
                     priority
                   />
