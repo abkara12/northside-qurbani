@@ -616,13 +616,13 @@ className="relative z-50 inline-flex h-10 w-10 items-center justify-center round
               Northside Qurbani
             </div>
 
-            <h1 className="mt-4 pb-2 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.4rem] font-semibold leading-[1.05] tracking-[-0.06em] text-transparent sm:text-[3rem] lg:text-[4rem] xl:text-[4.65rem]">
+            <h1 className="mt-3 pb-2 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.4rem] font-semibold leading-[1.05] tracking-[-0.06em] text-transparent sm:text-[3rem] lg:text-[4rem] xl:text-[4.65rem]">
               Elevating the Qurbani experience,
               <span className="mt-1 block">with clarity,</span>
               <span className="mt-1 block">care, and organisation.</span>
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[38rem] lg:text-[1.04rem]">
+            <p className="mx-auto mt-3 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[38rem] lg:text-[1.04rem]">
               Northside Qurbani offers a trusted and well-managed service, supported by a refined digital system that brings greater ease, clarity, and structure to the entire process.
             </p>
 
