@@ -528,54 +528,53 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
         <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
-
       {/* NAVBAR */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
-        <div className="flex items-center gap-4">
-          <div className="grid h-[88px] w-[88px] place-items-center rounded-[26px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:h-[78px] sm:w-[78px]">
             <Image
               src="/logo4.png"
               alt="Northside Qurbani"
-              width={68}
-              height={68}
-              className="object-contain"
+              width={58}
+              height={58}
+              className="object-contain sm:h-[62px] sm:w-[62px]"
               priority
             />
           </div>
         </div>
 
         <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:flex">
-          <a href="#about" className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a href="#about" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
             About
           </a>
-          <a href="#services" className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a href="#services" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
             Services
           </a>
-          <a href="#platform" className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a href="#platform" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
             Platform
           </a>
-          <a href="#faq" className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a href="#faq" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
             FAQ
           </a>
 
           {user ? (
             <Link
               href="/admin"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
             >
-             Staff Dashboard
+              Staff Dashboard
             </Link>
           ) : savedOrder ? (
             <>
               <Link
                 href={`/order/success/${savedOrder.id}`}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
               >
                 View My Order
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Place Another Order
               </Link>
@@ -584,13 +583,13 @@ export default function Home() {
             <>
               <Link
                 href="/login"
-                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Staff Sign In
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
               >
                 Place Order
               </Link>
@@ -604,7 +603,7 @@ export default function Home() {
             setMobileOpen(true);
             requestAnimationFrame(() => setMenuState("open"));
           }}
-          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
           aria-label="Open menu"
         >
           <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
@@ -612,148 +611,25 @@ export default function Home() {
         </button>
       </header>
 
-      {/* MOBILE MENU */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50">
-          <div
-            onClick={closeMenu}
-            className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-[650ms] ease-out ${
-              menuState === "open" ? "opacity-100" : "opacity-0"
-            }`}
-          />
-
-          <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
-              menuState === "open" ? "translate-x-0" : "translate-x-full"
-            }`}
-          >
-            <div className="relative flex h-full flex-col p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-sm">
-                    <Image
-                      src="/logo4.png"
-                      alt="Northside Qurbani"
-                      width={58}
-                      height={58}
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold leading-tight text-white">
-                      Northside Qurbani
-                    </div>
-                    <div className="text-xs text-white/55">Menu</div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeMenu}
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm transition hover:bg-white/10"
-                  aria-label="Close menu"
-                >
-                  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
-                  <CloseIcon />
-                </button>
-              </div>
-
-              <div className="mt-6 grid gap-3">
-                <MenuRow href="/" label="Home" sub="Return to homepage" onClick={closeMenu} />
-                <MenuRow href="#about" label="About" sub="Who we are and what we do" onClick={closeMenu} />
-                <MenuRow href="#services" label="Services" sub="Our premium offering" onClick={closeMenu} />
-                <MenuRow href="#platform" label="Platform" sub="How the system works" onClick={closeMenu} />
-                <MenuRow href="#faq" label="FAQ" sub="Common questions" onClick={closeMenu} />
-
-                <div className="my-1 h-px bg-white/10" />
-
-                {user ? (
-                  <MenuRow
-                    href="/admin"
-                    label="Dashboard"
-                    sub="Manage operations and updates"
-                    onClick={closeMenu}
-                    variant="primary"
-                  />
-                ) : savedOrder ? (
-                  <>
-                    <MenuRow
-                      href={`/order/success/${savedOrder.id}`}
-                      label="View My Order"
-                      sub={`Reference: ${savedOrder.reference}`}
-                      onClick={closeMenu}
-                      variant="primary"
-                    />
-                    <MenuRow
-                      href="/order"
-                      label="Place Another Order"
-                      sub="Submit an additional qurbani booking"
-                      onClick={closeMenu}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <MenuRow
-                      href="/login"
-                      label="Staff Sign In"
-                      sub="Access the operations dashboard"
-                      onClick={closeMenu}
-                    />
-                    <MenuRow
-                      href="/order"
-                      label="Place Order"
-                      sub="Submit your qurbani booking"
-                      onClick={closeMenu}
-                      variant="primary"
-                    />
-                  </>
-                )}
-              </div>
-
-              <div className="mt-auto pt-6">
-                <div className="rounded-[28px] border border-white/10 bg-white/5 px-5 py-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-[#d8b67e]">Quick tip</div>
-                  <div className="mt-1 text-sm text-white/70">
-                    Add the app to your home screen for faster use on the day.
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between text-xs text-white/45">
-                  <span>© {new Date().getFullYear()} Northside Qurbani</span>
-                  <button
-                    type="button"
-                    onClick={closeMenu}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white transition hover:bg-white/10"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* HERO */}
-      <section className="mx-auto max-w-7xl px-6 pb-18 pt-3 sm:px-10 lg:pb-24 lg:pt-6">
-        <div className="grid items-center gap-8 lg:grid-cols-12 xl:gap-10">
+      <section className="mx-auto flex min-h-[calc(100svh-96px)] max-w-7xl items-center px-6 pb-10 pt-2 sm:px-10 sm:pb-14 lg:min-h-[calc(100svh-108px)] lg:pb-16 lg:pt-2">
+        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
           <div className="text-center lg:col-span-7 lg:text-left">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
               Northside Qurbani
             </div>
 
-            <h1 className="mt-5 pb-2 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.08] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
-  Elevating the Qurbani experience,
-  <span className="mt-1 block">with clarity,</span>
-  <span className="mt-1 block">care, and organisation.</span>
-</h1>
+            <h1 className="mt-4 pb-2 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.4rem] font-semibold leading-[1.05] tracking-[-0.06em] text-transparent sm:text-[3rem] lg:text-[4rem] xl:text-[4.65rem]">
+              Elevating the Qurbani experience,
+              <span className="mt-1 block">with clarity,</span>
+              <span className="mt-1 block">care, and organisation.</span>
+            </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[40rem] lg:text-[1.06rem]">
+            <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[38rem] lg:text-[1.04rem]">
               Northside Qurbani offers a trusted and well-managed service, supported by a refined digital system that brings greater ease, clarity, and structure to the entire process.
             </p>
 
-            <div className="mt-7 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
+            <div className="mt-6 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
               <OrderAccessButtons
                 savedOrder={savedOrder}
                 primaryLarge
@@ -791,7 +667,7 @@ export default function Home() {
               </div>
             ) : null}
 
-            <div className="mx-auto mt-8 hidden max-w-3xl gap-4 md:grid md:grid-cols-3 lg:mx-0">
+            <div className="mx-auto mt-6 hidden max-w-3xl gap-4 md:grid md:grid-cols-3 lg:mx-0">
               {[
                 { k: "Trusted Service", v: "Handled with dignity and care" },
                 { k: "Premium Ordering", v: "Simple, polished, and modern" },
