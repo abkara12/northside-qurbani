@@ -313,7 +313,7 @@ function FeatureCard({
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#c6a268]/10 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
 
       <div className="relative">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#4a2a3b] text-[#d8b67e] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#141016] text-[#d8b67e] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
           {icon}
         </div>
 
@@ -378,7 +378,7 @@ function MenuRow({
   const base =
     "group relative overflow-hidden rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-300";
   const primary =
-    "border-[#4a2a3b] bg-[#4a2a3b] text-white shadow-lg shadow-black/10 hover:bg-[#3c2130]";
+    "border-[#141016] bg-[#141016] text-white shadow-lg shadow-black/10 hover:bg-[#3c2130]";
   const normal = "border-white/10 bg-white/5 text-white shadow-sm hover:bg-white/10";
 
   return (
@@ -490,7 +490,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#4a2a3b]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#141016]/[0.26] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
@@ -529,7 +529,7 @@ export default function Home() {
           {isStaff ? (
             <Link
               href="/admin"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#141016] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
             >
               Staff Dashboard
             </Link>
@@ -537,7 +537,7 @@ export default function Home() {
             <>
               <Link
                 href={`/order/success/${savedOrder.id}`}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#141016] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
               >
                 View My Order
               </Link>
@@ -558,7 +558,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#141016] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
               >
                 Place Order
               </Link>
