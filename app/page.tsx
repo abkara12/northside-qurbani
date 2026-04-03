@@ -113,10 +113,10 @@ function InstallAppPrompt() {
     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#f5efe6]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#191118]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c6a268]/18 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#5a3045]/18 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#f5efe6]/8 blur-3xl" />
         </div>
 
         <div className="relative p-6">
@@ -151,20 +151,29 @@ function InstallAppPrompt() {
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
               <div className="font-semibold text-white">On iPhone / iPad (Safari):</div>
               <ol className="mt-2 list-inside list-decimal space-y-1">
-                <li>Tap the <span className="font-semibold text-white">Share</span> button</li>
-                <li>Select <span className="font-semibold text-white">Add to Home Screen</span></li>
-                <li>Tap <span className="font-semibold text-white">Add</span></li>
+                <li>
+                  Tap the <span className="font-semibold text-white">Share</span> button
+                </li>
+                <li>
+                  Select{" "}
+                  <span className="font-semibold text-white">Add to Home Screen</span>
+                </li>
+                <li>
+                  Tap <span className="font-semibold text-white">Add</span>
+                </li>
               </ol>
             </div>
           ) : (
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
               {deferred ? (
                 <div>
-                  Tap <span className="font-semibold text-white">Install</span> for faster access for staff on Qurbani day.
+                  Tap <span className="font-semibold text-white">Install</span> for
+                  faster access for staff on Qurbani day.
                 </div>
               ) : (
                 <div>
-                  Faster access for orders, payment checks, processing updates, and customer collections.
+                  Faster access for orders, payment checks, processing updates, and
+                  customer collections.
                 </div>
               )}
             </div>
@@ -175,7 +184,7 @@ function InstallAppPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#f5efe6] transition hover:brightness-105 disabled:opacity-60"
+                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#191118] transition hover:brightness-105 disabled:opacity-60"
                 disabled={!deferred}
               >
                 Install
@@ -204,7 +213,12 @@ function InstallAppPrompt() {
 function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -212,7 +226,12 @@ function MenuIcon() {
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-      <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M6 6l12 12M18 6l-12 12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -221,7 +240,9 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`h-5 w-5 transition-transform duration-300 ${open ? "rotate-180" : "rotate-0"}`}
+      className={`h-5 w-5 transition-transform duration-300 ${
+        open ? "rotate-180" : "rotate-0"
+      }`}
       fill="none"
       aria-hidden="true"
     >
@@ -260,7 +281,13 @@ function ShieldIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path d="M9.5 12l1.7 1.7L14.8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M9.5 12l1.7 1.7L14.8 10"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -313,7 +340,7 @@ function FeatureCard({
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#c6a268]/10 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
 
       <div className="relative">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[##f5efe6] text-[#d8b67e] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#f5efe6] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
           {icon}
         </div>
 
@@ -321,9 +348,7 @@ function FeatureCard({
           {title}
         </h3>
 
-        <p className="mt-3 text-[0.96rem] leading-7 text-white/65">
-          {text}
-        </p>
+        <p className="mt-3 text-[0.96rem] leading-7 text-white/65">{text}</p>
       </div>
     </div>
   );
@@ -342,7 +367,9 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
       <div className="flex items-center justify-between gap-6">
         <h4 className="text-lg font-semibold text-white">{question}</h4>
         <span className="flex items-center gap-3 text-[#d8b67e]">
-          <span className="hidden text-sm font-medium sm:inline">{open ? "Close" : "Open"}</span>
+          <span className="hidden text-sm font-medium sm:inline">
+            {open ? "Close" : "Open"}
+          </span>
           <span className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-[#d8b67e]">
             <ChevronIcon open={open} />
           </span>
@@ -378,22 +405,36 @@ function MenuRow({
   const base =
     "group relative overflow-hidden rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-300";
   const primary =
-    "border-[##f5efe6] bg-[##f5efe6] text-white shadow-lg shadow-black/10 hover:bg-[#3c2130]";
+    "border-[#f5efe6] bg-[#f5efe6] text-[#161015] shadow-lg shadow-black/10 hover:bg-[#e8dfd3]";
   const normal = "border-white/10 bg-white/5 text-white shadow-sm hover:bg-white/10";
 
   return (
-    <Link href={href} onClick={onClick} className={`${base} ${variant === "primary" ? primary : normal}`}>
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`${base} ${variant === "primary" ? primary : normal}`}
+    >
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-base leading-tight">{label}</div>
           {sub ? (
-            <div className={`mt-1 text-xs font-medium ${variant === "primary" ? "text-white/70" : "text-white/55"}`}>
+            <div
+              className={`mt-1 text-xs font-medium ${
+                variant === "primary" ? "text-[#161015]/70" : "text-white/55"
+              }`}
+            >
               {sub}
             </div>
           ) : null}
         </div>
 
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-[#d8b67e] transition-all duration-300">
+        <div
+          className={`grid h-10 w-10 place-items-center rounded-full transition-all duration-300 ${
+            variant === "primary"
+              ? "bg-[#161015]/10 text-[#161015]"
+              : "bg-white/10 text-[#d8b67e]"
+          }`}
+        >
           <ArrowIcon />
         </div>
       </div>
@@ -426,7 +467,7 @@ function OrderAccessButtons({
     <div className={className}>
       <Link
         href="/order"
-        className={`inline-flex items-center justify-center rounded-full bg-[#c6a268] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] ${
+        className={`inline-flex items-center justify-center rounded-full bg-[#c6a268] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] ${
           primaryLarge
             ? "h-[44px] min-w-[182px] px-6 text-[14px] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
             : "h-11 px-6 text-sm"
@@ -490,9 +531,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##f5efe6]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.08] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(245,239,230,0.05),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
         <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
@@ -513,23 +554,35 @@ export default function Home() {
         </div>
 
         <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:flex">
-          <a href="#about" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a
+            href="#about"
+            className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
             About
           </a>
-          <a href="#services" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a
+            href="#services"
+            className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
             Services
           </a>
-          <a href="#platform" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a
+            href="#platform"
+            className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
             Platform
           </a>
-          <a href="#faq" className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10">
+          <a
+            href="#faq"
+            className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
             FAQ
           </a>
 
           {isStaff ? (
             <Link
               href="/admin"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[##f5efe6] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
             >
               Staff Dashboard
             </Link>
@@ -537,7 +590,7 @@ export default function Home() {
             <>
               <Link
                 href={`/order/success/${savedOrder.id}`}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[##f5efe6] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
               >
                 View My Order
               </Link>
@@ -558,7 +611,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[##f5efe6] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
               >
                 Place Order
               </Link>
@@ -591,7 +644,7 @@ export default function Home() {
           />
 
           <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#f5efe6]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
               menuState === "open" ? "translate-x-0" : "translate-x-full"
             }`}
           >
@@ -681,7 +734,9 @@ export default function Home() {
 
               <div className="mt-auto pt-6">
                 <div className="rounded-[28px] border border-white/10 bg-white/5 px-5 py-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-[#d8b67e]">Quick tip</div>
+                  <div className="text-xs uppercase tracking-[0.25em] text-[#d8b67e]">
+                    Quick tip
+                  </div>
                   <div className="mt-1 text-sm text-white/70">
                     Add the app to your home screen for faster use on the day.
                   </div>
@@ -718,14 +773,16 @@ export default function Home() {
             </h1>
 
             <p className="mx-auto mt-3 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[38rem] lg:text-[1.04rem]">
-              Northside Qurbani offers a trusted and well-managed service, supported by a refined digital system that brings greater ease, clarity, and structure to the entire process.
+              Northside Qurbani offers a trusted and well-managed service, supported
+              by a refined digital system that brings greater ease, clarity, and
+              structure to the entire process.
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
               {isStaff ? (
                 <Link
                   href="/admin"
-                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
                 >
                   Staff Dashboard
                 </Link>
@@ -798,7 +855,7 @@ export default function Home() {
             <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#171018] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute right-[-4rem] top-[-4rem] h-40 w-40 rounded-full bg-[#c6a268]/14 blur-3xl" />
-                <div className="absolute bottom-[-4rem] left-[-4rem] h-36 w-36 rounded-full bg-[#5a3045]/20 blur-3xl" />
+                <div className="absolute bottom-[-4rem] left-[-4rem] h-36 w-36 rounded-full bg-[#f5efe6]/8 blur-3xl" />
                 <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))]" />
                 <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:32px_32px]" />
               </div>
@@ -815,8 +872,8 @@ export default function Home() {
                 </h3>
 
                 <p className="mt-3 text-[0.95rem] leading-6 text-white/68">
-                  Designed to give customers a smoother experience and give staff clearer control
-                  across ordering, coordination, and collection.
+                  Designed to give customers a smoother experience and give staff
+                  clearer control across ordering, coordination, and collection.
                 </p>
 
                 <div className="mt-6 grid gap-3">
@@ -864,17 +921,24 @@ export default function Home() {
             </h2>
 
             <p className="mt-5 text-[0.98rem] leading-7 text-white/70 sm:text-[1.05rem] sm:leading-8">
-              Northside Qurbani is led by <span className="font-medium text-[#d8b67e]">Moulana Shaheed Bhabha</span> and <span className="font-medium text-[#d8b67e]">Yaqoob Sader</span>,
-              bringing together years of experience, responsibility, and a deep understanding of the importance of qurbani.
+              Northside Qurbani is led by{" "}
+              <span className="font-medium text-[#d8b67e]">Moulana Shaheed Bhabha</span>{" "}
+              and <span className="font-medium text-[#d8b67e]">Yaqoob Sader</span>,
+              bringing together years of experience, responsibility, and a deep
+              understanding of the importance of qurbani.
             </p>
 
             <p className="mt-4 text-[0.95rem] leading-7 text-white/65 sm:text-[1rem] sm:leading-8">
-              Every aspect of the process is handled with care — from the initial booking to the final collection —
-              ensuring that each qurbani is carried out in a way that is organised, respectful, and aligned with proper standards.
+              Every aspect of the process is handled with care — from the initial
+              booking to the final collection — ensuring that each qurbani is
+              carried out in a way that is organised, respectful, and aligned with
+              proper standards.
             </p>
 
             <p className="mt-4 text-[0.95rem] leading-7 text-white/65 sm:text-[1rem] sm:leading-8">
-              The introduction of a refined digital platform allows the team to manage operations with greater clarity and coordination, while maintaining the same trusted approach the service is known for.
+              The introduction of a refined digital platform allows the team to
+              manage operations with greater clarity and coordination, while
+              maintaining the same trusted approach the service is known for.
             </p>
           </div>
 
@@ -895,21 +959,17 @@ export default function Home() {
                     key={person.name}
                     className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center sm:text-left"
                   >
-                    <div className="text-sm text-white/40">
-                      {person.role}
-                    </div>
-                    <div className="mt-1 font-semibold text-white">
-                      {person.name}
-                    </div>
+                    <div className="text-sm text-white/40">{person.role}</div>
+                    <div className="mt-1 font-semibold text-white">{person.name}</div>
                   </div>
                 ))}
 
                 <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-center sm:text-left sm:col-span-2">
-                  <div className="text-sm text-white/45">
-                    Our Approach
-                  </div>
+                  <div className="text-sm text-white/45">Our Approach</div>
                   <div className="mt-2 text-[0.95rem] leading-6 text-white/70">
-                    Structured processes, clear communication, and a focus on delivering a smooth and professional qurbani experience from start to finish.
+                    Structured processes, clear communication, and a focus on
+                    delivering a smooth and professional qurbani experience from
+                    start to finish.
                   </div>
                 </div>
               </div>
@@ -929,7 +989,8 @@ export default function Home() {
               built around service, clarity, and trust.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8">
-              Every part of the Northside Qurbani experience is designed to feel smooth, organised, and easy to navigate for both customers and staff.
+              Every part of the Northside Qurbani experience is designed to feel
+              smooth, organised, and easy to navigate for both customers and staff.
             </p>
           </div>
 
@@ -991,7 +1052,9 @@ export default function Home() {
                 key={item.step}
                 className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 text-center shadow-[0_14px_38px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left"
               >
-                <div className="text-sm font-semibold tracking-[0.2em] text-[#a98a61]">{item.step}</div>
+                <div className="text-sm font-semibold tracking-[0.2em] text-[#a98a61]">
+                  {item.step}
+                </div>
                 <h3 className="mt-3 text-xl font-semibold text-white">{item.title}</h3>
                 <p className="mt-3 leading-relaxed text-[#c8bdc3]">{item.text}</p>
               </div>
@@ -1017,7 +1080,9 @@ export default function Home() {
                 </h2>
 
                 <p className="mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/70 sm:text-[1.04rem] sm:leading-8">
-                  The value lies in the clarity, smoother coordination, and overall experience the platform supports, helping the full qurbani process feel more seamless from beginning to end.
+                  The value lies in the clarity, smoother coordination, and overall
+                  experience the platform supports, helping the full qurbani process
+                  feel more seamless from beginning to end.
                 </p>
               </div>
 
@@ -1069,7 +1134,8 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.04rem] sm:leading-8">
               A few of the most common questions about how Northside Qurbani works,
-              what the platform adds, and why the experience feels more organised overall.
+              what the platform adds, and why the experience feels more organised
+              overall.
             </p>
           </div>
 
@@ -1102,7 +1168,8 @@ export default function Home() {
                   <span className="mt-1 block">to the staff dashboard</span>
                 </h2>
                 <p className="mt-4 max-w-2xl text-[1rem] leading-7 text-[#c8bdc3] sm:text-[1.05rem] sm:leading-8">
-                  A trusted qurbani service presented through a clear, refined, and easy-to-use digital experience.
+                  A trusted qurbani service presented through a clear, refined, and
+                  easy-to-use digital experience.
                 </p>
 
                 {!isStaff && savedOrder ? (
@@ -1124,7 +1191,7 @@ export default function Home() {
                 {isStaff ? (
                   <Link
                     href="/admin"
-                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                   >
                     Staff Dashboard
                   </Link>
@@ -1132,7 +1199,7 @@ export default function Home() {
                   <>
                     <Link
                       href={`/order/success/${savedOrder.id}`}
-                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                     >
                       View My Order
                     </Link>
@@ -1148,7 +1215,7 @@ export default function Home() {
                   <>
                     <Link
                       href="/order"
-                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                     >
                       Place Your Order
                     </Link>
@@ -1189,7 +1256,8 @@ export default function Home() {
                     Northside Qurbani
                   </div>
                   <div className="mt-1 max-w-[16rem] text-sm leading-6 text-white/55 lg:max-w-[18rem]">
-                    Premium qurbani service presented through a refined digital experience for customers and staff.
+                    Premium qurbani service presented through a refined digital
+                    experience for customers and staff.
                   </div>
                 </div>
               </div>
@@ -1198,7 +1266,9 @@ export default function Home() {
             <div className="lg:col-span-7 lg:col-start-6">
               <div className="grid grid-cols-2 gap-8 text-center sm:grid-cols-3 sm:text-left">
                 <div>
-                  <div className="mb-4 text-[0.92rem] font-semibold text-white">Explore</div>
+                  <div className="mb-4 text-[0.92rem] font-semibold text-white">
+                    Explore
+                  </div>
                   <div className="space-y-3">
                     <a href="/" className="block text-sm text-white/65 transition hover:text-white">
                       Home
@@ -1213,7 +1283,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <div className="mb-4 text-[0.92rem] font-semibold text-white">Platform</div>
+                  <div className="mb-4 text-[0.92rem] font-semibold text-white">
+                    Platform
+                  </div>
                   <div className="space-y-3">
                     <a href="#platform" className="block text-sm text-white/65 transition hover:text-white">
                       How It Works
@@ -1228,7 +1300,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <div className="mb-4 text-[0.92rem] font-semibold text-white">Order</div>
+                  <div className="mb-4 text-[0.92rem] font-semibold text-white">
+                    Order
+                  </div>
                   <div className="space-y-3">
                     {!isStaff ? (
                       <a href="/order" className="block text-sm text-white/65 transition hover:text-white">
@@ -1240,7 +1314,10 @@ export default function Home() {
                         Staff Dashboard
                       </a>
                     ) : savedOrder ? (
-                      <a href={`/order/success/${savedOrder.id}`} className="block text-sm text-white/65 transition hover:text-white">
+                      <a
+                        href={`/order/success/${savedOrder.id}`}
+                        className="block text-sm text-white/65 transition hover:text-white"
+                      >
                         View My Order
                       </a>
                     ) : null}
@@ -1258,7 +1335,9 @@ export default function Home() {
                       Trusted service, elevated presentation
                     </div>
                     <div className="mt-2 max-w-[30rem] text-sm leading-6 text-[#c8bdc3]">
-                      Premium qurbani coordination presented through a refined platform designed to support clarity, trust, and a smooth overall experience.
+                      Premium qurbani coordination presented through a refined
+                      platform designed to support clarity, trust, and a smooth
+                      overall experience.
                     </div>
 
                     {!isStaff && savedOrder ? (
@@ -1272,7 +1351,7 @@ export default function Home() {
                     {isStaff ? (
                       <a
                         href="/admin"
-                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                       >
                         Staff Dashboard
                       </a>
@@ -1280,7 +1359,7 @@ export default function Home() {
                       <>
                         <a
                           href={`/order/success/${savedOrder.id}`}
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                         >
                           View My Order
                         </a>
@@ -1296,7 +1375,7 @@ export default function Home() {
                       <>
                         <a
                           href="/order"
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                         >
                           Place Your Order
                         </a>
@@ -1312,6 +1391,25 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+
+              <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+                <div className="text-xs text-white/40">
+                  © {new Date().getFullYear()} Northside Qurbani
+                </div>
+
+                <a
+                  href="https://wa.me/27662385090"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-xs text-white/40 transition hover:text-[#d8b67e]"
+                >
+                  <span>Website by</span>
+                  <span className="font-medium text-white/70 group-hover:text-[#d8b67e]">
+                    AK Web Design
+                  </span>
+                  <span className="transition group-hover:translate-x-1">→</span>
+                </a>
+              </div>
             </div>
           </div>
 
@@ -1324,37 +1422,6 @@ export default function Home() {
             <span>Northside Qurbani • {new Date().getFullYear()}</span>
           </div>
         </div>
-
-        <footer className="mt-20 border-t border-white/10 bg-white/[0.02]">
-  <div className="mx-auto max-w-7xl px-6 py-8 sm:px-10">
-    
-    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-      
-      {/* LEFT */}
-      <div className="text-xs text-white/40">
-        © {new Date().getFullYear()} Northside Qurbani
-      </div>
-
-      {/* RIGHT — YOUR EXPOSURE */}
-      <a
-        href="https://wa.me/27662385090"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-2 text-xs text-white/40 transition hover:text-[#d8b67e]"
-      >
-        <span>Website by</span>
-        <span className="font-medium text-white/70 group-hover:text-[#d8b67e]">
-          AK Web Design
-        </span>
-
-        {/* subtle arrow */}
-        <span className="transition group-hover:translate-x-1">→</span>
-      </a>
-
-    </div>
-
-  </div>
-</footer>
       </footer>
     </main>
   );
