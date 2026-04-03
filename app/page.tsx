@@ -113,7 +113,7 @@ function InstallAppPrompt() {
     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#171018]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-[34px] border border-white/10 bg-[#111111]/95 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c6a268]/18 blur-3xl" />
           <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#f5efe6]/8 blur-3xl" />
@@ -184,7 +184,7 @@ function InstallAppPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#171018] transition hover:brightness-105 disabled:opacity-60"
+                className="h-12 flex-1 rounded-2xl bg-[#c6a268] font-semibold text-[#141414] transition hover:brightness-105 disabled:opacity-60"
                 disabled={!deferred}
               >
                 Install
@@ -340,7 +340,7 @@ function FeatureCard({
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#c6a268]/10 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
 
       <div className="relative">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#f5efe6] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#f5efe6] text-[#141414] shadow-[0_10px_24px_rgba(0,0,0,0.18)] sm:mx-0">
           {icon}
         </div>
 
@@ -405,7 +405,7 @@ function MenuRow({
   const base =
     "group relative overflow-hidden rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-300";
   const primary =
-    "border-[#f5efe6] bg-[#f5efe6] text-[#161015] shadow-lg shadow-black/10 hover:bg-[#e8dfd3]";
+    "border-[#f5efe6] bg-[#f5efe6] text-[#141414] shadow-lg shadow-black/10 hover:bg-[#e8dfd3]";
   const normal = "border-white/10 bg-white/5 text-white shadow-sm hover:bg-white/10";
 
   return (
@@ -420,7 +420,7 @@ function MenuRow({
           {sub ? (
             <div
               className={`mt-1 text-xs font-medium ${
-                variant === "primary" ? "text-[#161015]/70" : "text-white/55"
+                variant === "primary" ? "text-[#141414]/70" : "text-white/55"
               }`}
             >
               {sub}
@@ -431,7 +431,7 @@ function MenuRow({
         <div
           className={`grid h-10 w-10 place-items-center rounded-full transition-all duration-300 ${
             variant === "primary"
-              ? "bg-[#161015]/10 text-[#161015]"
+              ? "bg-[#141414]/10 text-[#141414]"
               : "bg-white/10 text-[#d8b67e]"
           }`}
         >
@@ -467,7 +467,7 @@ function OrderAccessButtons({
     <div className={className}>
       <Link
         href="/order"
-        className={`inline-flex items-center justify-center rounded-full bg-[#c6a268] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] ${
+        className={`inline-flex items-center justify-center rounded-full bg-[#c6a268] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] ${
           primaryLarge
             ? "h-[44px] min-w-[182px] px-6 text-[14px] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
             : "h-11 px-6 text-sm"
@@ -524,16 +524,16 @@ export default function Home() {
   }
 
   return (
-    <main id="top" className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
+    <main id="top" className="min-h-screen overflow-x-hidden bg-[#0A0A0A] text-white">
       <InstallAppPrompt />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#09070b]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
+        <div className="absolute inset-0 bg-[#0A0A0A]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#111111_0%,#0D0D0D_38%,#080808_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.08] blur-3xl" />
-        <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(245,239,230,0.05),transparent_32%)]" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.06] blur-3xl" />
+        <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#6B5637]/[0.05] blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(245,239,230,0.04),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
         <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('/noise.png')]" />
       </div>
@@ -582,7 +582,7 @@ export default function Home() {
           {isStaff ? (
             <Link
               href="/admin"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
             >
               Staff Dashboard
             </Link>
@@ -590,7 +590,7 @@ export default function Home() {
             <>
               <Link
                 href={`/order/success/${savedOrder.id}`}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
               >
                 View My Order
               </Link>
@@ -611,7 +611,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/order"
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#161015] shadow-sm transition hover:bg-[#e8dfd3]"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
               >
                 Place Order
               </Link>
@@ -644,7 +644,7 @@ export default function Home() {
           />
 
           <div
-            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#171018]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+            className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#111111]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
               menuState === "open" ? "translate-x-0" : "translate-x-full"
             }`}
           >
@@ -782,7 +782,7 @@ export default function Home() {
               {isStaff ? (
                 <Link
                   href="/admin"
-                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
                 >
                   Staff Dashboard
                 </Link>
@@ -852,7 +852,7 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#141016] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
+            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#161616] p-5 text-white shadow-[0_28px_90px_rgba(0,0,0,0.36)] lg:p-6">
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute right-[-4rem] top-[-4rem] h-40 w-40 rounded-full bg-[#c6a268]/14 blur-3xl" />
                 <div className="absolute bottom-[-4rem] left-[-4rem] h-36 w-36 rounded-full bg-[#f5efe6]/8 blur-3xl" />
@@ -943,7 +943,7 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <div className="rounded-[32px] border border-white/10 bg-[#161015] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-8">
+            <div className="rounded-[32px] border border-white/10 bg-[#141414] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-8">
               <div className="grid gap-5 sm:grid-cols-2">
                 {[
                   {
@@ -1066,7 +1066,7 @@ export default function Home() {
       {/* PREMIUM STRIP */}
       <section className="py-18 lg:py-24">
         <div className="mx-auto max-w-6xl px-6 sm:px-10">
-          <div className="overflow-hidden rounded-[40px] border border-white/10 bg-[#141016] p-8 text-white shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-10 lg:p-12">
+          <div className="overflow-hidden rounded-[40px] border border-white/10 bg-[#161616] p-8 text-white shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-10 lg:p-12">
             <div className="grid items-center gap-10 lg:grid-cols-12">
               <div className="text-center lg:col-span-7 lg:text-left">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-[#d8b67e]">
@@ -1191,7 +1191,7 @@ export default function Home() {
                 {isStaff ? (
                   <Link
                     href="/admin"
-                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                   >
                     Staff Dashboard
                   </Link>
@@ -1199,7 +1199,7 @@ export default function Home() {
                   <>
                     <Link
                       href={`/order/success/${savedOrder.id}`}
-                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                     >
                       View My Order
                     </Link>
@@ -1215,7 +1215,7 @@ export default function Home() {
                   <>
                     <Link
                       href="/order"
-                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                     >
                       Place Your Order
                     </Link>
@@ -1351,7 +1351,7 @@ export default function Home() {
                     {isStaff ? (
                       <a
                         href="/admin"
-                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                       >
                         Staff Dashboard
                       </a>
@@ -1359,7 +1359,7 @@ export default function Home() {
                       <>
                         <a
                           href={`/order/success/${savedOrder.id}`}
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                         >
                           View My Order
                         </a>
@@ -1375,7 +1375,7 @@ export default function Home() {
                       <>
                         <a
                           href="/order"
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
                         >
                           Place Your Order
                         </a>
