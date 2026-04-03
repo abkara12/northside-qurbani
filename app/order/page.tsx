@@ -884,7 +884,7 @@ export default function OrderPage() {
                           Slicing preferences
                         </Label>
                         <p className="text-sm leading-6 text-white/50">
-                          Select as many options as required.
+                          Select your slicing preferences.
                         </p>
                       </div>
 

@@ -492,7 +492,7 @@ export default function AdminPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name, phone, email, reference, or weight"
+                    placeholder="Name, phone, email, or reference"
                     className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
                   />
                 </div>
