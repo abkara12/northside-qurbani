@@ -280,7 +280,7 @@ function CutPreferenceCard({
         <span
           className={`grid h-5 w-5 place-items-center rounded-full border text-[11px] ${
             checked
-              ? "border-[#c6a268] bg-[#c6a268] text-[#f5efe6]"
+              ? "border-[#c6a268] bg-[#c6a268] text-[#4f422f]"
               : "border-white/20 text-transparent"
           }`}
         >
@@ -373,7 +373,7 @@ Branch Code: ${branchCode}`;
     <button
       type="button"
       onClick={handleCopyAll}
-      className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#f5efe6] transition hover:brightness-105"
+      className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#4f422f] transition hover:brightness-105"
     >
       {copied ? "Copied All Details" : "Copy All Banking Details"}
     </button>
@@ -650,7 +650,7 @@ export default function OrderPage() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##f5efe6]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##4f422f]/[0.26] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
       </div>
 
@@ -1008,7 +1008,7 @@ export default function OrderPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#f5efe6] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
+                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#4f422f] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
                   >
                     {submitting ? "Submitting..." : "Submit Booking"}
                   </button>
