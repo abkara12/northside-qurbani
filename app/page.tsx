@@ -744,10 +744,10 @@ export default function Home() {
             </div>
 
             <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.55rem] font-semibold leading-[1.1] tracking-[-0.06em] text-transparent sm:text-[3.35rem] lg:text-[4.25rem] xl:text-[5rem]">
-              Elevating the Qurbani experience,
-              <span className="mt-1 block">with clarity,</span>
-              <span className="mt-1 block">care, and organisation.</span>
-            </h1>
+  Elevating the Qurbani experience,
+  <span className="mt-1 block">with clarity,</span>
+  <span className="mt-1 block">care, and organisation.</span>
+</h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8 lg:mx-0 lg:max-w-[40rem] lg:text-[1.06rem]">
               Northside Qurbani offers a trusted and well-managed service, supported by a refined digital system that brings greater ease, clarity, and structure to the entire process.
