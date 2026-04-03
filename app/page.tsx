@@ -509,11 +509,12 @@ export default function Home() {
     }
   }, []);
 
-  function closeMenu() {
-    setMenuState("closed");
-    setTimeout(() => setMobileOpen(false), 650);
-  }
-
+ function closeMenu() {
+  setMenuState("closed");
+  setTimeout(() => {
+    setMobileOpen(false);
+  }, 650);
+}
   return (
     <main id="top" className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
       <InstallAppPrompt />
@@ -597,17 +598,36 @@ export default function Home() {
         </div>
 
         <button
-          type="button"
-          onClick={() => {
-            setMobileOpen(true);
-            requestAnimationFrame(() => setMenuState("open"));
-          }}
-className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"          aria-label="Open menu"
-        >
-          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
-          <MenuIcon />
-        </button>
+  type="button"
+  onClick={() => {
+    setMobileOpen(true);
+    setMenuState("open");
+  }}
+  className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-xl transition hover:bg-white/10 lg:hidden"
+  aria-label="Open menu"
+>
+  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/5" />
+  <MenuIcon />
+</button>
       </header>
+      {mobileOpen && (
+  <div className="fixed inset-0 z-[100]">
+    <div
+      onClick={closeMenu}
+      className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-[650ms] ease-out ${
+        menuState === "open" ? "opacity-100" : "opacity-0"
+      }`}
+    />
+
+    <div
+      className={`absolute right-0 top-0 h-full w-[92%] max-w-sm border-l border-white/10 bg-[#191118]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+        menuState === "open" ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      {/* menu content */}
+    </div>
+  </div>
+)}
 
       {/* HERO */}
 <section className="mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-6 pb-8 pt-1 sm:px-10 sm:pb-12 lg:min-h-[calc(100svh-100px)] lg:pb-14 lg:pt-1">        <div className="grid w-full items-center gap-8 lg:grid-cols-12 xl:gap-10">
