@@ -50,7 +50,7 @@ const BANK_DETAILS = {
   accountNumber: "REPLACE WITH ACCOUNT NUMBER",
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Use your phone number or full name",
+  referenceHint: "Please use your name and surname as the payment reference.",
 };
 
 type FormData = {
@@ -344,14 +344,12 @@ function CopyAllBankDetails({
   accountNumber,
   accountType,
   branchCode,
-  referenceHint,
 }: {
   accountName: string;
   bankName: string;
   accountNumber: string;
   accountType: string;
   branchCode: string;
-  referenceHint: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -360,8 +358,7 @@ function CopyAllBankDetails({
 Bank: ${bankName}
 Account Number: ${accountNumber}
 Account Type: ${accountType}
-Branch Code: ${branchCode}
-Reference: ${referenceHint}`;
+Branch Code: ${branchCode}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -586,7 +583,7 @@ export default function OrderPage() {
     }
 
     if (form.cutPreferences.length === 0) {
-      nextErrors.cutPreferences = "Please choose at least one cutting preference.";
+      nextErrors.cutPreferences = "Please choose at least one slicing preference.";
     }
 
     if (!form.agree) {
@@ -688,7 +685,7 @@ export default function OrderPage() {
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
         <div className="grid gap-8 xl:grid-cols-12">
           <div className="xl:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
               Place Order
             </div>
 
@@ -947,7 +944,6 @@ export default function OrderPage() {
                         accountNumber={BANK_DETAILS.accountNumber}
                         accountType={BANK_DETAILS.accountType}
                         branchCode={BANK_DETAILS.branchCode}
-                        referenceHint={BANK_DETAILS.referenceHint}
                       />
                     </div>
 
@@ -957,7 +953,25 @@ export default function OrderPage() {
                       <CopyField label="Account number" value={BANK_DETAILS.accountNumber} />
                       <CopyField label="Account type" value={BANK_DETAILS.accountType} />
                       <CopyField label="Branch code" value={BANK_DETAILS.branchCode} />
-                      <CopyField label="Reference" value={BANK_DETAILS.referenceHint} />
+
+                      <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4 sm:col-span-2">
+                        <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
+                          Payment reference
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-white">
+                          Please use your name and surname as the payment reference.
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+                          Proof of payment
+                        </p>
+                        <p className="mt-2 text-sm font-medium leading-6 text-white">
+                          Once you have completed the payment, please send the proof of payment
+                          to Yaqoob Sader or Moulana Shaheed.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1052,7 +1066,7 @@ export default function OrderPage() {
                   </div>
 
                   <SummaryRow
-                    label="Cutting preferences"
+                    label="Slicing preferences"
                     value={form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"}
                   />
                   <SummaryRow
@@ -1084,31 +1098,6 @@ export default function OrderPage() {
                     value={totalPrice ? formatZAR(totalPrice) : "—"}
                     strong
                   />
-                </div>
-              </div>
-
-              <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                  Payment
-                </p>
-
-                <div className="mt-4 flex justify-center lg:justify-start">
-                  <CopyAllBankDetails
-                    accountName={BANK_DETAILS.accountName}
-                    bankName={BANK_DETAILS.bankName}
-                    accountNumber={BANK_DETAILS.accountNumber}
-                    accountType={BANK_DETAILS.accountType}
-                    branchCode={BANK_DETAILS.branchCode}
-                    referenceHint={BANK_DETAILS.referenceHint}
-                  />
-                </div>
-
-                <div className="mt-4 grid gap-3">
-                  <CopyField label="Account name" value={BANK_DETAILS.accountName} />
-                  <CopyField label="Bank" value={BANK_DETAILS.bankName} />
-                  <CopyField label="Account number" value={BANK_DETAILS.accountNumber} />
-                  <CopyField label="Branch code" value={BANK_DETAILS.branchCode} />
-                  <CopyField label="Reference" value={BANK_DETAILS.referenceHint} />
                 </div>
               </div>
 

@@ -463,7 +463,7 @@ export default function AdminPage() {
               </div>
 
               <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.05em] text-transparent sm:text-[3rem] lg:text-[3.8rem]">
-                Farm Day Register
+                Qurbani Day Register
               </h1>
 
               <p className="mx-auto mt-5 max-w-3xl text-[1rem] leading-7 text-white/62 sm:text-[1.04rem] sm:leading-8 xl:mx-0">
@@ -682,7 +682,7 @@ export default function AdminPage() {
                       <DetailRow label="Email" value={selectedOrder.email || "—"} />
                       <DetailRow label="Sheep" value={sheepSummary(selectedOrder)} />
                       <DetailRow
-                        label="Cutting preferences"
+                        label="Slicing preferences"
                         value={
                           selectedOrder.cutPreferences?.length
                             ? selectedOrder.cutPreferences.join(", ")

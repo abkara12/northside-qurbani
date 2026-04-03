@@ -563,7 +563,7 @@ export default function Home() {
               href="/admin"
               className="inline-flex h-11 items-center justify-center rounded-full bg-[#4a2a3b] px-6 text-sm font-medium text-white shadow-sm transition hover:bg-[#3c2130]"
             >
-              Dashboard
+             Staff Dashboard
             </Link>
           ) : savedOrder ? (
             <>
@@ -765,7 +765,7 @@ export default function Home() {
                   href="/admin"
                   className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
                 >
-                  Open Dashboard
+                  Open Staff Dashboard
                 </Link>
               ) : !savedOrder ? (
                 <Link
@@ -1223,7 +1223,7 @@ export default function Home() {
                     </a>
                     {user ? (
                       <a href="/admin" className="block text-sm text-white/65 transition hover:text-white">
-                        Dashboard
+                         Staff Dashboard
                       </a>
                     ) : savedOrder ? (
                       <a href={`/order/success/${savedOrder.id}`} className="block text-sm text-white/65 transition hover:text-white">
