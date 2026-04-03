@@ -150,7 +150,7 @@ function FilterButton({
       onClick={onClick}
       className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition ${
         active
-          ? "bg-[#c6a268] text-[#4f422f] shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
+          ? "bg-[#c6a268] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
           : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
       }`}
     >
@@ -222,7 +222,7 @@ function QuickActionButton({
         compact ? "px-3.5 py-2 text-[12px]" : "px-4 py-2 text-sm"
       } ${
         active
-          ? "bg-[#c6a268] text-[#4f422f]"
+          ? "bg-[#c6a268] text-[#161015]"
           : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
       }`}
     >
@@ -409,7 +409,7 @@ export default function AdminPage() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##4f422f]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##f5efe6]/[0.26] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
       </div>
 
@@ -444,7 +444,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="inline-flex h-10 items-center justify-center rounded-full bg-[##4f422f] px-5 text-sm font-medium text-white transition hover:bg-[#3c2130]"
+            className="inline-flex h-10 items-center justify-center rounded-full bg-[##f5efe6] px-5 text-sm font-medium text-white transition hover:bg-[#3c2130]"
           >
             Sign Out
           </button>
