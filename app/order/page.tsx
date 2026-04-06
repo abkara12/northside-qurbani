@@ -2,8 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, ReactNode, useMemo, useState } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  addDoc,
+  collection,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 type WeightOption = {
@@ -25,32 +31,17 @@ type WeightBreakdownItem = {
   subtotal: number;
 };
 
-const weightOptions: WeightOption[] = [
-  { label: "35–39 kg", price: 2750 },
-  { label: "40–45 kg", price: 3150 },
-  { label: "46–50 kg", price: 3500 },
-  { label: "51–55 kg", price: 3850 },
-  { label: "56–60 kg", price: 4200 },
-];
-
-const cutPreferenceOptions = [
-  "Curry packs",
-  "Chops",
-  "Ribs",
-  "Whole leg",
-  "Liver",
-  "Back legs sliced",
-  "Front legs whole",
-  "Front legs sliced",
-];
-
-const BANK_DETAILS = {
-  accountName: "Northside Qurbani",
-  bankName: "REPLACE WITH BANK NAME",
-  accountNumber: "REPLACE WITH ACCOUNT NUMBER",
-  accountType: "Business Cheque",
-  branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Please use your name and surname as the payment reference.",
+type AppSettings = {
+  bookingsOpen: boolean;
+  bookingCutoffDate: string;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  accountType: string;
+  branchCode: string;
+  referenceHint: string;
+  reminderMessageIntro: string;
+  weightOptions: WeightOption[];
 };
 
 type FormData = {
@@ -75,23 +66,63 @@ type Errors = {
   agree?: string;
 };
 
-const initialForm: FormData = {
-  fullName: "",
-  phone: "",
-  email: "",
-  weightSelections: [
-    {
-      id: crypto.randomUUID(),
-      weightLabel: "",
-      quantity: "1",
-    },
+const DEFAULT_SETTINGS: AppSettings = {
+  bookingsOpen: true,
+  bookingCutoffDate: "",
+  accountName: "Northside Qurbani",
+  bankName: "REPLACE WITH BANK NAME",
+  accountNumber: "REPLACE WITH ACCOUNT NUMBER",
+  accountType: "Business Cheque",
+  branchCode: "REPLACE WITH BRANCH CODE",
+  referenceHint: "Please use your name and surname as the payment reference.",
+  reminderMessageIntro:
+    "Assalaamu alaikum. This is a kind reminder regarding your Northside Qurbani booking.",
+  weightOptions: [
+    { label: "35–39 kg", price: 2750 },
+    { label: "40–45 kg", price: 3150 },
+    { label: "46–50 kg", price: 3500 },
+    { label: "51–55 kg", price: 3850 },
+    { label: "56–60 kg", price: 4200 },
   ],
-  addServices: false,
-  delivery: false,
-  cutPreferences: [],
-  notes: "",
-  agree: false,
 };
+
+const cutPreferenceOptions = [
+  "Curry packs",
+  "Chops",
+  "Ribs",
+  "Whole leg",
+  "Liver",
+  "Back legs sliced",
+  "Front legs whole",
+  "Front legs sliced",
+];
+
+function makeId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createInitialForm(): FormData {
+  return {
+    fullName: "",
+    phone: "",
+    email: "",
+    weightSelections: [
+      {
+        id: makeId(),
+        weightLabel: "",
+        quantity: "1",
+      },
+    ],
+    addServices: false,
+    delivery: false,
+    cutPreferences: [],
+    notes: "",
+    agree: false,
+  };
+}
 
 function formatZAR(value: number) {
   return new Intl.NumberFormat("en-ZA", {
@@ -99,6 +130,20 @@ function formatZAR(value: number) {
     currency: "ZAR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isBookingsClosed(settings: AppSettings) {
+  if (!settings.bookingsOpen) return true;
+  if (!settings.bookingCutoffDate) return false;
+  return settings.bookingCutoffDate < getTodayDateString();
 }
 
 function Label({
@@ -129,6 +174,7 @@ function Input({
   type = "text",
   min,
   error,
+  disabled = false,
 }: {
   id: string;
   value: string;
@@ -137,6 +183,7 @@ function Input({
   type?: string;
   min?: number;
   error?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -147,7 +194,8 @@ function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:bg-white/[0.07] ${
+        disabled={disabled}
+        className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
           error
             ? "border-red-400/70"
             : "border-white/10 focus:border-[#c6a268]/60"
@@ -165,6 +213,7 @@ function Select({
   options,
   placeholder,
   error,
+  disabled = false,
 }: {
   id: string;
   value: string;
@@ -172,6 +221,7 @@ function Select({
   options: string[];
   placeholder: string;
   error?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -179,7 +229,8 @@ function Select({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition focus:bg-white/[0.07] ${
+        disabled={disabled}
+        className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
           error
             ? "border-red-400/70"
             : "border-white/10 focus:border-[#c6a268]/60"
@@ -205,12 +256,14 @@ function TextArea({
   onChange,
   placeholder,
   error,
+  disabled = false,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   error?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -220,7 +273,8 @@ function TextArea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={5}
-        className={`w-full rounded-2xl border bg-white/[0.05] px-4 py-3 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:bg-white/[0.07] ${
+        disabled={disabled}
+        className={`w-full rounded-2xl border bg-white/[0.05] px-4 py-3 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
           error
             ? "border-red-400/70"
             : "border-white/10 focus:border-[#c6a268]/60"
@@ -260,16 +314,19 @@ function CutPreferenceCard({
   label,
   checked,
   onToggle,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={`rounded-2xl border px-4 py-3 text-center text-sm transition lg:text-left ${
+      disabled={disabled}
+      className={`rounded-2xl border px-4 py-3 text-center text-sm transition lg:text-left disabled:cursor-not-allowed disabled:opacity-60 ${
         checked
           ? "border-[#c6a268]/60 bg-[#c6a268]/10 text-white"
           : "border-white/10 bg-white/[0.05] text-white/75 hover:bg-white/[0.07]"
@@ -388,6 +445,8 @@ function BookingRowCard({
   onRemove,
   canRemove,
   error,
+  options,
+  disabled = false,
 }: {
   index: number;
   row: WeightSelectionRow;
@@ -396,6 +455,8 @@ function BookingRowCard({
   onRemove: () => void;
   canRemove: boolean;
   error?: string;
+  options: string[];
+  disabled?: boolean;
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
@@ -409,7 +470,8 @@ function BookingRowCard({
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white transition hover:bg-white/10"
+            disabled={disabled}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Remove
           </button>
@@ -425,9 +487,10 @@ function BookingRowCard({
             id={`weight-${row.id}`}
             value={row.weightLabel}
             onChange={onWeightChange}
-            options={weightOptions.map((w) => `${w.label} — ${formatZAR(w.price)}`)}
+            options={options}
             placeholder="Select weight range"
             error={error}
+            disabled={disabled}
           />
         </div>
 
@@ -443,6 +506,7 @@ function BookingRowCard({
             onChange={onQuantityChange}
             placeholder="Enter quantity"
             error={error}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -451,15 +515,48 @@ function BookingRowCard({
 }
 
 export default function OrderPage() {
-  const [form, setForm] = useState<FormData>(initialForm);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  const [form, setForm] = useState<FormData>(createInitialForm);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "settings", "qurbani"),
+      (snap) => {
+        if (snap.exists()) {
+          setSettings({
+            ...DEFAULT_SETTINGS,
+            ...(snap.data() as Partial<AppSettings>),
+          });
+        } else {
+          setSettings(DEFAULT_SETTINGS);
+        }
+        setSettingsLoaded(true);
+      },
+      (error) => {
+        console.error("Settings load failed:", error);
+        setSettings(DEFAULT_SETTINGS);
+        setSettingsLoaded(true);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  const bookingClosed = isBookingsClosed(settings);
+
+  const weightSelectOptions = useMemo(() => {
+    return settings.weightOptions.map((w) => `${w.label} — ${formatZAR(w.price)}`);
+  }, [settings.weightOptions]);
+
   const parsedSelections = useMemo(() => {
     return form.weightSelections.map((row) => {
       const selectedOption =
-        weightOptions.find(
+        settings.weightOptions.find(
           (option) => `${option.label} — ${formatZAR(option.price)}` === row.weightLabel
         ) || null;
 
@@ -474,7 +571,7 @@ export default function OrderPage() {
         subtotal,
       };
     });
-  }, [form.weightSelections]);
+  }, [form.weightSelections, settings.weightOptions]);
 
   const quantityNumber = parsedSelections.reduce(
     (sum, row) => sum + row.quantityNumber,
@@ -535,7 +632,7 @@ export default function OrderPage() {
       weightSelections: [
         ...prev.weightSelections,
         {
-          id: crypto.randomUUID(),
+          id: makeId(),
           weightLabel: "",
           quantity: "1",
         },
@@ -598,6 +695,11 @@ export default function OrderPage() {
     e.preventDefault();
     setSubmitError("");
 
+    if (bookingClosed) {
+      setSubmitError("Bookings are currently closed.");
+      return;
+    }
+
     if (!validate()) return;
 
     try {
@@ -623,6 +725,11 @@ export default function OrderPage() {
         paymentStatus: "pending",
         slaughtered: false,
         delivered: false,
+        cancelled: false,
+        cancelReason: "",
+        queueNumber: null,
+        manualEntry: false,
+        bookingYear: new Date().getFullYear(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -683,438 +790,501 @@ export default function OrderPage() {
       </header>
 
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
-        <div className="grid gap-8 xl:grid-cols-12">
-          <div className="xl:col-span-7">
-           <div className="mx-auto lg:mx-0 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
-  Place Order
-</div>
-
-            <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
-              Complete your qurbani
-              <span className="mt-1 block">booking with clarity</span>
-              <span className="mt-1 block">and confidence.</span>
+        {!settingsLoaded ? (
+          <div className="rounded-[34px] border border-white/10 bg-white/[0.045] p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">
+              Loading
+            </p>
+            <h1 className="mt-4 text-[2rem] font-semibold text-white sm:text-[2.4rem]">
+              Preparing the booking form
             </h1>
-
-            <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-              Submit your booking with the exact sheep quantities and weight ranges you want.
+          </div>
+        ) : bookingClosed ? (
+          <div className="rounded-[34px] border border-amber-400/20 bg-amber-400/10 p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.24em] text-amber-200">
+              Bookings Closed
+            </p>
+            <h1 className="mt-4 text-[2rem] font-semibold text-white sm:text-[2.4rem]">
+              Qurbani bookings are currently closed
+            </h1>
+            <p className="mt-4 text-amber-50/80">
+              Please contact the team directly if you need assistance.
             </p>
 
-            <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div className="text-center lg:text-left">
-                  <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
-                    Booking progress
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-semibold text-white">{progress}%</div>
-                  <div className="text-xs text-white/45">Completed</div>
-                </div>
-              </div>
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link
+                href="/"
+                className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
+              >
+                Back Home
+              </Link>
 
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#c6a268_0%,#e3c794_100%)] transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+              <Link
+                href="/lookup"
+                className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white"
+              >
+                Find Existing Booking
+              </Link>
             </div>
+          </div>
+        ) : (
+          <div className="grid gap-8 xl:grid-cols-12">
+            <div className="xl:col-span-7">
+              <div className="mx-auto lg:mx-0 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
+                Place Order
+              </div>
 
-            <form
-              onSubmit={handleSubmit}
-              noValidate
-              className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
-            >
-              <div className="grid gap-8">
-                <div>
-                  <div className="mb-5 text-center lg:text-left">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Customer details
+              <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
+                Complete your qurbani
+                <span className="mt-1 block">booking with clarity</span>
+                <span className="mt-1 block">and confidence.</span>
+              </h1>
+
+              <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+                Submit your booking with the exact sheep quantities and weight ranges you want.
+              </p>
+
+              <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="text-center lg:text-left">
+                    <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
+                      Booking progress
                     </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Your information
-                    </h2>
                   </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="fullName" required>
-                        Full name
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={form.fullName}
-                        onChange={(value) => updateField("fullName", value)}
-                        placeholder="Enter your full name"
-                        error={errors.fullName}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone" required>
-                        Phone number
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={form.phone}
-                        onChange={(value) => updateField("phone", value)}
-                        placeholder="Enter your phone number"
-                        error={errors.phone}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">
-                        Email address <span className="text-white/35">(optional)</span>
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={form.email}
-                        onChange={(value) => updateField("email", value)}
-                        placeholder="Enter your email address"
-                        error={errors.email}
-                      />
-                    </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-white">{progress}%</div>
+                    <div className="text-xs text-white/45">Completed</div>
                   </div>
                 </div>
 
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <div className="mb-5 text-center lg:text-left">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Sheep selection
-                    </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Quantity and weight ranges
-                    </h2>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {form.weightSelections.map((row, index) => (
-                      <BookingRowCard
-                        key={row.id}
-                        index={index}
-                        row={row}
-                        onWeightChange={(value) => updateWeightRow(row.id, { weightLabel: value })}
-                        onQuantityChange={(value) => updateWeightRow(row.id, { quantity: value })}
-                        onRemove={() => removeWeightRow(row.id)}
-                        canRemove={form.weightSelections.length > 1}
-                        error={errors.weightSelections}
-                      />
-                    ))}
-                  </div>
-
-                  {errors.weightSelections ? (
-                    <p className="mt-3 text-xs text-red-300">{errors.weightSelections}</p>
-                  ) : null}
-
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={addWeightRow}
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                    >
-                      Add another weight category
-                    </button>
-                  </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#c6a268_0%,#e3c794_100%)] transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
+              </div>
 
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <div className="mb-5 text-center lg:text-left">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Order details
-                    </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      Booking preferences
-                    </h2>
-                  </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                        <p className="text-sm font-medium text-white/80">Service package</p>
-                        <p className="mt-1 text-sm leading-6 text-white/55">
-                          Skinning, cleaning, storage, slicing, and packaging —
-                          <span className="font-medium text-[#d8b67e]"> R400 per sheep</span>
-                        </p>
-
-                        <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                          <input
-                            type="checkbox"
-                            checked={form.addServices}
-                            onChange={(e) => updateField("addServices", e.target.checked)}
-                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                          />
-                          <span className="text-sm text-white/75">
-                            Add the service package to this order
-                          </span>
-                        </label>
-                      </div>
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
+              >
+                <div className="grid gap-8">
+                  <div>
+                    <div className="mb-5 text-center lg:text-left">
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                        Customer details
+                      </p>
+                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                        Your information
+                      </h2>
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                        <p className="text-sm font-medium text-white/80">Delivery</p>
-                        <p className="mt-1 text-sm leading-6 text-white/55">
-                          Delivery is charged at
-                          <span className="font-medium text-[#d8b67e]"> R100 per sheep</span>
-                        </p>
-
-                        <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                          <input
-                            type="checkbox"
-                            checked={form.delivery}
-                            onChange={(e) => updateField("delivery", e.target.checked)}
-                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                          />
-                          <span className="text-sm text-white/75">
-                            Add delivery to this order
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <div className="mb-2 text-center lg:text-left">
-                        <Label htmlFor="cutPreferences" required>
-                          Slicing preferences
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="fullName" required>
+                          Full name
                         </Label>
-                        <p className="text-sm leading-6 text-white/50">
-                          Select your slicing preferences.
-                        </p>
+                        <Input
+                          id="fullName"
+                          value={form.fullName}
+                          onChange={(value) => updateField("fullName", value)}
+                          placeholder="Enter your full name"
+                          error={errors.fullName}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone" required>
+                          Phone number
+                        </Label>
+                        <Input
+                          id="phone"
+                          value={form.phone}
+                          onChange={(value) => updateField("phone", value)}
+                          placeholder="Enter your phone number"
+                          error={errors.phone}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="email">
+                          Email address <span className="text-white/35">(optional)</span>
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={form.email}
+                          onChange={(value) => updateField("email", value)}
+                          placeholder="Enter your email address"
+                          error={errors.email}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10" />
+
+                  <div>
+                    <div className="mb-5 text-center lg:text-left">
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                        Sheep selection
+                      </p>
+                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                        Quantity and weight ranges
+                      </h2>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {form.weightSelections.map((row, index) => (
+                        <BookingRowCard
+                          key={row.id}
+                          index={index}
+                          row={row}
+                          onWeightChange={(value) =>
+                            updateWeightRow(row.id, { weightLabel: value })
+                          }
+                          onQuantityChange={(value) =>
+                            updateWeightRow(row.id, { quantity: value })
+                          }
+                          onRemove={() => removeWeightRow(row.id)}
+                          canRemove={form.weightSelections.length > 1}
+                          error={errors.weightSelections}
+                          options={weightSelectOptions}
+                        />
+                      ))}
+                    </div>
+
+                    {errors.weightSelections ? (
+                      <p className="mt-3 text-xs text-red-300">{errors.weightSelections}</p>
+                    ) : null}
+
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={addWeightRow}
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                      >
+                        Add another weight category
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10" />
+
+                  <div>
+                    <div className="mb-5 text-center lg:text-left">
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                        Order details
+                      </p>
+                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                        Booking preferences
+                      </h2>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                          <p className="text-sm font-medium text-white/80">Service package</p>
+                          <p className="mt-1 text-sm leading-6 text-white/55">
+                            Skinning, cleaning, storage, slicing, and packaging —
+                            <span className="font-medium text-[#d8b67e]">
+                              {" "}
+                              {formatZAR(400)} per sheep
+                            </span>
+                          </p>
+
+                          <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                            <input
+                              type="checkbox"
+                              checked={form.addServices}
+                              onChange={(e) => updateField("addServices", e.target.checked)}
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                            />
+                            <span className="text-sm text-white/75">
+                              Add the service package to this order
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                          <p className="text-sm font-medium text-white/80">Delivery</p>
+                          <p className="mt-1 text-sm leading-6 text-white/55">
+                            Delivery is charged at
+                            <span className="font-medium text-[#d8b67e]">
+                              {" "}
+                              {formatZAR(100)} per sheep
+                            </span>
+                          </p>
+
+                          <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                            <input
+                              type="checkbox"
+                              checked={form.delivery}
+                              onChange={(e) => updateField("delivery", e.target.checked)}
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                            />
+                            <span className="text-sm text-white/75">
+                              Add delivery to this order
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <div className="mb-2 text-center lg:text-left">
+                          <Label htmlFor="cutPreferences" required>
+                            Slicing preferences
+                          </Label>
+                          <p className="text-sm leading-6 text-white/50">
+                            Select your slicing preferences.
+                          </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {cutPreferenceOptions.map((item) => (
+                            <CutPreferenceCard
+                              key={item}
+                              label={item}
+                              checked={form.cutPreferences.includes(item)}
+                              onToggle={() => toggleCutPreference(item)}
+                            />
+                          ))}
+                        </div>
+
+                        {errors.cutPreferences ? (
+                          <p className="mt-2 text-center text-xs text-red-300 lg:text-left">
+                            {errors.cutPreferences}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="notes">
+                          Additional notes <span className="text-white/35">(optional)</span>
+                        </Label>
+                        <TextArea
+                          id="notes"
+                          value={form.notes}
+                          onChange={(value) => updateField("notes", value)}
+                          placeholder="Add any additional notes or special requests"
+                          error={errors.notes}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10" />
+
+                  <div>
+                    <div className="mb-4 text-center lg:text-left">
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                        Banking details
+                      </p>
+                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                        EFT payment details
+                      </h2>
+                      <p className="mt-2 text-sm leading-6 text-white/55">
+                        Copy the details below directly into your banking app.
+                      </p>
+                    </div>
+
+                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                      <div className="mb-5 flex justify-center lg:justify-start">
+                        <CopyAllBankDetails
+                          accountName={settings.accountName}
+                          bankName={settings.bankName}
+                          accountNumber={settings.accountNumber}
+                          accountType={settings.accountType}
+                          branchCode={settings.branchCode}
+                        />
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        {cutPreferenceOptions.map((item) => (
-                          <CutPreferenceCard
-                            key={item}
-                            label={item}
-                            checked={form.cutPreferences.includes(item)}
-                            onToggle={() => toggleCutPreference(item)}
-                          />
-                        ))}
+                        <CopyField label="Account name" value={settings.accountName} />
+                        <CopyField label="Bank" value={settings.bankName} />
+                        <CopyField label="Account number" value={settings.accountNumber} />
+                        <CopyField label="Account type" value={settings.accountType} />
+                        <CopyField label="Branch code" value={settings.branchCode} />
+
+                        <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4 sm:col-span-2">
+                          <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
+                            Payment reference
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-white">
+                            {settings.referenceHint}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                          <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+                            Proof of payment
+                          </p>
+                          <p className="mt-2 text-sm font-medium leading-6 text-white">
+                            Once you have completed the payment, please send the proof of payment
+                            to Yaqoob Sader or Moulana Shaheed.
+                          </p>
+                        </div>
                       </div>
-
-                      {errors.cutPreferences ? (
-                        <p className="mt-2 text-center text-xs text-red-300 lg:text-left">
-                          {errors.cutPreferences}
-                        </p>
-                      ) : null}
                     </div>
+                  </div>
 
-                    <div className="sm:col-span-2">
-                      <Label htmlFor="notes">
-                        Additional notes <span className="text-white/35">(optional)</span>
-                      </Label>
-                      <TextArea
-                        id="notes"
-                        value={form.notes}
-                        onChange={(value) => updateField("notes", value)}
-                        placeholder="Add any additional notes or special requests"
-                        error={errors.notes}
+                  <div className="h-px bg-white/10" />
+
+                  <div>
+                    <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <input
+                        type="checkbox"
+                        checked={form.agree}
+                        onChange={(e) => updateField("agree", e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
                       />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <div className="mb-4 text-center lg:text-left">
-                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                      Banking details
-                    </p>
-                    <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                      EFT payment details
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-white/55">
-                      Copy the details below directly into your banking app.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                    <div className="mb-5 flex justify-center lg:justify-start">
-                      <CopyAllBankDetails
-                        accountName={BANK_DETAILS.accountName}
-                        bankName={BANK_DETAILS.bankName}
-                        accountNumber={BANK_DETAILS.accountNumber}
-                        accountType={BANK_DETAILS.accountType}
-                        branchCode={BANK_DETAILS.branchCode}
-                      />
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <CopyField label="Account name" value={BANK_DETAILS.accountName} />
-                      <CopyField label="Bank" value={BANK_DETAILS.bankName} />
-                      <CopyField label="Account number" value={BANK_DETAILS.accountNumber} />
-                      <CopyField label="Account type" value={BANK_DETAILS.accountType} />
-                      <CopyField label="Branch code" value={BANK_DETAILS.branchCode} />
-
-                      <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4 sm:col-span-2">
-                        <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
-                          Payment reference
-                        </p>
-                        <p className="mt-2 text-sm font-medium text-white">
-                          Please use your name and surname as the payment reference.
+                      <div>
+                        <p className="text-sm text-white/80">
+                          I confirm that the information provided above is correct.
                         </p>
                       </div>
-
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
-                        <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-                          Proof of payment
-                        </p>
-                        <p className="mt-2 text-sm font-medium leading-6 text-white">
-                          Once you have completed the payment, please send the proof of payment
-                          to Yaqoob Sader or Moulana Shaheed.
-                        </p>
-                      </div>
-                    </div>
+                    </label>
+                    {errors.agree ? (
+                      <p className="mt-2 text-center text-xs text-red-300 lg:text-left">
+                        {errors.agree}
+                      </p>
+                    ) : null}
                   </div>
-                </div>
 
-                <div className="h-px bg-white/10" />
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                    <Link
+                      href="/"
+                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
+                    >
+                      Back Home
+                    </Link>
 
-                <div>
-                  <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <input
-                      type="checkbox"
-                      checked={form.agree}
-                      onChange={(e) => updateField("agree", e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                    />
-                    <div>
-                      <p className="text-sm text-white/80">
-                        I confirm that the information provided above is correct.
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
+                    >
+                      {submitting ? "Submitting..." : "Submit Booking"}
+                    </button>
+                  </div>
+
+                  {submitError ? (
+                    <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-5">
+                      <p className="text-center text-sm font-semibold text-red-200 lg:text-left">
+                        Could not save booking
+                      </p>
+                      <p className="mt-1 text-center text-sm leading-6 text-red-100/80 lg:text-left">
+                        {submitError}
                       </p>
                     </div>
-                  </label>
-                  {errors.agree ? (
-                    <p className="mt-2 text-center text-xs text-red-300 lg:text-left">{errors.agree}</p>
                   ) : null}
                 </div>
+              </form>
+            </div>
 
-                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-                  <Link
-                    href="/"
-                    className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px]"
-                  >
-                    Back Home
-                  </Link>
+            <div className="xl:col-span-5">
+              <div className="space-y-6 xl:sticky xl:top-6">
+                <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                    Booking summary
+                  </p>
+                  <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white lg:text-left">
+                    Review your details
+                  </h2>
 
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
-                  >
-                    {submitting ? "Submitting..." : "Submit Booking"}
-                  </button>
-                </div>
+                  <div className="mt-6">
+                    <SummaryRow label="Full name" value={form.fullName} />
+                    <SummaryRow label="Phone" value={form.phone} />
 
-                {submitError ? (
-                  <div className="rounded-[24px] border border-red-400/20 bg-red-400/10 p-5">
-                    <p className="text-center text-sm font-semibold text-red-200 lg:text-left">
-                      Could not save booking
-                    </p>
-                    <p className="mt-1 text-center text-sm leading-6 text-red-100/80 lg:text-left">
-                      {submitError}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            </form>
-          </div>
+                    <div className="border-b border-white/10 py-3">
+                      <div className="mb-2 text-sm text-white/45">Sheep selected</div>
+                      {weightBreakdown.length ? (
+                        <div className="space-y-2">
+                          {weightBreakdown.map((row) => (
+                            <div
+                              key={row.id}
+                              className="flex items-start justify-between gap-4 text-sm"
+                            >
+                              <span className="text-white">
+                                {row.quantity} × {row.label}
+                              </span>
+                              <span className="font-medium text-white">
+                                {formatZAR(row.subtotal)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-white">—</div>
+                      )}
+                    </div>
 
-          <div className="xl:col-span-5">
-            <div className="space-y-6 xl:sticky xl:top-6">
-              <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-                <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                  Booking summary
-                </p>
-                <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white lg:text-left">
-                  Review your details
-                </h2>
-
-                <div className="mt-6">
-                  <SummaryRow label="Full name" value={form.fullName} />
-                  <SummaryRow label="Phone" value={form.phone} />
-
-                  <div className="border-b border-white/10 py-3">
-                    <div className="mb-2 text-sm text-white/45">Sheep selected</div>
-                    {weightBreakdown.length ? (
-                      <div className="space-y-2">
-                        {weightBreakdown.map((row) => (
-                          <div
-                            key={row.id}
-                            className="flex items-start justify-between gap-4 text-sm"
-                          >
-                            <span className="text-white">
-                              {row.quantity} × {row.label}
-                            </span>
-                            <span className="font-medium text-white">
-                              {formatZAR(row.subtotal)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm font-medium text-white">—</div>
-                    )}
+                    <SummaryRow
+                      label="Slicing preferences"
+                      value={
+                        form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"
+                      }
+                    />
+                    <SummaryRow
+                      label="Service package"
+                      value={form.addServices ? "Included" : "Not added"}
+                    />
+                    <SummaryRow
+                      label="Delivery"
+                      value={form.delivery ? "Included" : "Not added"}
+                    />
                   </div>
 
-                  <SummaryRow
-                    label="Slicing preferences"
-                    value={form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"}
-                  />
-                  <SummaryRow
-                    label="Service package"
-                    value={form.addServices ? "Included" : "Not added"}
-                  />
-                  <SummaryRow
-                    label="Delivery"
-                    value={form.delivery ? "Included" : "Not added"}
-                  />
+                  <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
+                    <SummaryRow label="Total sheep" value={String(quantityNumber)} />
+                    <SummaryRow
+                      label="Base sheep total"
+                      value={basePriceTotal ? formatZAR(basePriceTotal) : "—"}
+                    />
+                    <SummaryRow
+                      label="Service total"
+                      value={formatZAR(servicesTotal)}
+                    />
+                    <SummaryRow
+                      label="Delivery total"
+                      value={formatZAR(deliveryTotal)}
+                    />
+                    <SummaryRow
+                      label="Total due"
+                      value={totalPrice ? formatZAR(totalPrice) : "—"}
+                      strong
+                    />
+                  </div>
                 </div>
 
-                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <SummaryRow label="Total sheep" value={String(quantityNumber)} />
-                  <SummaryRow
-                    label="Base sheep total"
-                    value={basePriceTotal ? formatZAR(basePriceTotal) : "—"}
-                  />
-                  <SummaryRow
-                    label="Service total"
-                    value={servicesTotal ? formatZAR(servicesTotal) : formatZAR(0)}
-                  />
-                  <SummaryRow
-                    label="Delivery total"
-                    value={deliveryTotal ? formatZAR(deliveryTotal) : formatZAR(0)}
-                  />
-                  <SummaryRow
-                    label="Total due"
-                    value={totalPrice ? formatZAR(totalPrice) : "—"}
-                    strong
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                  Included pricing
-                </p>
-                <div className="mt-4 grid gap-3">
-                  <SmallInfoCard>Multiple weight categories can be booked in one order</SmallInfoCard>
-                  <SmallInfoCard>Skinning, slicing, cleaning, storage and packaging at R400 per sheep</SmallInfoCard>
-                  <SmallInfoCard>Delivery at R100 per sheep</SmallInfoCard>
-                  <SmallInfoCard>Live total shown before submission</SmallInfoCard>
+                <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                    Included pricing
+                  </p>
+                  <div className="mt-4 grid gap-3">
+                    <SmallInfoCard>
+                      Multiple weight categories can be booked in one order
+                    </SmallInfoCard>
+                    <SmallInfoCard>
+                      Skinning, slicing, cleaning, storage and packaging at {formatZAR(400)} per sheep
+                    </SmallInfoCard>
+                    <SmallInfoCard>
+                      Delivery at {formatZAR(100)} per sheep
+                    </SmallInfoCard>
+                    <SmallInfoCard>Live total shown before submission</SmallInfoCard>
+                    <SmallInfoCard>
+                      Prices and bank details now pull from admin settings
+                    </SmallInfoCard>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
     </main>
   );
