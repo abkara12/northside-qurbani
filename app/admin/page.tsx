@@ -998,66 +998,94 @@ export default function AdminPage() {
             </div>
 
             {/* Search & Check-In */}
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-              <label className="mb-3 block text-sm font-medium text-white/82">
-                Search customer to check in
-              </label>
-              <input
-                type="text"
-                value={simpleSearch}
-                onChange={(e) => setSimpleSearch(e.target.value)}
-                placeholder="Name, phone, email, or booking reference"
-                className="h-14 w-full rounded-[20px] border border-white/10 bg-white/[0.05] px-5 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
-              />
+<div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+  <div className="mb-4">
+    <h3 className="text-lg font-semibold text-white">Add Customer To Queue</h3>
+    <p className="mt-1 text-sm text-white/55">
+      When the customer arrives at the farm, search for their booking below and press the button to place them next in queue.
+    </p>
+  </div>
 
-              {simpleSearch.trim() ? (
-                <div className="mt-5 space-y-3">
-                  {simpleSearchResults.length === 0 ? (
-                    <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/60">
-                      No matching booking found.
-                    </div>
-                  ) : (
-                    simpleSearchResults.map((order) => {
-                      const alreadyInQueue = !!(order.queueNumber && order.queueNumber > 0);
-                      return (
-                        <div key={order.id} className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-base font-semibold text-white">{order.fullName || "Unnamed booking"}</div>
-                            <PaymentBadge value={order.paymentStatus} />
-                            <WorkflowBadge order={order} />
-                            {alreadyInQueue && (
-                              <span className="inline-flex h-7 items-center rounded-full bg-[#c6a268] px-3 text-xs font-semibold text-[#161015]">
-                                Queue #{order.queueNumber}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-2 text-sm text-white/55">
-                            {orderReference(order.id)} • {order.phone || "No phone"}
-                          </div>
-                          <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
-                          <div className="mt-3">
-                            {alreadyInQueue ? (
-                              <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60">
-                                Already checked in as #{order.queueNumber}
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={updatingField === order.id || !!order.cancelled || !!order.delivered}
-                                onClick={() => handleCheckIn(order)}
-                                className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-50"
-                              >
-                                {updatingField === order.id ? "Checking in…" : `Check In → Queue #${nextQueueNumber}`}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+  <label className="mb-3 block text-sm font-medium text-white/82">
+    Search customer
+  </label>
+
+  <input
+    type="text"
+    value={simpleSearch}
+    onChange={(e) => setSimpleSearch(e.target.value)}
+    placeholder="Name, phone, email, or booking reference"
+    className="h-14 w-full rounded-[20px] border border-white/10 bg-white/[0.05] px-5 text-base text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
+  />
+
+  {simpleSearch.trim() ? (
+    <div className="mt-5 space-y-3">
+      {simpleSearchResults.length === 0 ? (
+        <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/60">
+          No matching booking found.
+        </div>
+      ) : (
+        simpleSearchResults.map((order) => {
+          const alreadyInQueue = !!(order.queueNumber && order.queueNumber > 0);
+
+          return (
+            <div
+              key={order.id}
+              className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-base font-semibold text-white">
+                  {order.fullName || "Unnamed booking"}
                 </div>
-              ) : null}
+                <PaymentBadge value={order.paymentStatus} />
+                <WorkflowBadge order={order} />
+              </div>
+
+              <div className="mt-2 text-sm text-white/55">
+                {orderReference(order.id)} • {order.phone || "No phone"}
+              </div>
+
+              <div className="mt-1 text-sm text-[#d8b67e]">
+                {sheepSummary(order)}
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                {alreadyInQueue ? (
+                  <div className="inline-flex items-center rounded-full border border-[#c6a268]/30 bg-[#c6a268]/15 px-4 py-2 text-sm font-medium text-[#f3dfb8]">
+                    Already in queue as #{order.queueNumber}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={updatingField === order.id || !!order.cancelled || !!order.slaughtered}
+                    onClick={() => handleCheckIn(order)}
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {updatingField === order.id
+                      ? "Adding To Queue..."
+                      : `Put Customer Next In Queue (#${nextQueueNumber})`}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(order)}
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Open Booking
+                </button>
+              </div>
             </div>
+          );
+        })
+      )}
+    </div>
+  ) : (
+    <div className="mt-5 rounded-[22px] border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/45">
+      Start typing the customer name, phone number, email, or booking reference to place them into the slaughter queue.
+    </div>
+  )}
+</div>
 
             {/* Slaughter Queue */}
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
