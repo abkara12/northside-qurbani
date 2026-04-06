@@ -365,7 +365,7 @@ export default function OrderSuccessPage() {
 
                 <h1 className="mt-5 text-center text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.5rem] lg:text-left lg:text-[2.7rem]">
                   Your qurbani booking
-                  <span className="mt-1 block">has been submitted.</span>
+                  <span className="mt-1 block">was received successfully.</span>
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/80 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
@@ -439,10 +439,6 @@ export default function OrderSuccessPage() {
                     <SummaryRow label="Email" value={order?.email || "—"} />
                     <SummaryRow label="Total sheep" value={String(totalSheep(order))} />
                     <SummaryRow label="Sheep selected" value={sheepSummary(order)} />
-                    <SummaryRow
-                      label="Slicing preferences"
-                      value={order?.cutPreferences?.length ? order.cutPreferences.join(", ") : "—"}
-                    />
                     <SummaryRow
                       label="Service package"
                       value={order?.addServices ? "Included" : "Not added"}

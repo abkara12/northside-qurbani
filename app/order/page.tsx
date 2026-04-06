@@ -679,10 +679,6 @@ export default function OrderPage() {
         "Please complete each sheep selection with a valid weight range and quantity.";
     }
 
-    if (form.cutPreferences.length === 0) {
-      nextErrors.cutPreferences = "Please choose at least one slicing preference.";
-    }
-
     if (!form.agree) {
       nextErrors.agree = "Please confirm before submitting.";
     }
@@ -1035,34 +1031,6 @@ export default function OrderPage() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <div className="mb-2 text-center lg:text-left">
-                          <Label htmlFor="cutPreferences" required>
-                            Slicing preferences
-                          </Label>
-                          <p className="text-sm leading-6 text-white/50">
-                            Select your slicing preferences.
-                          </p>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {cutPreferenceOptions.map((item) => (
-                            <CutPreferenceCard
-                              key={item}
-                              label={item}
-                              checked={form.cutPreferences.includes(item)}
-                              onToggle={() => toggleCutPreference(item)}
-                            />
-                          ))}
-                        </div>
-
-                        {errors.cutPreferences ? (
-                          <p className="mt-2 text-center text-xs text-red-300 lg:text-left">
-                            {errors.cutPreferences}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="sm:col-span-2">
                         <Label htmlFor="notes">
                           Additional notes <span className="text-white/35">(optional)</span>
                         </Label>
@@ -1077,62 +1045,8 @@ export default function OrderPage() {
                     </div>
                   </div>
 
-                  <div className="h-px bg-white/10" />
 
-                  <div>
-                    <div className="mb-4 text-center lg:text-left">
-                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                        Banking details
-                      </p>
-                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                        EFT payment details
-                      </h2>
-                      <p className="mt-2 text-sm leading-6 text-white/55">
-                        Copy the details below directly into your banking app.
-                      </p>
-                    </div>
 
-                    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-                      <div className="mb-5 flex justify-center lg:justify-start">
-                        <CopyAllBankDetails
-                          accountName={settings.accountName}
-                          bankName={settings.bankName}
-                          accountNumber={settings.accountNumber}
-                          accountType={settings.accountType}
-                          branchCode={settings.branchCode}
-                        />
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <CopyField label="Account name" value={settings.accountName} />
-                        <CopyField label="Bank" value={settings.bankName} />
-                        <CopyField label="Account number" value={settings.accountNumber} />
-                        <CopyField label="Account type" value={settings.accountType} />
-                        <CopyField label="Branch code" value={settings.branchCode} />
-
-                        <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4 sm:col-span-2">
-                          <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
-                            Payment reference
-                          </p>
-                          <p className="mt-2 text-sm font-medium text-white">
-                            {settings.referenceHint}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
-                          <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-                            Proof of payment
-                          </p>
-                          <p className="mt-2 text-sm font-medium leading-6 text-white">
-                            Once you have completed the payment, please send the proof of payment
-                            to Yaqoob Sader or Moulana Shaheed.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-white/10" />
 
                   <div>
                     <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -1223,12 +1137,6 @@ export default function OrderPage() {
                       )}
                     </div>
 
-                    <SummaryRow
-                      label="Slicing preferences"
-                      value={
-                        form.cutPreferences.length ? form.cutPreferences.join(", ") : "—"
-                      }
-                    />
                     <SummaryRow
                       label="Service package"
                       value={form.addServices ? "Included" : "Not added"}
