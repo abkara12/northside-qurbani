@@ -666,11 +666,11 @@ export default function AdminPage() {
   }, [activeOrders, simpleSearch]);
 
   // Queue: ordered by check-in time (arrival order), not booking order
-  const queueOrders = useMemo(() => {
-    return activeOrders
-      .filter((order) => !order.delivered && (order.queueNumber || 0) > 0)
-      .sort((a, b) => (a.queueNumber || 999999) - (b.queueNumber || 999999));
-  }, [activeOrders]);
+ const queueOrders = useMemo(() => {
+  return activeOrders
+    .filter((order) => !order.cancelled && !order.slaughtered && (order.queueNumber || 0) > 0)
+    .sort((a, b) => (a.queueNumber || 999999) - (b.queueNumber || 999999));
+}, [activeOrders]);
 
   const paidOrders = activeOrders.filter((o) => (o.paymentStatus || "pending").toLowerCase() === "paid");
   const unpaidOrders = activeOrders.filter((o) => (o.paymentStatus || "pending").toLowerCase() !== "paid");
