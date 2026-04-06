@@ -201,6 +201,7 @@ function sheepSummary(order: OrderItem) {
 
 function statusLabel(order: OrderItem) {
   if (order.cancelled) return "Cancelled";
+  if (order.delivered) return "Delivered";
   if (order.slaughtered) return "Slaughtered";
   if ((order.queueNumber || 0) > 0) return "In Queue";
   return "Pending";
@@ -389,8 +390,6 @@ function openPrintWindow(orders: OrderItem[]) {
   win.print();
 }
 
-// ── UI primitives ──────────────────────────────────────────────
-
 function PaymentBadge({ value }: { value?: string }) {
   const paid = (value || "pending").toLowerCase() === "paid";
   return (
@@ -409,7 +408,9 @@ function PaymentBadge({ value }: { value?: string }) {
 function WorkflowBadge({ order }: { order: OrderItem }) {
   const label = statusLabel(order);
   const className =
-    label === "Slaughtered"
+    label === "Delivered"
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+      : label === "Slaughtered"
       ? "border-sky-400/20 bg-sky-400/10 text-sky-200"
       : label === "In Queue"
       ? "border-[#c6a268]/30 bg-[#c6a268]/15 text-[#f3dfb8]"
@@ -541,8 +542,6 @@ function MiniBarChart({
     </div>
   );
 }
-
-// ── Main Page ──────────────────────────────────────────────────
 
 export default function AdminPage() {
   const [authReady, setAuthReady] = useState(false);
@@ -723,16 +722,18 @@ export default function AdminPage() {
         (paymentFilter === "paid" && payment === "paid") ||
         (paymentFilter === "unpaid" && payment !== "paid");
 
+      const status = statusLabel(order).toLowerCase();
       const matchesWorkflow =
         workflowFilter === "all" ||
-        (workflowFilter === "pending" && !order.cancelled && !order.slaughtered && !order.delivered) ||
-        (workflowFilter === "slaughtered" && !!order.slaughtered && !order.delivered && !order.cancelled) ||
-        (workflowFilter === "delivered" && !!order.delivered && !order.cancelled) ||
-        (workflowFilter === "cancelled" && !!order.cancelled);
+        (workflowFilter === "pending" && status === "pending") ||
+        (workflowFilter === "queue" && status === "in queue") ||
+        (workflowFilter === "slaughtered" && status === "slaughtered") ||
+        (workflowFilter === "delivered" && status === "delivered") ||
+        (workflowFilter === "cancelled" && status === "cancelled");
 
       const matchesSpecial =
         specialFilter === "all" ||
-        (specialFilter === "queue" && !order.cancelled && !order.delivered && (order.queueNumber || 0) > 0) ||
+        (specialFilter === "queue" && status === "in queue") ||
         (specialFilter === "manual" && !!order.manualEntry) ||
         (specialFilter === "withNotes" && !!order.notes?.trim()) ||
         (specialFilter === "outstanding" &&
@@ -743,9 +744,11 @@ export default function AdminPage() {
     });
 
     return [...next].sort((a, b) => {
-      const queueA = a.queueNumber || 999999;
-      const queueB = b.queueNumber || 999999;
-      if (specialFilter === "queue" && queueA !== queueB) return queueA - queueB;
+      if (specialFilter === "queue" || workflowFilter === "queue") {
+        const queueA = a.queueNumber || 999999;
+        const queueB = b.queueNumber || 999999;
+        if (queueA !== queueB) return queueA - queueB;
+      }
       const nameA = (a.fullName || "").trim();
       const nameB = (b.fullName || "").trim();
       if (!nameA && !nameB) return 0;
@@ -1165,7 +1168,7 @@ export default function AdminPage() {
           <p className="mx-auto mt-4 max-w-3xl text-[0.95rem] leading-7 text-white/62 sm:text-[1.04rem] sm:leading-8 xl:mx-0">
             {mode === "simple"
               ? "When a customer arrives at the farm, search for the booking and place them into the queue. Staff can then mark paid or slaughtered directly from the live queue."
-              : "Settings, reports, edits, exports, manual bookings, advanced filters, and the full booking management view."}
+              : "Admin control for bookings, payments, exports, reminders, settings, and full booking edits."}
           </p>
         </div>
 
@@ -1357,604 +1360,786 @@ export default function AdminPage() {
             </div>
           </div>
         ) : (
-          <div className="mt-8 grid gap-8 xl:grid-cols-12 xl:gap-8">
-            <div className="xl:col-span-8">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <SummaryCard label="Bookings" value={String(activeOrders.length)} helper={`${cancelledOrders.length} cancelled`} />
-                <SummaryCard label="Expected Revenue" value={formatZAR(totalExpectedRevenue)} helper={`${formatZAR(totalCollected)} collected`} />
-                <SummaryCard label="Outstanding" value={formatZAR(totalOutstanding)} helper={`${unpaidOrders.length} unpaid`} />
-                <SummaryCard
-                  label="Pending / Slaughtered / Delivered"
-                  value={`${pendingOrders.length} / ${slaughteredOrders.length} / ${deliveredOrders.length}`}
-                />
+          <div className="mt-8 space-y-8">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <SummaryCard
+                label="Total Bookings"
+                value={String(activeOrders.length)}
+                helper={`${cancelledOrders.length} cancelled`}
+              />
+              <SummaryCard
+                label="Collected"
+                value={formatZAR(totalCollected)}
+                helper={`${paidOrders.length} paid`}
+              />
+              <SummaryCard
+                label="Outstanding"
+                value={formatZAR(totalOutstanding)}
+                helper={`${unpaidOrders.length} unpaid`}
+              />
+              <SummaryCard
+                label="Slaughtered"
+                value={String(slaughteredOrders.length)}
+                helper={`${deliveredOrders.length} delivered`}
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
+              <MiniBarChart
+                title="Recent Booking Trend"
+                data={bookingsByDay.length ? bookingsByDay : [{ label: "No data", value: 0 }]}
+              />
+            </div>
+
+            <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowManualForm((prev) => !prev)}
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
+                >
+                  {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings((prev) => !prev)}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  {showSettings ? "Hide Settings" : "Settings"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportOrdersToCSV(filteredOrders)}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPrintWindow(filteredOrders)}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Print Booking List
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkPaymentReminders}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Bulk Payment Reminder
+                </button>
               </div>
 
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
-                <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
-                <MiniBarChart
-                  title="Recent Booking Trend"
-                  data={bookingsByDay.length ? bookingsByDay : [{ label: "No data", value: 0 }]}
-                />
+              <div className="mt-6 grid gap-4 xl:grid-cols-[1.4fr_auto_auto] xl:items-end">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Name, phone, email, reference, notes, or sheep size"
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterButton active={paymentFilter === "all"} label="All" onClick={() => setPaymentFilter("all")} />
+                    <FilterButton active={paymentFilter === "unpaid"} label="Unpaid" onClick={() => setPaymentFilter("unpaid")} />
+                    <FilterButton active={paymentFilter === "paid"} label="Paid" onClick={() => setPaymentFilter("paid")} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-sm font-medium text-white/82">Status</div>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterButton active={workflowFilter === "all"} label="All" onClick={() => setWorkflowFilter("all")} />
+                    <FilterButton active={workflowFilter === "pending"} label="Pending" onClick={() => setWorkflowFilter("pending")} />
+                    <FilterButton active={workflowFilter === "queue"} label="In Queue" onClick={() => setWorkflowFilter("queue")} />
+                    <FilterButton active={workflowFilter === "slaughtered"} label="Slaughtered" onClick={() => setWorkflowFilter("slaughtered")} />
+                    <FilterButton active={workflowFilter === "delivered"} label="Delivered" onClick={() => setWorkflowFilter("delivered")} />
+                    <FilterButton active={workflowFilter === "cancelled"} label="Cancelled" onClick={() => setWorkflowFilter("cancelled")} />
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-                <div className="grid gap-4 xl:grid-cols-[1.3fr_auto_auto] xl:items-center">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
-                    <input
-                      type="text"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Name, phone, email, reference, notes, or sheep size"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
-                    <div className="flex flex-wrap gap-2">
-                      <FilterButton active={paymentFilter === "all"} label="All" onClick={() => setPaymentFilter("all")} />
-                      <FilterButton active={paymentFilter === "unpaid"} label="Unpaid" onClick={() => setPaymentFilter("unpaid")} />
-                      <FilterButton active={paymentFilter === "paid"} label="Paid" onClick={() => setPaymentFilter("paid")} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 text-sm font-medium text-white/82">Workflow</div>
-                    <div className="flex flex-wrap gap-2">
-                      <FilterButton active={workflowFilter === "all"} label="All" onClick={() => setWorkflowFilter("all")} />
-                      <FilterButton active={workflowFilter === "pending"} label="Pending" onClick={() => setWorkflowFilter("pending")} />
-                      <FilterButton active={workflowFilter === "slaughtered"} label="Slaughtered" onClick={() => setWorkflowFilter("slaughtered")} />
-                      <FilterButton active={workflowFilter === "delivered"} label="Delivered" onClick={() => setWorkflowFilter("delivered")} />
-                      <FilterButton active={workflowFilter === "cancelled"} label="Cancelled" onClick={() => setWorkflowFilter("cancelled")} />
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <FilterButton active={specialFilter === "all"} label="All Bookings" onClick={() => setSpecialFilter("all")} />
+                <FilterButton active={specialFilter === "outstanding"} label="Outstanding" onClick={() => setSpecialFilter("outstanding")} />
+                <FilterButton active={specialFilter === "queue"} label="Queue" onClick={() => setSpecialFilter("queue")} />
+                <FilterButton active={specialFilter === "manual"} label="Manual Entries" onClick={() => setSpecialFilter("manual")} />
+                <FilterButton active={specialFilter === "withNotes"} label="With Notes" onClick={() => setSpecialFilter("withNotes")} />
+              </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <FilterButton active={specialFilter === "all"} label="All Bookings" onClick={() => setSpecialFilter("all")} />
-                  <FilterButton active={specialFilter === "queue"} label="Slaughter Queue" onClick={() => setSpecialFilter("queue")} />
-                  <FilterButton active={specialFilter === "manual"} label="Manual Entries" onClick={() => setSpecialFilter("manual")} />
-                  <FilterButton active={specialFilter === "withNotes"} label="With Notes" onClick={() => setSpecialFilter("withNotes")} />
-                  <FilterButton active={specialFilter === "outstanding"} label="Outstanding Report" onClick={() => setSpecialFilter("outstanding")} />
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowManualForm((prev) => !prev)}
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
-                  >
-                    {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSettings((prev) => !prev)}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                  >
-                    {showSettings ? "Hide Settings" : "Settings"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBulkPaymentReminders}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                  >
-                    Bulk Payment Reminder Blast
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => exportOrdersToCSV(filteredOrders)}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openPrintWindow(filteredOrders)}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                  >
-                    Print Booking List
-                  </button>
-                </div>
-
-                {showManualForm ? (
-                  <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
-                    <h3 className="text-lg font-semibold text-white">Add Booking Manually</h3>
-                    <p className="mt-1 text-sm text-white/55">For customers who message directly instead of using the app.</p>
-                    <form onSubmit={submitManualBooking} className="mt-5 grid gap-5">
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {[["Full name", "fullName"], ["Phone number", "phone"], ["Email", "email"]].map(
-                          ([label, key]) => (
-                            <div key={key}>
-                              <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
-                              <input
-                                value={(manualForm as any)[key]}
-                                onChange={(e) => setManualForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
-                            </div>
-                          )
-                        )}
-                      </div>
-
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                        <div className="mb-4 flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-white">Sheep selections</p>
-                            <p className="text-sm text-white/55">Mix multiple sizes in one booking.</p>
+              {showManualForm ? (
+                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                  <h3 className="text-lg font-semibold text-white">Add Booking Manually</h3>
+                  <p className="mt-1 text-sm text-white/55">For customers who message directly instead of using the app.</p>
+                  <form onSubmit={submitManualBooking} className="mt-5 grid gap-5">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {[["Full name", "fullName"], ["Phone number", "phone"], ["Email", "email"]].map(
+                        ([label, key]) => (
+                          <div key={key}>
+                            <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
+                            <input
+                              value={(manualForm as any)[key]}
+                              onChange={(e) => setManualForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setManualForm((prev) => ({
-                                ...prev,
-                                weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
-                              }))
-                            }
-                            className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
-                          >
-                            Add Row
-                          </button>
-                        </div>
-                        <div className="space-y-3">
-                          {manualForm.weightRows.map((row) => (
-                            <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
-                              <select
-                                value={row.label}
-                                onChange={(e) =>
-                                  setManualForm((prev) => ({
-                                    ...prev,
-                                    weightRows: prev.weightRows.map((item) =>
-                                      item.id === row.id ? { ...item, label: e.target.value } : item
-                                    ),
-                                  }))
-                                }
-                                className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              >
-                                <option value="" className="text-black">
-                                  Select size
-                                </option>
-                                {settings.weightOptions.map((option) => (
-                                  <option key={option.label} value={option.label} className="text-black">
-                                    {option.label} — {formatZAR(option.price)}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                type="number"
-                                min={1}
-                                value={row.quantity}
-                                onChange={(e) =>
-                                  setManualForm((prev) => ({
-                                    ...prev,
-                                    weightRows: prev.weightRows.map((item) =>
-                                      item.id === row.id ? { ...item, quantity: e.target.value } : item
-                                    ),
-                                  }))
-                                }
-                                className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setManualForm((prev) => ({
-                                    ...prev,
-                                    weightRows:
-                                      prev.weightRows.length === 1
-                                        ? prev.weightRows
-                                        : prev.weightRows.filter((item) => item.id !== row.id),
-                                  }))
-                                }
-                                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                        )
+                      )}
+                    </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                      <div className="mb-4 flex items-center justify-between">
                         <div>
-                          <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
-                          <textarea
-                            rows={4}
-                            value={manualForm.cutPreferences}
-                            onChange={(e) => setManualForm((prev) => ({ ...prev, cutPreferences: e.target.value }))}
-                            placeholder={CUT_PREFERENCE_OPTIONS.join(", ")}
-                            className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                          />
+                          <p className="font-medium text-white">Sheep selections</p>
+                          <p className="text-sm text-white/55">Mix multiple sizes in one booking.</p>
                         </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
-                          <textarea
-                            rows={4}
-                            value={manualForm.notes}
-                            onChange={(e) => setManualForm((prev) => ({ ...prev, notes: e.target.value }))}
-                            className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {[
-                          { key: "addServices", onLabel: "Services Added", offLabel: "Services Off" },
-                          { key: "delivery", onLabel: "Delivery Added", offLabel: "Delivery Off" },
-                        ].map(({ key, onLabel, offLabel }) => (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => setManualForm((prev) => ({ ...prev, [key]: !(prev as any)[key] }))}
-                            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                              (manualForm as any)[key]
-                                ? "bg-[#c6a268] text-[#161015]"
-                                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            }`}
-                          >
-                            {(manualForm as any)[key] ? onLabel : offLabel}
-                          </button>
-                        ))}
                         <button
                           type="button"
                           onClick={() =>
                             setManualForm((prev) => ({
                               ...prev,
-                              paymentStatus: prev.paymentStatus === "paid" ? "pending" : "paid",
+                              weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
                             }))
                           }
-                          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                            manualForm.paymentStatus === "paid"
-                              ? "bg-[#c6a268] text-[#161015]"
-                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                          }`}
+                          className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
                         >
-                          {manualForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
+                          Add Row
                         </button>
                       </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="submit"
-                          disabled={manualSaving}
-                          className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
-                        >
-                          {manualSaving ? "Saving..." : "Save Manual Booking"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowManualForm(false)}
-                          className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
-                        >
-                          Cancel
-                        </button>
+                      <div className="space-y-3">
+                        {manualForm.weightRows.map((row) => (
+                          <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+                            <select
+                              value={row.label}
+                              onChange={(e) =>
+                                setManualForm((prev) => ({
+                                  ...prev,
+                                  weightRows: prev.weightRows.map((item) =>
+                                    item.id === row.id ? { ...item, label: e.target.value } : item
+                                  ),
+                                }))
+                              }
+                              className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            >
+                              <option value="" className="text-black">
+                                Select size
+                              </option>
+                              {settings.weightOptions.map((option) => (
+                                <option key={option.label} value={option.label} className="text-black">
+                                  {option.label} — {formatZAR(option.price)}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              min={1}
+                              value={row.quantity}
+                              onChange={(e) =>
+                                setManualForm((prev) => ({
+                                  ...prev,
+                                  weightRows: prev.weightRows.map((item) =>
+                                    item.id === row.id ? { ...item, quantity: e.target.value } : item
+                                  ),
+                                }))
+                              }
+                              className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setManualForm((prev) => ({
+                                  ...prev,
+                                  weightRows:
+                                    prev.weightRows.length === 1
+                                      ? prev.weightRows
+                                      : prev.weightRows.filter((item) => item.id !== row.id),
+                                }))
+                              }
+                              className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    </form>
-                  </div>
-                ) : null}
+                    </div>
 
-                {showSettings ? (
-                  <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
-                    <h3 className="text-lg font-semibold text-white">Admin Settings</h3>
-                    <p className="mt-1 text-sm text-white/55">Booking cutoff control, bank details, and yearly sheep prices.</p>
-
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                        <label className="mb-2 block text-sm font-medium text-white/82">Bookings open</label>
-                        <button
-                          type="button"
-                          onClick={() => setSettings((prev) => ({ ...prev, bookingsOpen: !prev.bookingsOpen }))}
-                          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                            settings.bookingsOpen
-                              ? "bg-[#c6a268] text-[#161015]"
-                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                          }`}
-                        >
-                          {settings.bookingsOpen ? "Bookings Open" : "Bookings Closed"}
-                        </button>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
+                        <textarea
+                          rows={4}
+                          value={manualForm.cutPreferences}
+                          onChange={(e) => setManualForm((prev) => ({ ...prev, cutPreferences: e.target.value }))}
+                          placeholder={CUT_PREFERENCE_OPTIONS.join(", ")}
+                          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                        />
                       </div>
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                        <label className="mb-2 block text-sm font-medium text-white/82">Booking cutoff date</label>
-                        <input
-                          type="date"
-                          value={settings.bookingCutoffDate}
-                          onChange={(e) => setSettings((prev) => ({ ...prev, bookingCutoffDate: e.target.value }))}
-                          className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
+                        <textarea
+                          rows={4}
+                          value={manualForm.notes}
+                          onChange={(e) => setManualForm((prev) => ({ ...prev, notes: e.target.value }))}
+                          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
                         />
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="flex flex-wrap gap-3">
                       {[
-                        ["Account name", "accountName"],
-                        ["Bank name", "bankName"],
-                        ["Account number", "accountNumber"],
-                        ["Account type", "accountType"],
-                        ["Branch code", "branchCode"],
-                        ["Reference hint", "referenceHint"],
-                      ].map(([label, key]) => (
-                        <div key={key}>
-                          <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
+                        { key: "addServices", onLabel: "Services Added", offLabel: "Services Off" },
+                        { key: "delivery", onLabel: "Delivery Added", offLabel: "Delivery Off" },
+                      ].map(({ key, onLabel, offLabel }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setManualForm((prev) => ({ ...prev, [key]: !(prev as any)[key] }))}
+                          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                            (manualForm as any)[key]
+                              ? "bg-[#c6a268] text-[#161015]"
+                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                          }`}
+                        >
+                          {(manualForm as any)[key] ? onLabel : offLabel}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setManualForm((prev) => ({
+                            ...prev,
+                            paymentStatus: prev.paymentStatus === "paid" ? "pending" : "paid",
+                          }))
+                        }
+                        className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                          manualForm.paymentStatus === "paid"
+                            ? "bg-[#c6a268] text-[#161015]"
+                            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {manualForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        disabled={manualSaving}
+                        className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+                      >
+                        {manualSaving ? "Saving..." : "Save Manual Booking"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowManualForm(false)}
+                        className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : null}
+
+              {showSettings ? (
+                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                  <h3 className="text-lg font-semibold text-white">Admin Settings</h3>
+                  <p className="mt-1 text-sm text-white/55">Booking cutoff control, bank details, and yearly sheep prices.</p>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                      <label className="mb-2 block text-sm font-medium text-white/82">Bookings open</label>
+                      <button
+                        type="button"
+                        onClick={() => setSettings((prev) => ({ ...prev, bookingsOpen: !prev.bookingsOpen }))}
+                        className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                          settings.bookingsOpen
+                            ? "bg-[#c6a268] text-[#161015]"
+                            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {settings.bookingsOpen ? "Bookings Open" : "Bookings Closed"}
+                      </button>
+                    </div>
+                    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                      <label className="mb-2 block text-sm font-medium text-white/82">Booking cutoff date</label>
+                      <input
+                        type="date"
+                        value={settings.bookingCutoffDate}
+                        onChange={(e) => setSettings((prev) => ({ ...prev, bookingCutoffDate: e.target.value }))}
+                        className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    {[
+                      ["Account name", "accountName"],
+                      ["Bank name", "bankName"],
+                      ["Account number", "accountNumber"],
+                      ["Account type", "accountType"],
+                      ["Branch code", "branchCode"],
+                      ["Reference hint", "referenceHint"],
+                    ].map(([label, key]) => (
+                      <div key={key}>
+                        <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
+                        <input
+                          value={(settings as any)[key]}
+                          onChange={(e) => setSettings((prev) => ({ ...prev, [key]: e.target.value }))}
+                          className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="mb-2 block text-sm font-medium text-white/82">Payment reminder intro</label>
+                    <textarea
+                      rows={4}
+                      value={settings.reminderMessageIntro}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, reminderMessageIntro: e.target.value }))
+                      }
+                      className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+
+                  <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <div className="mb-4">
+                      <p className="font-medium text-white">Yearly sheep prices</p>
+                      <p className="text-sm text-white/55">Change prices here instead of touching code next year.</p>
+                    </div>
+                    <div className="space-y-3">
+                      {settings.weightOptions.map((option, index) => (
+                        <div key={option.label} className="grid gap-3 md:grid-cols-[1fr_180px]">
                           <input
-                            value={(settings as any)[key]}
-                            onChange={(e) => setSettings((prev) => ({ ...prev, [key]: e.target.value }))}
-                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            value={option.label}
+                            onChange={(e) =>
+                              setSettings((prev) => ({
+                                ...prev,
+                                weightOptions: prev.weightOptions.map((item, i) =>
+                                  i === index ? { ...item, label: e.target.value } : item
+                                ),
+                              }))
+                            }
+                            className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={option.price}
+                            onChange={(e) =>
+                              setSettings((prev) => ({
+                                ...prev,
+                                weightOptions: prev.weightOptions.map((item, i) =>
+                                  i === index ? { ...item, price: Number(e.target.value || 0) } : item
+                                ),
+                              }))
+                            }
+                            className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                           />
                         </div>
                       ))}
                     </div>
-
-                    <div className="mt-4">
-                      <label className="mb-2 block text-sm font-medium text-white/82">Payment reminder intro</label>
-                      <textarea
-                        rows={4}
-                        value={settings.reminderMessageIntro}
-                        onChange={(e) =>
-                          setSettings((prev) => ({ ...prev, reminderMessageIntro: e.target.value }))
-                        }
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                      />
-                    </div>
-
-                    <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                      <div className="mb-4">
-                        <p className="font-medium text-white">Yearly sheep prices</p>
-                        <p className="text-sm text-white/55">Change prices here instead of touching code next year.</p>
-                      </div>
-                      <div className="space-y-3">
-                        {settings.weightOptions.map((option, index) => (
-                          <div key={option.label} className="grid gap-3 md:grid-cols-[1fr_180px]">
-                            <input
-                              value={option.label}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  weightOptions: prev.weightOptions.map((item, i) =>
-                                    i === index ? { ...item, label: e.target.value } : item
-                                  ),
-                                }))
-                              }
-                              className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                            />
-                            <input
-                              type="number"
-                              min={0}
-                              value={option.price}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  weightOptions: prev.weightOptions.map((item, i) =>
-                                    i === index ? { ...item, price: Number(e.target.value || 0) } : item
-                                  ),
-                                }))
-                              }
-                              className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex gap-3">
-                      <button
-                        type="button"
-                        onClick={saveSettings}
-                        disabled={settingsSaving}
-                        className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
-                      >
-                        {settingsSaving ? "Saving..." : "Save Settings"}
-                      </button>
-                    </div>
                   </div>
-                ) : null}
 
-                <div className="mt-6 overflow-hidden rounded-[28px] border border-white/10">
-                  <div className="max-h-[980px] overflow-auto">
+                  <div className="mt-5 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={saveSettings}
+                      disabled={settingsSaving}
+                      className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+                    >
+                      {settingsSaving ? "Saving..." : "Save Settings"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="grid gap-8 xl:grid-cols-12 xl:gap-8">
+              <div className="xl:col-span-8">
+                <SectionCard
+                  title="Bookings"
+                  sub="Search, filter, and take quick actions before opening a booking for full editing."
+                >
+                  <div className="space-y-4">
                     {loadingOrders ? (
-                      <div className="p-6 text-sm text-white/60">Loading bookings...</div>
+                      <div className="text-sm text-white/60">Loading bookings...</div>
                     ) : filteredOrders.length === 0 ? (
-                      <div className="p-6 text-sm text-white/60">No bookings found for the current filter.</div>
+                      <div className="text-sm text-white/60">No bookings found for the current filter.</div>
                     ) : (
-                      <div className="divide-y divide-white/10">
-                        {filteredOrders.map((order) => (
-                          <div
-                            key={order.id}
-                            className={`p-5 transition ${
-                              selectedOrder?.id === order.id ? "bg-white/[0.06]" : "bg-transparent"
-                            }`}
-                          >
-                            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                      filteredOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          className={`rounded-[24px] border p-4 transition ${
+                            selectedOrder?.id === order.id
+                              ? "border-[#c6a268]/30 bg-[#c6a268]/[0.08]"
+                              : "border-white/10 bg-white/[0.03]"
+                          }`}
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="text-base font-semibold text-white">
+                                  {order.fullName || "Unnamed booking"}
+                                </div>
+                                <PaymentBadge value={order.paymentStatus} />
+                                <WorkflowBadge order={order} />
+                                {order.manualEntry && (
+                                  <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                                    Manual
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-2 text-sm text-white/55">
+                                {orderReference(order.id)} • {order.phone || "No phone"}
+                              </div>
+
+                              <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
+
+                              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                                <span className="font-medium text-white">{formatZAR(order.totalPrice || 0)}</span>
+                                {(order.queueNumber || 0) > 0 && (
+                                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
+                                    Queue #{order.queueNumber}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={updatingField === order.id}
+                                onClick={() => handleQuickToggle(order, "paymentStatus")}
+                                className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                                  (order.paymentStatus || "pending").toLowerCase() === "paid"
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {(order.paymentStatus || "pending").toLowerCase() === "paid"
+                                  ? "Paid"
+                                  : "Mark Paid"}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={updatingField === order.id || !!order.cancelled}
+                                onClick={() => handleQuickToggle(order, "slaughtered")}
+                                className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                                  order.slaughtered
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={updatingField === order.id || !!order.cancelled}
+                                onClick={() => handleQuickToggle(order, "delivered")}
+                                className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                                  order.delivered
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {order.delivered ? "Delivered" : "Mark Delivered"}
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => setSelectedOrder(order)}
-                                className="text-left"
+                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
                               >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <div className="text-base font-semibold text-white">
-                                    {order.fullName || "Unnamed booking"}
-                                  </div>
-                                  <PaymentBadge value={order.paymentStatus} />
-                                  <WorkflowBadge order={order} />
-                                  {order.manualEntry && (
-                                    <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                                      Manual
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="mt-2 text-sm text-white/55">
-                                  {orderReference(order.id)} • {order.phone || "No phone"} • {sheepSummary(order)}
-                                </div>
-                                <div className="mt-2 text-sm font-medium text-[#d8b67e]">
-                                  {formatZAR(order.totalPrice || 0)}
-                                </div>
+                                Open
                               </button>
-
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  disabled={updatingField === order.id}
-                                  onClick={() => handleQuickToggle(order, "paymentStatus")}
-                                  className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-                                    (order.paymentStatus || "pending").toLowerCase() === "paid"
-                                      ? "bg-[#c6a268] text-[#161015]"
-                                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                  }`}
-                                >
-                                  {(order.paymentStatus || "pending").toLowerCase() === "paid"
-                                    ? "Paid"
-                                    : "Mark Paid"}
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={updatingField === order.id || !!order.cancelled}
-                                  onClick={() => handleQuickToggle(order, "slaughtered")}
-                                  className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-                                    order.slaughtered
-                                      ? "bg-[#c6a268] text-[#161015]"
-                                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                  }`}
-                                >
-                                  {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={updatingField === order.id || !!order.cancelled}
-                                  onClick={() => handleQuickToggle(order, "delivered")}
-                                  className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-                                    order.delivered
-                                      ? "bg-[#c6a268] text-[#161015]"
-                                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                  }`}
-                                >
-                                  {order.delivered ? "Delivered" : "Mark Delivered"}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings))}
-                                  className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                                >
-                                  Payment Reminder
-                                </button>
-                              </div>
                             </div>
+                          </div>
 
-                            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_220px]">
-                              <textarea
-                                rows={3}
-                                defaultValue={order.notes || ""}
-                                placeholder="Notes for this customer..."
-                                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none"
+                          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_220px]">
+                            <textarea
+                              rows={3}
+                              defaultValue={order.notes || ""}
+                              placeholder="Notes for this customer..."
+                              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none"
+                              onBlur={(e) => {
+                                const nextValue = e.target.value.trim();
+                                if ((order.notes || "").trim() !== nextValue) saveQuickNotes(order, nextValue);
+                              }}
+                            />
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                              <div className="text-xs uppercase tracking-[0.16em] text-white/40">
+                                Queue Number
+                              </div>
+                              <input
+                                type="number"
+                                min={1}
+                                defaultValue={order.queueNumber ?? ""}
                                 onBlur={(e) => {
-                                  const nextValue = e.target.value.trim();
-                                  if ((order.notes || "").trim() !== nextValue) saveQuickNotes(order, nextValue);
+                                  const raw = e.target.value.trim();
+                                  const value = raw === "" ? null : Number(raw);
+                                  if (value === null || (Number.isInteger(value) && value > 0)) {
+                                    updateField(order.id, { queueNumber: value });
+                                  } else {
+                                    alert("Queue number must be a whole number.");
+                                  }
                                 }}
+                                className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                               />
-                              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                                <div className="text-xs uppercase tracking-[0.16em] text-white/40">Queue Number</div>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  defaultValue={order.queueNumber ?? ""}
-                                  onBlur={(e) => {
-                                    const raw = e.target.value.trim();
-                                    const value = raw === "" ? null : Number(raw);
-                                    if (value === null || (Number.isInteger(value) && value > 0)) {
-                                      updateField(order.id, { queueNumber: value });
-                                    } else {
-                                      alert("Queue number must be a whole number.");
-                                    }
-                                  }}
-                                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                                />
-                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="xl:col-span-4">
-              <div className="space-y-5 xl:sticky xl:top-6">
-                <SectionCard title="Outstanding Payments" sub="Quick follow-up list of unpaid customers.">
-                  <div className="space-y-3">
-                    {unpaidOrders.length === 0 ? (
-                      <div className="text-sm text-white/55">No unpaid customers right now.</div>
-                    ) : (
-                      unpaidOrders.slice(0, 8).map((order) => (
-                        <div key={order.id} className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-medium text-white">{order.fullName}</div>
-                              <div className="mt-1 text-sm text-white/55">{order.phone}</div>
-                            </div>
-                            <div className="text-sm font-semibold text-[#d8b67e]">
-                              {formatZAR(order.totalPrice || 0)}
-                            </div>
-                          </div>
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings))}
-                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                            >
-                              Remind
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOrder(order)}
-                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                            >
-                              Open
-                            </button>
                           </div>
                         </div>
                       ))
                     )}
                   </div>
                 </SectionCard>
+              </div>
 
-                <SectionCard
-                  title="Selected Booking"
-                  sub={
-                    selectedOrder
-                      ? `${selectedOrder.fullName || "Booking"} • ${orderReference(selectedOrder.id)}`
-                      : "Choose any booking from the list to edit it."
-                  }
-                >
-                  {!selectedOrder || !editForm ? (
-                    <div className="text-sm text-white/55">No booking selected yet.</div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                        <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
-                        <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
-                        <DetailRow label="Current Booking" value={sheepSummary(selectedOrder)} />
-                        <DetailRow label="Current Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
-                      </div>
-
-                      <div className="space-y-4">
-                        {[["Full name", "fullName"], ["Phone", "phone"], ["Email", "email"]].map(
-                          ([label, key]) => (
-                            <div key={key}>
-                              <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
-                              <input
-                                value={(editForm as any)[key]}
-                                onChange={(e) =>
-                                  setEditForm((prev) => (prev ? { ...prev, [key]: e.target.value } : prev))
-                                }
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
+              <div className="xl:col-span-4">
+                <div className="space-y-5 xl:sticky xl:top-6">
+                  <SectionCard title="Outstanding Payments" sub="Quick follow-up list of unpaid customers.">
+                    <div className="space-y-3">
+                      {unpaidOrders.length === 0 ? (
+                        <div className="text-sm text-white/55">No unpaid customers right now.</div>
+                      ) : (
+                        unpaidOrders.slice(0, 8).map((order) => (
+                          <div key={order.id} className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-medium text-white">{order.fullName}</div>
+                                <div className="mt-1 text-sm text-white/55">{order.phone}</div>
+                              </div>
+                              <div className="text-sm font-semibold text-[#d8b67e]">
+                                {formatZAR(order.totalPrice || 0)}
+                              </div>
                             </div>
-                          )
-                        )}
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings))}
+                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                              >
+                                Remind
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrder(order)}
+                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                              >
+                                Open
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </SectionCard>
 
+                  <SectionCard
+                    title="Selected Booking"
+                    sub={
+                      selectedOrder
+                        ? `${selectedOrder.fullName || "Booking"} • ${orderReference(selectedOrder.id)}`
+                        : "Choose any booking from the list to edit it."
+                    }
+                  >
+                    {!selectedOrder || !editForm ? (
+                      <div className="text-sm text-white/55">No booking selected yet.</div>
+                    ) : (
+                      <div className="space-y-5">
                         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-white">Edit sheep selections</p>
-                              <p className="text-sm text-white/55">Correct kg and quantities directly here.</p>
+                          <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
+                          <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
+                          <DetailRow label="Current Booking" value={sheepSummary(selectedOrder)} />
+                          <DetailRow label="Current Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
+                        </div>
+
+                        <div className="space-y-4">
+                          {[["Full name", "fullName"], ["Phone", "phone"], ["Email", "email"]].map(
+                            ([label, key]) => (
+                              <div key={key}>
+                                <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
+                                <input
+                                  value={(editForm as any)[key]}
+                                  onChange={(e) =>
+                                    setEditForm((prev) =>
+                                      prev ? { ...prev, [key]: e.target.value } : prev
+                                    )
+                                  }
+                                  className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                />
+                              </div>
+                            )
+                          )}
+
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-white">Edit sheep selections</p>
+                                <p className="text-sm text-white/55">Correct kg and quantities directly here.</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditForm((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
+                                        }
+                                      : prev
+                                  )
+                                }
+                                className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
+                              >
+                                Add Row
+                              </button>
                             </div>
+                            <div className="space-y-3">
+                              {editForm.weightRows.map((row) => (
+                                <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
+                                  <select
+                                    value={row.label}
+                                    onChange={(e) =>
+                                      setEditForm((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              weightRows: prev.weightRows.map((item) =>
+                                                item.id === row.id ? { ...item, label: e.target.value } : item
+                                              ),
+                                            }
+                                          : prev
+                                      )
+                                    }
+                                    className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                  >
+                                    <option value="" className="text-black">
+                                      Select size
+                                    </option>
+                                    {settings.weightOptions.map((option) => (
+                                      <option key={option.label} value={option.label} className="text-black">
+                                        {option.label} — {formatZAR(option.price)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={row.quantity}
+                                    onChange={(e) =>
+                                      setEditForm((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              weightRows: prev.weightRows.map((item) =>
+                                                item.id === row.id ? { ...item, quantity: e.target.value } : item
+                                              ),
+                                            }
+                                          : prev
+                                      )
+                                    }
+                                    className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditForm((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              weightRows:
+                                                prev.weightRows.length === 1
+                                                  ? prev.weightRows
+                                                  : prev.weightRows.filter((item) => item.id !== row.id),
+                                            }
+                                          : prev
+                                      )
+                                    }
+                                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
+                            <textarea
+                              rows={3}
+                              value={editForm.cutPreferences}
+                              onChange={(e) =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, cutPreferences: e.target.value } : prev
+                                )
+                              }
+                              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
+                            <textarea
+                              rows={3}
+                              value={editForm.notes}
+                              onChange={(e) =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, notes: e.target.value } : prev
+                                )
+                              }
+                              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">Queue number</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={editForm.queueNumber}
+                              onChange={(e) =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, queueNumber: e.target.value } : prev
+                                )
+                              }
+                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-3">
+                            {[
+                              { key: "addServices", on: "Services Added", off: "Services Off" },
+                              { key: "delivery", on: "Delivery Added", off: "Delivery Off" },
+                            ].map(({ key, on, off }) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() =>
+                                  setEditForm((prev) => (prev ? { ...prev, [key]: !(prev as any)[key] } : prev))
+                                }
+                                className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                  (editForm as any)[key]
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {(editForm as any)[key] ? on : off}
+                              </button>
+                            ))}
                             <button
                               type="button"
                               onClick={() =>
@@ -1962,245 +2147,110 @@ export default function AdminPage() {
                                   prev
                                     ? {
                                         ...prev,
-                                        weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
+                                        paymentStatus: prev.paymentStatus === "paid" ? "pending" : "paid",
                                       }
                                     : prev
                                 )
                               }
-                              className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
-                            >
-                              Add Row
-                            </button>
-                          </div>
-                          <div className="space-y-3">
-                            {editForm.weightRows.map((row) => (
-                              <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
-                                <select
-                                  value={row.label}
-                                  onChange={(e) =>
-                                    setEditForm((prev) =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            weightRows: prev.weightRows.map((item) =>
-                                              item.id === row.id ? { ...item, label: e.target.value } : item
-                                            ),
-                                          }
-                                        : prev
-                                    )
-                                  }
-                                  className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                                >
-                                  <option value="" className="text-black">
-                                    Select size
-                                  </option>
-                                  {settings.weightOptions.map((option) => (
-                                    <option key={option.label} value={option.label} className="text-black">
-                                      {option.label} — {formatZAR(option.price)}
-                                    </option>
-                                  ))}
-                                </select>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={row.quantity}
-                                  onChange={(e) =>
-                                    setEditForm((prev) =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            weightRows: prev.weightRows.map((item) =>
-                                              item.id === row.id ? { ...item, quantity: e.target.value } : item
-                                            ),
-                                          }
-                                        : prev
-                                    )
-                                  }
-                                  className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setEditForm((prev) =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            weightRows:
-                                              prev.weightRows.length === 1
-                                                ? prev.weightRows
-                                                : prev.weightRows.filter((item) => item.id !== row.id),
-                                          }
-                                        : prev
-                                    )
-                                  }
-                                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
-                          <textarea
-                            rows={3}
-                            value={editForm.cutPreferences}
-                            onChange={(e) =>
-                              setEditForm((prev) => (prev ? { ...prev, cutPreferences: e.target.value } : prev))
-                            }
-                            className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
-                          <textarea
-                            rows={3}
-                            value={editForm.notes}
-                            onChange={(e) =>
-                              setEditForm((prev) => (prev ? { ...prev, notes: e.target.value } : prev))
-                            }
-                            className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-white/82">Queue number</label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={editForm.queueNumber}
-                            onChange={(e) =>
-                              setEditForm((prev) => (prev ? { ...prev, queueNumber: e.target.value } : prev))
-                            }
-                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                          />
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          {[
-                            { key: "addServices", on: "Services Added", off: "Services Off" },
-                            { key: "delivery", on: "Delivery Added", off: "Delivery Off" },
-                          ].map(({ key, on, off }) => (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() =>
-                                setEditForm((prev) => (prev ? { ...prev, [key]: !(prev as any)[key] } : prev))
-                              }
                               className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                                (editForm as any)[key]
+                                editForm.paymentStatus === "paid"
                                   ? "bg-[#c6a268] text-[#161015]"
                                   : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                               }`}
                             >
-                              {(editForm as any)[key] ? on : off}
+                              {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
                             </button>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      paymentStatus: prev.paymentStatus === "paid" ? "pending" : "paid",
-                                    }
-                                  : prev
-                              )
-                            }
-                            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                              editForm.paymentStatus === "paid"
-                                ? "bg-[#c6a268] text-[#161015]"
-                                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            }`}
-                          >
-                            {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => (prev ? { ...prev, slaughtered: !prev.slaughtered } : prev))
-                            }
-                            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                              editForm.slaughtered
-                                ? "bg-[#c6a268] text-[#161015]"
-                                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            }`}
-                          >
-                            {editForm.slaughtered ? "Slaughtered" : "Pending"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => (prev ? { ...prev, delivered: !prev.delivered } : prev))
-                            }
-                            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                              editForm.delivered
-                                ? "bg-[#c6a268] text-[#161015]"
-                                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            }`}
-                          >
-                            {editForm.delivered ? "Delivered" : "Awaiting Delivery"}
-                          </button>
-                        </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
+                                )
+                              }
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.slaughtered
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.slaughtered ? "Slaughtered" : "Pending"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, delivered: !prev.delivered } : prev
+                                )
+                              }
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.delivered
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.delivered ? "Delivered" : "Awaiting Delivery"}
+                            </button>
+                          </div>
 
-                        <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/10 p-4">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => (prev ? { ...prev, cancelled: !prev.cancelled } : prev))
-                            }
-                            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                              editForm.cancelled
-                                ? "bg-rose-300 text-[#161015]"
-                                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                            }`}
-                          >
-                            {editForm.cancelled ? "Booking Cancelled" : "Cancel Booking"}
-                          </button>
-                          {editForm.cancelled ? (
-                            <div className="mt-4">
-                              <label className="mb-2 block text-sm font-medium text-white/90">
-                                Cancellation reason
-                              </label>
-                              <textarea
-                                rows={3}
-                                value={editForm.cancelReason}
-                                onChange={(e) =>
-                                  setEditForm((prev) =>
-                                    prev ? { ...prev, cancelReason: e.target.value } : prev
-                                  )
-                                }
-                                className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                              />
-                            </div>
-                          ) : null}
-                        </div>
+                          <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/10 p-4">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, cancelled: !prev.cancelled } : prev
+                                )
+                              }
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.cancelled
+                                  ? "bg-rose-300 text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.cancelled ? "Booking Cancelled" : "Cancel Booking"}
+                            </button>
+                            {editForm.cancelled ? (
+                              <div className="mt-4">
+                                <label className="mb-2 block text-sm font-medium text-white/90">
+                                  Cancellation reason
+                                </label>
+                                <textarea
+                                  rows={3}
+                                  value={editForm.cancelReason}
+                                  onChange={(e) =>
+                                    setEditForm((prev) =>
+                                      prev ? { ...prev, cancelReason: e.target.value } : prev
+                                    )
+                                  }
+                                  className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                                />
+                              </div>
+                            ) : null}
+                          </div>
 
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            disabled={savingEdit}
-                            onClick={saveEditForm}
-                            className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
-                          >
-                            {savingEdit ? "Saving..." : "Save Booking Changes"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openWhatsAppForOrder(selectedOrder, buildPaymentReminderMessage(selectedOrder, settings))}
-                            className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
-                          >
-                            WhatsApp Reminder
-                          </button>
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              disabled={savingEdit}
+                              onClick={saveEditForm}
+                              className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+                            >
+                              {savingEdit ? "Saving..." : "Save Booking Changes"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openWhatsAppForOrder(selectedOrder, buildPaymentReminderMessage(selectedOrder, settings))
+                              }
+                              className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
+                            >
+                              WhatsApp Reminder
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </SectionCard>
+                    )}
+                  </SectionCard>
+                </div>
               </div>
             </div>
           </div>
