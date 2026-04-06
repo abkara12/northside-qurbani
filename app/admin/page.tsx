@@ -201,7 +201,6 @@ function sheepSummary(order: OrderItem) {
 
 function statusLabel(order: OrderItem) {
   if (order.cancelled) return "Cancelled";
-  if (order.delivered) return "Delivered";
   if (order.slaughtered) return "Slaughtered";
   return "Pending";
 }
@@ -390,8 +389,7 @@ function PaymentBadge({ value }: { value?: string }) {
 function WorkflowBadge({ order }: { order: OrderItem }) {
   const label = statusLabel(order);
   const className =
-    label === "Delivered" ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-    : label === "Slaughtered" ? "border-sky-400/20 bg-sky-400/10 text-sky-200"
+       label === "Slaughtered" ? "border-sky-400/20 bg-sky-400/10 text-sky-200"
     : label === "Cancelled" ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
     : "border-violet-400/20 bg-violet-400/10 text-violet-200";
   return (
@@ -676,7 +674,7 @@ export default function AdminPage() {
   const unpaidOrders = activeOrders.filter((o) => (o.paymentStatus || "pending").toLowerCase() !== "paid");
   const slaughteredOrders = activeOrders.filter((o) => !!o.slaughtered);
   const deliveredOrders = activeOrders.filter((o) => !!o.delivered);
-  const pendingOrders = activeOrders.filter((o) => !o.slaughtered && !o.delivered && !o.cancelled);
+const pendingOrders = activeOrders.filter((o) => !o.slaughtered && !o.cancelled);
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
   const totalExpectedRevenue = activeOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -994,7 +992,6 @@ export default function AdminPage() {
               <SummaryCard label="Pending" value={String(pendingOrders.length)} />
               <SummaryCard label="In Queue" value={String(queueOrders.length)} helper={`Next #${nextQueueNumber}`} />
               <SummaryCard label="Slaughtered" value={String(slaughteredOrders.length)} />
-              <SummaryCard label="Delivered" value={String(deliveredOrders.length)} />
             </div>
 
             {/* Search & Check-In */}
@@ -1173,15 +1170,6 @@ export default function AdminPage() {
                           }`}
                         >
                           {order.slaughtered ? "✓ Slaughtered" : "Mark Slaughtered"}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={updatingField === order.id || !!order.cancelled}
-                          onClick={() => handleQuickToggle(order, "delivered")}
-                          className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-                        >
-                          Mark Delivered
                         </button>
 
                         <button
