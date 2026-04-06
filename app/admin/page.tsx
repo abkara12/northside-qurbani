@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -86,7 +86,6 @@ type EditFormState = {
   paymentStatus: "pending" | "paid";
   slaughtered: boolean;
   delivered: boolean;
-  queueNumber: string;
   cancelled: boolean;
   cancelReason: string;
   weightRows: Array<{
@@ -301,95 +300,6 @@ Your Northside Qurbani booking (${ref}) has been marked as slaughtered.
 Jazakumullahu khayran.`;
 }
 
-function downloadTextFile(filename: string, content: string, mime = "text/plain;charset=utf-8") {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
-
-function exportOrdersToCSV(orders: OrderItem[]) {
-  const headers = [
-    "Reference",
-    "Name",
-    "Phone",
-    "Email",
-    "Booking",
-    "Sheep Count",
-    "Total Price",
-    "Payment Status",
-    "Status",
-    "Cancelled",
-    "Cancel Reason",
-    "Queue Number",
-    "Manual Entry",
-    "Created At",
-    "Cut Preferences",
-    "Notes",
-  ];
-  const rows = orders.map((order) => [
-    orderReference(order.id),
-    order.fullName || "",
-    order.phone || "",
-    order.email || "",
-    sheepSummary(order),
-    String(totalSheep(order)),
-    String(order.totalPrice || 0),
-    order.paymentStatus || "pending",
-    statusLabel(order),
-    order.cancelled ? "Yes" : "No",
-    order.cancelReason || "",
-    order.queueNumber ?? "",
-    order.manualEntry ? "Yes" : "No",
-    formatDate(order.createdAt),
-    (order.cutPreferences || []).join(" | "),
-    (order.notes || "").replace(/\n/g, " "),
-  ]);
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
-    .join("\n");
-  downloadTextFile("northside-qurbani-orders.csv", csv, "text/csv;charset=utf-8");
-}
-
-function openPrintWindow(orders: OrderItem[]) {
-  const htmlRows = orders
-    .map(
-      (order, index) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${orderReference(order.id)}</td>
-          <td>${order.fullName || ""}</td>
-          <td>${order.phone || ""}</td>
-          <td>${sheepSummary(order)}</td>
-          <td>${totalSheep(order)}</td>
-          <td>${formatZAR(order.totalPrice || 0)}</td>
-          <td>${order.paymentStatus || "pending"}</td>
-          <td>${statusLabel(order)}</td>
-          <td>${order.queueNumber ?? ""}</td>
-          <td>${order.notes || ""}</td>
-        </tr>`
-    )
-    .join("");
-  const win = window.open("", "_blank", "width=1200,height=800");
-  if (!win) return;
-  win.document.write(`
-    <html><head><title>Northside Qurbani Bookings</title>
-    <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:8px}p{margin-top:0;color:#555}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #d4d4d4;padding:8px;text-align:left;font-size:12px;vertical-align:top}th{background:#f5f5f5}</style>
-    </head><body>
-    <h1>Northside Qurbani Booking List</h1>
-    <p>Generated on ${new Date().toLocaleString("en-ZA")}</p>
-    <table><thead><tr><th>#</th><th>Ref</th><th>Name</th><th>Phone</th><th>Booking</th><th>Qty</th><th>Total</th><th>Payment</th><th>Status</th><th>Queue</th><th>Notes</th></tr></thead>
-    <tbody>${htmlRows}</tbody></table></body></html>`);
-  win.document.close();
-  win.focus();
-  win.print();
-}
-
 function PaymentBadge({ value }: { value?: string }) {
   const paid = (value || "pending").toLowerCase() === "paid";
   return (
@@ -496,13 +406,21 @@ function SectionCard({
   title,
   sub,
   children,
+  highlight = false,
 }: {
   title: string;
   sub?: string;
   children: React.ReactNode;
+  highlight?: boolean;
 }) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+    <div
+      className={`rounded-[30px] border p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6 ${
+        highlight
+          ? "border-[#c6a268]/35 bg-[#c6a268]/[0.08]"
+          : "border-white/10 bg-white/[0.045]"
+      }`}
+    >
       <div className="mb-5">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
         {sub ? <p className="mt-1 text-sm text-white/55">{sub}</p> : null}
@@ -556,7 +474,6 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
-  const [specialFilter, setSpecialFilter] = useState("all");
 
   const [mode, setMode] = useState<"simple" | "management">("simple");
 
@@ -566,9 +483,12 @@ export default function AdminPage() {
   const [updatingField, setUpdatingField] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showOutstandingPanel, setShowOutstandingPanel] = useState(false);
 
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   const [manualForm, setManualForm] = useState<ManualFormState>({
     fullName: "",
@@ -582,6 +502,8 @@ export default function AdminPage() {
     weightRows: [{ id: slugId(), label: "", quantity: "1" }],
   });
   const [manualSaving, setManualSaving] = useState(false);
+
+  const selectedBookingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
@@ -668,8 +590,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (!selectedOrder) {
       setEditForm(null);
+      setHasUnsavedChanges(false);
       return;
     }
+
     setEditForm({
       fullName: selectedOrder.fullName || "",
       phone: selectedOrder.phone || "",
@@ -684,14 +608,22 @@ export default function AdminPage() {
           : "pending",
       slaughtered: !!selectedOrder.slaughtered,
       delivered: !!selectedOrder.delivered,
-      queueNumber:
-        selectedOrder.queueNumber === null || selectedOrder.queueNumber === undefined
-          ? ""
-          : String(selectedOrder.queueNumber),
       cancelled: !!selectedOrder.cancelled,
       cancelReason: selectedOrder.cancelReason || "",
       weightRows: rowsFromOrder(selectedOrder),
     });
+
+    setHasUnsavedChanges(false);
+    setSaveMessage("");
+
+    const timer = setTimeout(() => {
+      selectedBookingRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+
+    return () => clearTimeout(timer);
   }, [selectedOrder]);
 
   const activeOrders = useMemo(() => orders.filter((o) => !o.cancelled), [orders]);
@@ -713,8 +645,7 @@ export default function AdminPage() {
         order.phone?.toLowerCase().includes(term) ||
         order.email?.toLowerCase().includes(term) ||
         orderReference(order.id).toLowerCase().includes(term) ||
-        sheepSummary(order).toLowerCase().includes(term) ||
-        (order.notes || "").toLowerCase().includes(term);
+        sheepSummary(order).toLowerCase().includes(term);
 
       const payment = (order.paymentStatus || "pending").toLowerCase();
       const matchesPayment =
@@ -726,29 +657,14 @@ export default function AdminPage() {
       const matchesWorkflow =
         workflowFilter === "all" ||
         (workflowFilter === "pending" && status === "pending") ||
-        (workflowFilter === "queue" && status === "in queue") ||
         (workflowFilter === "slaughtered" && status === "slaughtered") ||
         (workflowFilter === "delivered" && status === "delivered") ||
         (workflowFilter === "cancelled" && status === "cancelled");
 
-      const matchesSpecial =
-        specialFilter === "all" ||
-        (specialFilter === "queue" && status === "in queue") ||
-        (specialFilter === "manual" && !!order.manualEntry) ||
-        (specialFilter === "withNotes" && !!order.notes?.trim()) ||
-        (specialFilter === "outstanding" &&
-          !order.cancelled &&
-          (order.paymentStatus || "pending").toLowerCase() !== "paid");
-
-      return matchesSearch && matchesPayment && matchesWorkflow && matchesSpecial;
+      return matchesSearch && matchesPayment && matchesWorkflow;
     });
 
     return [...next].sort((a, b) => {
-      if (specialFilter === "queue" || workflowFilter === "queue") {
-        const queueA = a.queueNumber || 999999;
-        const queueB = b.queueNumber || 999999;
-        if (queueA !== queueB) return queueA - queueB;
-      }
       const nameA = (a.fullName || "").trim();
       const nameB = (b.fullName || "").trim();
       if (!nameA && !nameB) return 0;
@@ -756,7 +672,7 @@ export default function AdminPage() {
       if (!nameB) return -1;
       return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
     });
-  }, [orders, search, paymentFilter, workflowFilter, specialFilter]);
+  }, [orders, search, paymentFilter, workflowFilter]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -793,7 +709,6 @@ export default function AdminPage() {
   const deliveredOrders = activeOrders.filter((o) => !!o.delivered);
   const pendingOrders = activeOrders.filter((o) => !o.slaughtered && !o.cancelled);
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
-  const totalExpectedRevenue = activeOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalOutstanding = unpaidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
@@ -810,16 +725,10 @@ export default function AdminPage() {
     }));
   }, [activeOrders, settings.weightOptions]);
 
-  const bookingsByDay = useMemo(() => {
-    const map = new Map<string, number>();
-    activeOrders.forEach((order) => {
-      const date = order.createdAt?.toDate?.();
-      if (!date) return;
-      const label = date.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" });
-      map.set(label, (map.get(label) || 0) + 1);
-    });
-    return [...map.entries()].map(([label, value]) => ({ label, value })).slice(-7);
-  }, [activeOrders]);
+  function markDirty() {
+    setHasUnsavedChanges(true);
+    setSaveMessage("");
+  }
 
   async function updateField(orderId: string, payload: Partial<OrderItem>) {
     try {
@@ -879,29 +788,44 @@ export default function AdminPage() {
     });
   }
 
-  async function handleQuickToggle(order: OrderItem, field: "paymentStatus" | "slaughtered" | "delivered") {
+  async function handleQuickToggle(
+    order: OrderItem,
+    field: "paymentStatus" | "slaughtered" | "delivered"
+  ) {
     if (field === "paymentStatus") {
-      const next = (order.paymentStatus || "pending").toLowerCase() === "paid" ? "pending" : "paid";
+      const next =
+        (order.paymentStatus || "pending").toLowerCase() === "paid" ? "pending" : "paid";
       await updateField(order.id, { paymentStatus: next as "pending" | "paid" });
       return;
     }
 
     if (field === "slaughtered") {
       const next = !order.slaughtered;
+      if (next) {
+        const confirmed = window.confirm("Mark this booking as slaughtered?");
+        if (!confirmed) return;
+      }
       await updateField(order.id, {
         slaughtered: next,
         queueNumber: next ? null : order.queueNumber || null,
       });
 
       if (next && !order.cancelled) {
-        const shouldOpenWhatsApp = window.confirm("Open WhatsApp slaughter confirmation for this customer?");
+        const shouldOpenWhatsApp = window.confirm(
+          "Open WhatsApp slaughter confirmation for this customer?"
+        );
         if (shouldOpenWhatsApp) openWhatsAppForOrder(order, buildSlaughteredMessage(order));
       }
       return;
     }
 
     if (field === "delivered") {
-      await updateField(order.id, { delivered: !order.delivered });
+      const next = !order.delivered;
+      if (next) {
+        const confirmed = window.confirm("Mark this booking as delivered?");
+        if (!confirmed) return;
+      }
+      await updateField(order.id, { delivered: next });
     }
   }
 
@@ -915,9 +839,14 @@ export default function AdminPage() {
     setSimpleSearch("");
   }
 
+  function handleOpenBooking(order: OrderItem) {
+    setSelectedOrder(order);
+  }
+
   async function saveEditForm() {
     if (!selectedOrder || !editForm) return;
     const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
+
     if (!editForm.fullName.trim()) {
       alert("Please enter the customer name.");
       return;
@@ -938,11 +867,13 @@ export default function AdminPage() {
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
     const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-    const cutPreferences = editForm.cutPreferences.split(",").map((item) => item.trim()).filter(Boolean);
-    const queueNumberValue = editForm.queueNumber.trim() === "" ? null : Number(editForm.queueNumber);
+    const cutPreferences = editForm.cutPreferences
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
-    if (queueNumberValue !== null && (!Number.isInteger(queueNumberValue) || queueNumberValue < 1)) {
-      alert("Queue number must be a whole number.");
+    if (editForm.cancelled && !editForm.cancelReason.trim()) {
+      alert("Please enter a cancellation reason.");
       return;
     }
 
@@ -968,13 +899,12 @@ export default function AdminPage() {
         paymentStatus: editForm.paymentStatus,
         slaughtered: editForm.cancelled ? false : editForm.slaughtered,
         delivered: editForm.cancelled ? false : editForm.delivered,
-        queueNumber: editForm.cancelled ? null : queueNumberValue,
         cancelled: editForm.cancelled,
         cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
         updatedAt: serverTimestamp(),
       });
 
-      if (editForm.cancelled && editForm.cancelReason.trim()) {
+      if (editForm.cancelled) {
         if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
           openWhatsAppForOrder(
             selectedOrder,
@@ -982,6 +912,10 @@ export default function AdminPage() {
           );
         }
       }
+
+      setHasUnsavedChanges(false);
+      setSaveMessage("Saved successfully.");
+      setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Failed saving edit form:", error);
       alert("Could not save this booking.");
@@ -990,12 +924,9 @@ export default function AdminPage() {
     }
   }
 
-  async function saveQuickNotes(order: OrderItem, notes: string) {
-    await updateField(order.id, { notes });
-  }
-
   async function submitManualBooking(e: FormEvent) {
     e.preventDefault();
+
     if (!manualForm.fullName.trim()) {
       alert("Please enter the customer name.");
       return;
@@ -1004,6 +935,7 @@ export default function AdminPage() {
       alert("Please enter the customer phone number.");
       return;
     }
+
     const weightBreakdown = computeBreakdownFromRows(manualForm.weightRows, settings);
     if (!weightBreakdown.length) {
       alert("Please add at least one valid sheep selection.");
@@ -1017,7 +949,10 @@ export default function AdminPage() {
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
     const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-    const cutPreferences = manualForm.cutPreferences.split(",").map((item) => item.trim()).filter(Boolean);
+    const cutPreferences = manualForm.cutPreferences
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
     try {
       setManualSaving(true);
@@ -1062,6 +997,8 @@ export default function AdminPage() {
         weightRows: [{ id: slugId(), label: "", quantity: "1" }],
       });
       setShowManualForm(false);
+      setSaveMessage("Manual booking added successfully.");
+      setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Manual booking failed:", error);
       alert("Could not add manual booking.");
@@ -1168,7 +1105,7 @@ export default function AdminPage() {
           <p className="mx-auto mt-4 max-w-3xl text-[0.95rem] leading-7 text-white/62 sm:text-[1.04rem] sm:leading-8 xl:mx-0">
             {mode === "simple"
               ? "When a customer arrives at the farm, search for the booking and place them into the queue. Staff can then mark paid or slaughtered directly from the live queue."
-              : "Admin control for bookings, payments, exports, reminders, settings, and full booking edits."}
+              : "Owner control for bookings, payments, settings, reminders, manual bookings, and full booking edits."}
           </p>
         </div>
 
@@ -1176,7 +1113,11 @@ export default function AdminPage() {
           <div className="mt-8 space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <SummaryCard label="Pending" value={String(pendingOrders.length)} />
-              <SummaryCard label="In Queue" value={String(queueOrders.length)} helper={`Next #${nextQueueNumber}`} />
+              <SummaryCard
+                label="In Queue"
+                value={String(queueOrders.length)}
+                helper={`Next #${nextQueueNumber}`}
+              />
               <SummaryCard label="Slaughtered" value={String(slaughteredOrders.length)} />
             </div>
 
@@ -1247,7 +1188,7 @@ export default function AdminPage() {
 
                             <button
                               type="button"
-                              onClick={() => setSelectedOrder(order)}
+                              onClick={() => handleOpenBooking(order)}
                               className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
                             >
                               Open Booking
@@ -1384,44 +1325,54 @@ export default function AdminPage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
-              <MiniBarChart
-                title="Recent Booking Trend"
-                data={bookingsByDay.length ? bookingsByDay : [{ label: "No data", value: 0 }]}
-              />
             </div>
 
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowManualForm((prev) => !prev)}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
+                  onClick={() => {
+                    setShowManualForm((prev) => !prev);
+                    if (showSettings) setShowSettings(false);
+                  }}
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+                    showManualForm
+                      ? "bg-[#c6a268] text-[#161015]"
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
                 >
                   {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setShowSettings((prev) => !prev)}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                  onClick={() => setShowOutstandingPanel((prev) => !prev)}
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+                    showOutstandingPanel
+                      ? "bg-[#c6a268] text-[#161015]"
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettings((prev) => !prev);
+                    if (showManualForm) setShowManualForm(false);
+                  }}
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+                    showSettings
+                      ? "bg-[#c6a268] text-[#161015]"
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
                 >
                   {showSettings ? "Hide Settings" : "Settings"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => exportOrdersToCSV(filteredOrders)}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  Export CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPrintWindow(filteredOrders)}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  Print Booking List
-                </button>
+
                 <button
                   type="button"
                   onClick={handleBulkPaymentReminders}
@@ -1431,6 +1382,12 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {saveMessage ? (
+                <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-200">
+                  {saveMessage}
+                </div>
+              ) : null}
+
               <div className="mt-6 grid gap-4 xl:grid-cols-[1.4fr_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
@@ -1438,7 +1395,7 @@ export default function AdminPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name, phone, email, reference, notes, or sheep size"
+                    placeholder="Name, phone, email, reference, or sheep size"
                     className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
                   />
                 </div>
@@ -1446,37 +1403,63 @@ export default function AdminPage() {
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton active={paymentFilter === "all"} label="All" onClick={() => setPaymentFilter("all")} />
-                    <FilterButton active={paymentFilter === "unpaid"} label="Unpaid" onClick={() => setPaymentFilter("unpaid")} />
-                    <FilterButton active={paymentFilter === "paid"} label="Paid" onClick={() => setPaymentFilter("paid")} />
+                    <FilterButton
+                      active={paymentFilter === "all"}
+                      label="All"
+                      onClick={() => setPaymentFilter("all")}
+                    />
+                    <FilterButton
+                      active={paymentFilter === "unpaid"}
+                      label="Unpaid"
+                      onClick={() => setPaymentFilter("unpaid")}
+                    />
+                    <FilterButton
+                      active={paymentFilter === "paid"}
+                      label="Paid"
+                      onClick={() => setPaymentFilter("paid")}
+                    />
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Status</div>
                   <div className="flex flex-wrap gap-2">
-                    <FilterButton active={workflowFilter === "all"} label="All" onClick={() => setWorkflowFilter("all")} />
-                    <FilterButton active={workflowFilter === "pending"} label="Pending" onClick={() => setWorkflowFilter("pending")} />
-                    <FilterButton active={workflowFilter === "queue"} label="In Queue" onClick={() => setWorkflowFilter("queue")} />
-                    <FilterButton active={workflowFilter === "slaughtered"} label="Slaughtered" onClick={() => setWorkflowFilter("slaughtered")} />
-                    <FilterButton active={workflowFilter === "delivered"} label="Delivered" onClick={() => setWorkflowFilter("delivered")} />
-                    <FilterButton active={workflowFilter === "cancelled"} label="Cancelled" onClick={() => setWorkflowFilter("cancelled")} />
+                    <FilterButton
+                      active={workflowFilter === "all"}
+                      label="All"
+                      onClick={() => setWorkflowFilter("all")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "pending"}
+                      label="Pending"
+                      onClick={() => setWorkflowFilter("pending")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "slaughtered"}
+                      label="Slaughtered"
+                      onClick={() => setWorkflowFilter("slaughtered")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "delivered"}
+                      label="Delivered"
+                      onClick={() => setWorkflowFilter("delivered")}
+                    />
+                    <FilterButton
+                      active={workflowFilter === "cancelled"}
+                      label="Cancelled"
+                      onClick={() => setWorkflowFilter("cancelled")}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <FilterButton active={specialFilter === "all"} label="All Bookings" onClick={() => setSpecialFilter("all")} />
-                <FilterButton active={specialFilter === "outstanding"} label="Outstanding" onClick={() => setSpecialFilter("outstanding")} />
-                <FilterButton active={specialFilter === "queue"} label="Queue" onClick={() => setSpecialFilter("queue")} />
-                <FilterButton active={specialFilter === "manual"} label="Manual Entries" onClick={() => setSpecialFilter("manual")} />
-                <FilterButton active={specialFilter === "withNotes"} label="With Notes" onClick={() => setSpecialFilter("withNotes")} />
-              </div>
-
               {showManualForm ? (
                 <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
-                  <h3 className="text-lg font-semibold text-white">Add Booking Manually</h3>
-                  <p className="mt-1 text-sm text-white/55">For customers who message directly instead of using the app.</p>
+                  <h3 className="text-lg font-semibold text-white">Add Manual Booking</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Add a booking directly for a customer without using the order page.
+                  </p>
+
                   <form onSubmit={submitManualBooking} className="mt-5 grid gap-5">
                     <div className="grid gap-4 md:grid-cols-3">
                       {[["Full name", "fullName"], ["Phone number", "phone"], ["Email", "email"]].map(
@@ -1485,7 +1468,9 @@ export default function AdminPage() {
                             <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
                             <input
                               value={(manualForm as any)[key]}
-                              onChange={(e) => setManualForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                              onChange={(e) =>
+                                setManualForm((prev) => ({ ...prev, [key]: e.target.value }))
+                              }
                               className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                             />
                           </div>
@@ -1512,6 +1497,7 @@ export default function AdminPage() {
                           Add Row
                         </button>
                       </div>
+
                       <div className="space-y-3">
                         {manualForm.weightRows.map((row) => (
                           <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
@@ -1536,6 +1522,7 @@ export default function AdminPage() {
                                 </option>
                               ))}
                             </select>
+
                             <input
                               type="number"
                               min={1}
@@ -1550,6 +1537,7 @@ export default function AdminPage() {
                               }
                               className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                             />
+
                             <button
                               type="button"
                               onClick={() =>
@@ -1576,17 +1564,22 @@ export default function AdminPage() {
                         <textarea
                           rows={4}
                           value={manualForm.cutPreferences}
-                          onChange={(e) => setManualForm((prev) => ({ ...prev, cutPreferences: e.target.value }))}
+                          onChange={(e) =>
+                            setManualForm((prev) => ({ ...prev, cutPreferences: e.target.value }))
+                          }
                           placeholder={CUT_PREFERENCE_OPTIONS.join(", ")}
                           className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
                         />
                       </div>
+
                       <div>
                         <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
                         <textarea
                           rows={4}
                           value={manualForm.notes}
-                          onChange={(e) => setManualForm((prev) => ({ ...prev, notes: e.target.value }))}
+                          onChange={(e) =>
+                            setManualForm((prev) => ({ ...prev, notes: e.target.value }))
+                          }
                           className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
                         />
                       </div>
@@ -1600,7 +1593,9 @@ export default function AdminPage() {
                         <button
                           key={key}
                           type="button"
-                          onClick={() => setManualForm((prev) => ({ ...prev, [key]: !(prev as any)[key] }))}
+                          onClick={() =>
+                            setManualForm((prev) => ({ ...prev, [key]: !(prev as any)[key] }))
+                          }
                           className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                             (manualForm as any)[key]
                               ? "bg-[#c6a268] text-[#161015]"
@@ -1610,6 +1605,7 @@ export default function AdminPage() {
                           {(manualForm as any)[key] ? onLabel : offLabel}
                         </button>
                       ))}
+
                       <button
                         type="button"
                         onClick={() =>
@@ -1636,6 +1632,7 @@ export default function AdminPage() {
                       >
                         {manualSaving ? "Saving..." : "Save Manual Booking"}
                       </button>
+
                       <button
                         type="button"
                         onClick={() => setShowManualForm(false)}
@@ -1650,15 +1647,19 @@ export default function AdminPage() {
 
               {showSettings ? (
                 <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
-                  <h3 className="text-lg font-semibold text-white">Admin Settings</h3>
-                  <p className="mt-1 text-sm text-white/55">Booking cutoff control, bank details, and yearly sheep prices.</p>
+                  <h3 className="text-lg font-semibold text-white">Settings</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Banking details, booking dates, and yearly sheep prices.
+                  </p>
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                       <label className="mb-2 block text-sm font-medium text-white/82">Bookings open</label>
                       <button
                         type="button"
-                        onClick={() => setSettings((prev) => ({ ...prev, bookingsOpen: !prev.bookingsOpen }))}
+                        onClick={() =>
+                          setSettings((prev) => ({ ...prev, bookingsOpen: !prev.bookingsOpen }))
+                        }
                         className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                           settings.bookingsOpen
                             ? "bg-[#c6a268] text-[#161015]"
@@ -1668,12 +1669,15 @@ export default function AdminPage() {
                         {settings.bookingsOpen ? "Bookings Open" : "Bookings Closed"}
                       </button>
                     </div>
+
                     <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                       <label className="mb-2 block text-sm font-medium text-white/82">Booking cutoff date</label>
                       <input
                         type="date"
                         value={settings.bookingCutoffDate}
-                        onChange={(e) => setSettings((prev) => ({ ...prev, bookingCutoffDate: e.target.value }))}
+                        onChange={(e) =>
+                          setSettings((prev) => ({ ...prev, bookingCutoffDate: e.target.value }))
+                        }
                         className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                       />
                     </div>
@@ -1714,8 +1718,9 @@ export default function AdminPage() {
                   <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                     <div className="mb-4">
                       <p className="font-medium text-white">Yearly sheep prices</p>
-                      <p className="text-sm text-white/55">Change prices here instead of touching code next year.</p>
+                      <p className="text-sm text-white/55">Change these here each year.</p>
                     </div>
+
                     <div className="space-y-3">
                       {settings.weightOptions.map((option, index) => (
                         <div key={option.label} className="grid gap-3 md:grid-cols-[1fr_180px]">
@@ -1762,19 +1767,71 @@ export default function AdminPage() {
                   </div>
                 </div>
               ) : null}
+
+              {showOutstandingPanel ? (
+                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                  <h3 className="text-lg font-semibold text-white">Outstanding Payments</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Quick follow-up list of unpaid customers.
+                  </p>
+
+                  <div className="mt-5 space-y-3">
+                    {unpaidOrders.length === 0 ? (
+                      <div className="text-sm text-white/55">No unpaid customers right now.</div>
+                    ) : (
+                      unpaidOrders.slice(0, 10).map((order) => (
+                        <div
+                          key={order.id}
+                          className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-medium text-white">{order.fullName}</div>
+                              <div className="mt-1 text-sm text-white/55">{order.phone}</div>
+                            </div>
+                            <div className="text-sm font-semibold text-[#d8b67e]">
+                              {formatZAR(order.totalPrice || 0)}
+                            </div>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings))
+                              }
+                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                            >
+                              Remind
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBooking(order)}
+                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                            >
+                              Open
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-8 xl:grid-cols-12 xl:gap-8">
-              <div className="xl:col-span-8">
+              <div className="xl:col-span-7">
                 <SectionCard
                   title="Bookings"
-                  sub="Search, filter, and take quick actions before opening a booking for full editing."
+                  sub="Find the booking, open it, and manage it from one clear editor."
                 >
                   <div className="space-y-4">
                     {loadingOrders ? (
                       <div className="text-sm text-white/60">Loading bookings...</div>
                     ) : filteredOrders.length === 0 ? (
-                      <div className="text-sm text-white/60">No bookings found for the current filter.</div>
+                      <div className="text-sm text-white/60">
+                        No bookings found for the current filter.
+                      </div>
                     ) : (
                       filteredOrders.map((order) => (
                         <div
@@ -1806,13 +1863,8 @@ export default function AdminPage() {
 
                               <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
 
-                              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-                                <span className="font-medium text-white">{formatZAR(order.totalPrice || 0)}</span>
-                                {(order.queueNumber || 0) > 0 && (
-                                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-                                    Queue #{order.queueNumber}
-                                  </span>
-                                )}
+                              <div className="mt-2 text-sm font-medium text-white">
+                                {formatZAR(order.totalPrice || 0)}
                               </div>
                             </div>
 
@@ -1860,44 +1912,11 @@ export default function AdminPage() {
 
                               <button
                                 type="button"
-                                onClick={() => setSelectedOrder(order)}
+                                onClick={() => handleOpenBooking(order)}
                                 className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
                               >
                                 Open
                               </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_220px]">
-                            <textarea
-                              rows={3}
-                              defaultValue={order.notes || ""}
-                              placeholder="Notes for this customer..."
-                              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none"
-                              onBlur={(e) => {
-                                const nextValue = e.target.value.trim();
-                                if ((order.notes || "").trim() !== nextValue) saveQuickNotes(order, nextValue);
-                              }}
-                            />
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                              <div className="text-xs uppercase tracking-[0.16em] text-white/40">
-                                Queue Number
-                              </div>
-                              <input
-                                type="number"
-                                min={1}
-                                defaultValue={order.queueNumber ?? ""}
-                                onBlur={(e) => {
-                                  const raw = e.target.value.trim();
-                                  const value = raw === "" ? null : Number(raw);
-                                  if (value === null || (Number.isInteger(value) && value > 0)) {
-                                    updateField(order.id, { queueNumber: value });
-                                  } else {
-                                    alert("Queue number must be a whole number.");
-                                  }
-                                }}
-                                className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
                             </div>
                           </div>
                         </div>
@@ -1907,53 +1926,16 @@ export default function AdminPage() {
                 </SectionCard>
               </div>
 
-              <div className="xl:col-span-4">
-                <div className="space-y-5 xl:sticky xl:top-6">
-                  <SectionCard title="Outstanding Payments" sub="Quick follow-up list of unpaid customers.">
-                    <div className="space-y-3">
-                      {unpaidOrders.length === 0 ? (
-                        <div className="text-sm text-white/55">No unpaid customers right now.</div>
-                      ) : (
-                        unpaidOrders.slice(0, 8).map((order) => (
-                          <div key={order.id} className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="font-medium text-white">{order.fullName}</div>
-                                <div className="mt-1 text-sm text-white/55">{order.phone}</div>
-                              </div>
-                              <div className="text-sm font-semibold text-[#d8b67e]">
-                                {formatZAR(order.totalPrice || 0)}
-                              </div>
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings))}
-                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                              >
-                                Remind
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedOrder(order)}
-                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                              >
-                                Open
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </SectionCard>
-
+              <div className="xl:col-span-5">
+                <div ref={selectedBookingRef} className="xl:sticky xl:top-6">
                   <SectionCard
-                    title="Selected Booking"
+                    title="Currently Editing"
                     sub={
                       selectedOrder
                         ? `${selectedOrder.fullName || "Booking"} • ${orderReference(selectedOrder.id)}`
-                        : "Choose any booking from the list to edit it."
+                        : "Choose any booking from the list to open it here."
                     }
+                    highlight={!!selectedOrder}
                   >
                     {!selectedOrder || !editForm ? (
                       <div className="text-sm text-white/55">No booking selected yet.</div>
@@ -1962,22 +1944,40 @@ export default function AdminPage() {
                         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
-                          <DetailRow label="Current Booking" value={sheepSummary(selectedOrder)} />
-                          <DetailRow label="Current Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
+                          <DetailRow label="Booking" value={sheepSummary(selectedOrder)} />
+                          <DetailRow label="Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
+                          <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
+                          <DetailRow
+                            label="Queue"
+                            value={
+                              (selectedOrder.queueNumber || 0) > 0
+                                ? `In queue as #${selectedOrder.queueNumber}`
+                                : "Not in live queue"
+                            }
+                          />
                         </div>
+
+                        {hasUnsavedChanges ? (
+                          <div className="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm text-amber-200">
+                            Unsaved changes
+                          </div>
+                        ) : null}
 
                         <div className="space-y-4">
                           {[["Full name", "fullName"], ["Phone", "phone"], ["Email", "email"]].map(
                             ([label, key]) => (
                               <div key={key}>
-                                <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
+                                <label className="mb-2 block text-sm font-medium text-white/82">
+                                  {label}
+                                </label>
                                 <input
                                   value={(editForm as any)[key]}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
+                                    markDirty();
                                     setEditForm((prev) =>
                                       prev ? { ...prev, [key]: e.target.value } : prev
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                                 />
                               </div>
@@ -1988,74 +1988,94 @@ export default function AdminPage() {
                             <div className="mb-4 flex items-center justify-between">
                               <div>
                                 <p className="font-medium text-white">Edit sheep selections</p>
-                                <p className="text-sm text-white/55">Correct kg and quantities directly here.</p>
+                                <p className="text-sm text-white/55">
+                                  Correct kg categories and quantities here.
+                                </p>
                               </div>
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
+                                  markDirty();
                                   setEditForm((prev) =>
                                     prev
                                       ? {
                                           ...prev,
-                                          weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
+                                          weightRows: [
+                                            ...prev.weightRows,
+                                            { id: slugId(), label: "", quantity: "1" },
+                                          ],
                                         }
                                       : prev
-                                  )
-                                }
+                                  );
+                                }}
                                 className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
                               >
                                 Add Row
                               </button>
                             </div>
+
                             <div className="space-y-3">
                               {editForm.weightRows.map((row) => (
                                 <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
                                   <select
                                     value={row.label}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                      markDirty();
                                       setEditForm((prev) =>
                                         prev
                                           ? {
                                               ...prev,
                                               weightRows: prev.weightRows.map((item) =>
-                                                item.id === row.id ? { ...item, label: e.target.value } : item
+                                                item.id === row.id
+                                                  ? { ...item, label: e.target.value }
+                                                  : item
                                               ),
                                             }
                                           : prev
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                                   >
                                     <option value="" className="text-black">
                                       Select size
                                     </option>
                                     {settings.weightOptions.map((option) => (
-                                      <option key={option.label} value={option.label} className="text-black">
+                                      <option
+                                        key={option.label}
+                                        value={option.label}
+                                        className="text-black"
+                                      >
                                         {option.label} — {formatZAR(option.price)}
                                       </option>
                                     ))}
                                   </select>
+
                                   <input
                                     type="number"
                                     min={1}
                                     value={row.quantity}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                      markDirty();
                                       setEditForm((prev) =>
                                         prev
                                           ? {
                                               ...prev,
                                               weightRows: prev.weightRows.map((item) =>
-                                                item.id === row.id ? { ...item, quantity: e.target.value } : item
+                                                item.id === row.id
+                                                  ? { ...item, quantity: e.target.value }
+                                                  : item
                                               ),
                                             }
                                           : prev
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                                   />
+
                                   <button
                                     type="button"
-                                    onClick={() =>
+                                    onClick={() => {
+                                      markDirty();
                                       setEditForm((prev) =>
                                         prev
                                           ? {
@@ -2063,11 +2083,13 @@ export default function AdminPage() {
                                               weightRows:
                                                 prev.weightRows.length === 1
                                                   ? prev.weightRows
-                                                  : prev.weightRows.filter((item) => item.id !== row.id),
+                                                  : prev.weightRows.filter(
+                                                      (item) => item.id !== row.id
+                                                    ),
                                             }
                                           : prev
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
                                   >
                                     Remove
@@ -2078,45 +2100,36 @@ export default function AdminPage() {
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
+                            <label className="mb-2 block text-sm font-medium text-white/82">
+                              Cut preferences
+                            </label>
                             <textarea
                               rows={3}
                               value={editForm.cutPreferences}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev ? { ...prev, cutPreferences: e.target.value } : prev
-                                )
-                              }
+                                );
+                              }}
                               className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
+                            <label className="mb-2 block text-sm font-medium text-white/82">
+                              Notes
+                            </label>
                             <textarea
                               rows={3}
                               value={editForm.notes}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev ? { ...prev, notes: e.target.value } : prev
-                                )
-                              }
+                                );
+                              }}
                               className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-sm font-medium text-white/82">Queue number</label>
-                            <input
-                              type="number"
-                              min={1}
-                              value={editForm.queueNumber}
-                              onChange={(e) =>
-                                setEditForm((prev) =>
-                                  prev ? { ...prev, queueNumber: e.target.value } : prev
-                                )
-                              }
-                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                             />
                           </div>
 
@@ -2128,9 +2141,12 @@ export default function AdminPage() {
                               <button
                                 key={key}
                                 type="button"
-                                onClick={() =>
-                                  setEditForm((prev) => (prev ? { ...prev, [key]: !(prev as any)[key] } : prev))
-                                }
+                                onClick={() => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, [key]: !(prev as any)[key] } : prev
+                                  );
+                                }}
                                 className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                                   (editForm as any)[key]
                                     ? "bg-[#c6a268] text-[#161015]"
@@ -2140,18 +2156,21 @@ export default function AdminPage() {
                                 {(editForm as any)[key] ? on : off}
                               </button>
                             ))}
+
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev
                                     ? {
                                         ...prev,
-                                        paymentStatus: prev.paymentStatus === "paid" ? "pending" : "paid",
+                                        paymentStatus:
+                                          prev.paymentStatus === "paid" ? "pending" : "paid",
                                       }
                                     : prev
-                                )
-                              }
+                                );
+                              }}
                               className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                                 editForm.paymentStatus === "paid"
                                   ? "bg-[#c6a268] text-[#161015]"
@@ -2160,13 +2179,15 @@ export default function AdminPage() {
                             >
                               {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
                             </button>
+
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
-                                )
-                              }
+                                );
+                              }}
                               className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                                 editForm.slaughtered
                                   ? "bg-[#c6a268] text-[#161015]"
@@ -2175,13 +2196,15 @@ export default function AdminPage() {
                             >
                               {editForm.slaughtered ? "Slaughtered" : "Pending"}
                             </button>
+
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev ? { ...prev, delivered: !prev.delivered } : prev
-                                )
-                              }
+                                );
+                              }}
                               className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                                 editForm.delivered
                                   ? "bg-[#c6a268] text-[#161015]"
@@ -2195,11 +2218,12 @@ export default function AdminPage() {
                           <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/10 p-4">
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                markDirty();
                                 setEditForm((prev) =>
                                   prev ? { ...prev, cancelled: !prev.cancelled } : prev
-                                )
-                              }
+                                );
+                              }}
                               className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
                                 editForm.cancelled
                                   ? "bg-rose-300 text-[#161015]"
@@ -2208,6 +2232,7 @@ export default function AdminPage() {
                             >
                               {editForm.cancelled ? "Booking Cancelled" : "Cancel Booking"}
                             </button>
+
                             {editForm.cancelled ? (
                               <div className="mt-4">
                                 <label className="mb-2 block text-sm font-medium text-white/90">
@@ -2216,11 +2241,12 @@ export default function AdminPage() {
                                 <textarea
                                   rows={3}
                                   value={editForm.cancelReason}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
+                                    markDirty();
                                     setEditForm((prev) =>
                                       prev ? { ...prev, cancelReason: e.target.value } : prev
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
                                 />
                               </div>
@@ -2236,10 +2262,14 @@ export default function AdminPage() {
                             >
                               {savingEdit ? "Saving..." : "Save Booking Changes"}
                             </button>
+
                             <button
                               type="button"
                               onClick={() =>
-                                openWhatsAppForOrder(selectedOrder, buildPaymentReminderMessage(selectedOrder, settings))
+                                openWhatsAppForOrder(
+                                  selectedOrder,
+                                  buildPaymentReminderMessage(selectedOrder, settings)
+                                )
                               }
                               className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
                             >
