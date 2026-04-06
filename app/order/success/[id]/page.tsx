@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
@@ -123,17 +126,25 @@ function StatusBadge({
 }
 
 function CopyValueButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  }
+
   return (
     <button
       type="button"
       className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white transition hover:bg-white/10"
-      onClick={() => {
-        if (typeof navigator !== "undefined" && navigator.clipboard) {
-          navigator.clipboard.writeText(value).catch(() => {});
-        }
-      }}
+      onClick={handleCopy}
     >
-      Copy Reference
+      {copied ? "Copied" : "Copy Reference"}
     </button>
   );
 }
@@ -145,6 +156,18 @@ function CopyField({
   label: string;
   value: string;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -152,6 +175,14 @@ function CopyField({
           <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
           <p className="mt-2 break-all text-sm font-medium text-white">{value}</p>
         </div>
+
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
     </div>
   );
@@ -200,41 +231,55 @@ function sheepSummary(order: OrderData | null) {
   return order.preferredWeight || "—";
 }
 
-export default async function OrderSuccessPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default function OrderSuccessPage() {
+  const [order, setOrder] = useState<OrderData | null>(null);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [orderId, setOrderId] = useState("");
 
-  let order: OrderData | null = null;
-  let settings: AppSettings = DEFAULT_SETTINGS;
-  let error = "";
+  useEffect(() => {
+    const pathParts = window.location.pathname.split("/");
+    const id = pathParts[pathParts.length - 1] || "";
+    setOrderId(id);
 
-  try {
-    const [orderSnap, settingsSnap] = await Promise.all([
-      getDoc(doc(db, "orders", id)),
-      getDoc(doc(db, "settings", "qurbani")),
-    ]);
-
-    if (!orderSnap.exists()) {
-      error = "We could not find this booking.";
-    } else {
-      order = orderSnap.data() as OrderData;
+    if (!id) {
+      setError("We could not find this booking.");
+      setLoading(false);
+      return;
     }
 
-    if (settingsSnap.exists()) {
-      settings = {
-        ...DEFAULT_SETTINGS,
-        ...(settingsSnap.data() as Partial<AppSettings>),
-      };
-    }
-  } catch (err) {
-    console.error("Error loading order:", err);
-    error = "Something went wrong while loading the booking.";
-  }
+    async function loadData() {
+      try {
+        const [orderSnap, settingsSnap] = await Promise.all([
+          getDoc(doc(db, "orders", id)),
+          getDoc(doc(db, "settings", "qurbani")),
+        ]);
 
-  const orderReference = `NQ-${id.slice(0, 8).toUpperCase()}`;
+        if (!orderSnap.exists()) {
+          setError("We could not find this booking.");
+        } else {
+          setOrder(orderSnap.data() as OrderData);
+        }
+
+        if (settingsSnap.exists()) {
+          setSettings({
+            ...DEFAULT_SETTINGS,
+            ...(settingsSnap.data() as Partial<AppSettings>),
+          });
+        }
+      } catch (err) {
+        console.error("Error loading order:", err);
+        setError("Something went wrong while loading the booking.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  const orderReference = orderId ? `NQ-${orderId.slice(0, 8).toUpperCase()}` : "—";
   const workflowStatus = getWorkflowStatus(order);
   const paymentStatus = getPaymentStatus(order);
 
@@ -246,7 +291,6 @@ export default async function OrderSuccessPage({
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
         <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.06] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
       </div>
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
@@ -265,9 +309,7 @@ export default async function OrderSuccessPage({
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Premium qurbani service
-            </div>
+            <div className="mt-1 text-sm text-white/55">Premium qurbani service</div>
           </div>
         </Link>
 
@@ -280,7 +322,14 @@ export default async function OrderSuccessPage({
       </header>
 
       <section className="mx-auto max-w-6xl overflow-x-hidden px-5 pb-16 pt-2 sm:px-8 lg:px-10 lg:pb-24 lg:pt-4">
-        {error ? (
+        {loading ? (
+          <div className="rounded-[34px] border border-white/10 bg-white/[0.045] p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">Loading</p>
+            <h1 className="mt-4 text-[2rem] font-semibold text-white sm:text-[2.4rem]">
+              Loading your booking
+            </h1>
+          </div>
+        ) : error ? (
           <div className="rounded-[34px] border border-red-400/20 bg-red-400/10 p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
             <p className="text-sm uppercase tracking-[0.24em] text-red-200">
               Booking unavailable
@@ -404,12 +453,13 @@ export default async function OrderSuccessPage({
                     />
                     <SummaryRow
                       label="Payment status"
-                      value={(order?.paymentStatus || "pending").toLowerCase() === "paid" ? "Paid" : "Unpaid"}
+                      value={
+                        (order?.paymentStatus || "pending").toLowerCase() === "paid"
+                          ? "Paid"
+                          : "Unpaid"
+                      }
                     />
-                    <SummaryRow
-                      label="Workflow status"
-                      value={workflowStatus.label}
-                    />
+                    <SummaryRow label="Workflow status" value={workflowStatus.label} />
                     <SummaryRow
                       label="Total due"
                       value={formatZAR(order?.totalPrice || 0)}
@@ -433,9 +483,7 @@ export default async function OrderSuccessPage({
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-sm font-semibold text-white">{row.label}</p>
-                              <p className="mt-1 text-sm text-white/55">
-                                {row.quantity} sheep
-                              </p>
+                              <p className="mt-1 text-sm text-white/55">{row.quantity} sheep</p>
                             </div>
 
                             <div className="text-right">
@@ -484,7 +532,9 @@ export default async function OrderSuccessPage({
                     <InfoCard>Your booking remains available on this confirmation page</InfoCard>
                     <InfoCard>Your booking reference can be used for future lookup</InfoCard>
                     <InfoCard>Your submitted pricing and preferences remain visible here</InfoCard>
-                    <InfoCard>Live workflow and payment status will reflect here as the booking is updated</InfoCard>
+                    <InfoCard>
+                      Live workflow and payment status will reflect here as the booking is updated
+                    </InfoCard>
                   </div>
                 </div>
 
