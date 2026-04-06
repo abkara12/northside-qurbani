@@ -14,11 +14,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   function getFriendlyError(message: string) {
-    if (message.includes("auth/invalid-email")) return "Please enter a valid email address.";
-    if (message.includes("auth/user-not-found")) return "No staff account was found with that email.";
-    if (message.includes("auth/wrong-password")) return "The password you entered is incorrect.";
-    if (message.includes("auth/invalid-credential")) return "The email or password entered is incorrect.";
-    if (message.includes("auth/too-many-requests")) return "Too many attempts. Please try again shortly.";
+    if (message.includes("auth/invalid-email")) {
+      return "Please enter a valid email address.";
+    }
+    if (message.includes("auth/user-not-found")) {
+      return "No staff account was found with that email.";
+    }
+    if (message.includes("auth/wrong-password")) {
+      return "The password you entered is incorrect.";
+    }
+    if (message.includes("auth/invalid-credential")) {
+      return "The email or password entered is incorrect.";
+    }
+    if (message.includes("auth/too-many-requests")) {
+      return "Too many attempts. Please try again shortly.";
+    }
     return "Unable to sign in right now. Please try again.";
   }
 
@@ -49,7 +59,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##f5efe6]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.06] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
@@ -73,9 +83,7 @@ export default function LoginPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Staff access
-            </div>
+            <div className="mt-1 text-sm text-white/55">Staff access</div>
           </div>
         </Link>
 

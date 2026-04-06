@@ -7,7 +7,6 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
-// CHANGE THIS TO YOUR REAL PRIVATE INVITE CODE
 const STAFF_INVITE_CODE = "NORTHSIDE2026";
 
 export default function StaffRegisterPage() {
@@ -80,7 +79,7 @@ export default function StaffRegisterPage() {
         <div className="absolute inset-0 bg-[#09070b]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,#120c12_0%,#0c090d_38%,#070509_100%)]" />
         <div className="absolute right-[-12rem] top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#c6a268]/[0.10] blur-3xl" />
-        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[##f5efe6]/[0.26] blur-3xl" />
+        <div className="absolute left-[-10rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-[#f5efe6]/[0.06] blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,162,104,0.05),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,42,59,0.18),transparent_32%)]" />
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:44px_44px]" />
@@ -103,9 +102,7 @@ export default function StaffRegisterPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Staff registration
-            </div>
+            <div className="mt-1 text-sm text-white/55">Staff registration</div>
           </div>
         </Link>
 
@@ -170,7 +167,10 @@ export default function StaffRegisterPage() {
 
               <form onSubmit={handleSubmit} noValidate className="mt-8 grid gap-6">
                 <div>
-                  <label htmlFor="fullName" className="mb-2 block text-sm font-medium text-white/82">
+                  <label
+                    htmlFor="fullName"
+                    className="mb-2 block text-sm font-medium text-white/82"
+                  >
                     Full name
                   </label>
                   <input
@@ -184,7 +184,10 @@ export default function StaffRegisterPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-white/82">
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-medium text-white/82"
+                  >
                     Email address
                   </label>
                   <input
@@ -198,7 +201,10 @@ export default function StaffRegisterPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-white/82">
+                  <label
+                    htmlFor="password"
+                    className="mb-2 block text-sm font-medium text-white/82"
+                  >
                     Password
                   </label>
                   <input
@@ -212,7 +218,10 @@ export default function StaffRegisterPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="inviteCode" className="mb-2 block text-sm font-medium text-white/82">
+                  <label
+                    htmlFor="inviteCode"
+                    className="mb-2 block text-sm font-medium text-white/82"
+                  >
                     Staff invite code
                   </label>
                   <input
@@ -259,7 +268,8 @@ export default function StaffRegisterPage() {
                   Only authorised staff should have the invite code
                 </p>
                 <p className="mt-2 text-sm leading-6 text-white/55">
-                  Once your account is created, you can sign in normally and access the dashboard immediately.
+                  Once your account is created, you can sign in normally and access
+                  the dashboard immediately.
                 </p>
               </div>
             </div>
