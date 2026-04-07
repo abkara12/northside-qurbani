@@ -503,6 +503,10 @@ export default function AdminPage() {
   });
   const [manualSaving, setManualSaving] = useState(false);
 
+  const [bulkReminderActive, setBulkReminderActive] = useState(false);
+  const [bulkReminderIndex, setBulkReminderIndex] = useState(0);
+  const [bulkReminderTargets, setBulkReminderTargets] = useState<OrderItem[]>([]);
+
   const selectedBookingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -637,42 +641,51 @@ export default function AdminPage() {
   }, [activeOrders]);
 
   const filteredOrders = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const next = orders.filter((order) => {
-      const matchesSearch =
-        !term ||
-        order.fullName?.toLowerCase().includes(term) ||
-        order.phone?.toLowerCase().includes(term) ||
-        order.email?.toLowerCase().includes(term) ||
-        orderReference(order.id).toLowerCase().includes(term) ||
-        sheepSummary(order).toLowerCase().includes(term);
+  const term = search.trim().toLowerCase();
 
-      const payment = (order.paymentStatus || "pending").toLowerCase();
-      const matchesPayment =
-        paymentFilter === "all" ||
-        (paymentFilter === "paid" && payment === "paid") ||
-        (paymentFilter === "unpaid" && payment !== "paid");
+  const next = orders.filter((order) => {
+    const matchesSearch =
+      !term ||
+      order.fullName?.toLowerCase().includes(term) ||
+      order.phone?.toLowerCase().includes(term) ||
+      order.email?.toLowerCase().includes(term) ||
+      orderReference(order.id).toLowerCase().includes(term) ||
+      sheepSummary(order).toLowerCase().includes(term);
 
-      const status = statusLabel(order).toLowerCase();
-      const matchesWorkflow =
-        workflowFilter === "all" ||
-        (workflowFilter === "pending" && status === "pending") ||
-        (workflowFilter === "slaughtered" && status === "slaughtered") ||
-        (workflowFilter === "delivered" && status === "delivered") ||
-        (workflowFilter === "cancelled" && status === "cancelled");
+    const payment = (order.paymentStatus || "pending").toLowerCase();
+    const matchesPayment =
+      paymentFilter === "all" ||
+      (paymentFilter === "paid" && payment === "paid") ||
+      (paymentFilter === "unpaid" && payment !== "paid");
 
-      return matchesSearch && matchesPayment && matchesWorkflow;
-    });
+    const matchesWorkflow =
+      workflowFilter === "all" ||
+      (workflowFilter === "pending" &&
+        !order.cancelled &&
+        !order.slaughtered &&
+        !order.delivered) ||
+      (workflowFilter === "slaughtered" &&
+        !order.cancelled &&
+        !!order.slaughtered &&
+        !order.delivered) ||
+      (workflowFilter === "delivered" &&
+        !order.cancelled &&
+        !!order.delivered) ||
+      (workflowFilter === "cancelled" &&
+        !!order.cancelled);
 
-    return [...next].sort((a, b) => {
-      const nameA = (a.fullName || "").trim();
-      const nameB = (b.fullName || "").trim();
-      if (!nameA && !nameB) return 0;
-      if (!nameA) return 1;
-      if (!nameB) return -1;
-      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
-    });
-  }, [orders, search, paymentFilter, workflowFilter]);
+    return matchesSearch && matchesPayment && matchesWorkflow;
+  });
+
+  return [...next].sort((a, b) => {
+    const nameA = (a.fullName || "").trim();
+    const nameB = (b.fullName || "").trim();
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
+    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+  });
+}, [orders, search, paymentFilter, workflowFilter]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -725,6 +738,8 @@ export default function AdminPage() {
     }));
   }, [activeOrders, settings.weightOptions]);
 
+  const currentBulkReminderOrder = bulkReminderTargets[bulkReminderIndex] || null;
+
   function markDirty() {
     setHasUnsavedChanges(true);
     setSaveMessage("");
@@ -773,19 +788,64 @@ export default function AdminPage() {
       alert("This customer does not have a valid phone number saved.");
       return;
     }
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    window.open(
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   function handleBulkPaymentReminders() {
-    const targets = unpaidOrders.filter((order) => cleanPhoneForWhatsApp(order.phone));
+    const targets = unpaidOrders
+      .filter((order) => cleanPhoneForWhatsApp(order.phone))
+      .sort((a, b) =>
+        (a.fullName || "").localeCompare(b.fullName || "", undefined, {
+          sensitivity: "base",
+        })
+      );
+
     if (!targets.length) {
       alert("There are no unpaid customers with valid phone numbers.");
       return;
     }
-    if (!window.confirm(`This will open ${targets.length} WhatsApp reminder tab(s). Continue?`)) return;
-    targets.forEach((order, index) => {
-      setTimeout(() => openWhatsAppForOrder(order, buildPaymentReminderMessage(order, settings)), index * 250);
-    });
+
+    setBulkReminderTargets(targets);
+    setBulkReminderIndex(0);
+    setBulkReminderActive(true);
+    setShowOutstandingPanel(false);
+    setShowManualForm(false);
+    setShowSettings(false);
+  }
+
+  function openCurrentBulkReminder() {
+    if (!currentBulkReminderOrder) return;
+    openWhatsAppForOrder(
+      currentBulkReminderOrder,
+      buildPaymentReminderMessage(currentBulkReminderOrder, settings)
+    );
+  }
+
+  function goToNextBulkReminder() {
+    if (bulkReminderIndex >= bulkReminderTargets.length - 1) {
+      setBulkReminderActive(false);
+      setBulkReminderTargets([]);
+      setBulkReminderIndex(0);
+      setSaveMessage("Bulk reminder queue completed.");
+      setTimeout(() => setSaveMessage(""), 3000);
+      return;
+    }
+
+    setBulkReminderIndex((prev) => prev + 1);
+  }
+
+  function skipBulkReminder() {
+    goToNextBulkReminder();
+  }
+
+  function stopBulkReminder() {
+    setBulkReminderActive(false);
+    setBulkReminderTargets([]);
+    setBulkReminderIndex(0);
   }
 
   async function handleQuickToggle(
@@ -801,21 +861,12 @@ export default function AdminPage() {
 
     if (field === "slaughtered") {
       const next = !order.slaughtered;
-      if (next) {
-        const confirmed = window.confirm("Mark this booking as slaughtered?");
-        if (!confirmed) return;
-      }
+
       await updateField(order.id, {
         slaughtered: next,
         queueNumber: next ? null : order.queueNumber || null,
       });
 
-      if (next && !order.cancelled) {
-        const shouldOpenWhatsApp = window.confirm(
-          "Open WhatsApp slaughter confirmation for this customer?"
-        );
-        if (shouldOpenWhatsApp) openWhatsAppForOrder(order, buildSlaughteredMessage(order));
-      }
       return;
     }
 
@@ -839,10 +890,20 @@ export default function AdminPage() {
     setSimpleSearch("");
   }
 
-  function handleOpenBooking(order: OrderItem) {
-    setSelectedOrder(order);
-  }
+function handleOpenBooking(order: OrderItem) {
+  setMode("management");
+  setShowOutstandingPanel(false);
+  setShowManualForm(false);
+  setShowSettings(false);
+  setSelectedOrder(order);
 
+  setTimeout(() => {
+    selectedBookingRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 150);
+}
   async function saveEditForm() {
     if (!selectedOrder || !editForm) return;
     const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
@@ -1186,13 +1247,6 @@ export default function AdminPage() {
                               </button>
                             )}
 
-                            <button
-                              type="button"
-                              onClick={() => handleOpenBooking(order)}
-                              className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                            >
-                              Open Booking
-                            </button>
                           </div>
                         </div>
                       );
@@ -1266,20 +1320,6 @@ export default function AdminPage() {
                       )}
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={updatingField === order.id}
-                          onClick={() => handleQuickToggle(order, "paymentStatus")}
-                          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition disabled:opacity-50 ${
-                            (order.paymentStatus || "pending").toLowerCase() === "paid"
-                              ? "border border-emerald-400/30 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
-                              : "border border-amber-400/30 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
-                          }`}
-                        >
-                          {(order.paymentStatus || "pending").toLowerCase() === "paid"
-                            ? "✓ Paid"
-                            : "Mark Paid"}
-                        </button>
 
                         <button
                           type="button"
@@ -1378,13 +1418,79 @@ export default function AdminPage() {
                   onClick={handleBulkPaymentReminders}
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
                 >
-                  Bulk Payment Reminder
+                  Start Bulk Reminder Queue
                 </button>
               </div>
 
               {saveMessage ? (
                 <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-200">
                   {saveMessage}
+                </div>
+              ) : null}
+
+              {bulkReminderActive && currentBulkReminderOrder ? (
+                <div className="mt-6 rounded-[28px] border border-[#c6a268]/25 bg-[#c6a268]/[0.06] p-5">
+                  <h3 className="text-lg font-semibold text-white">Bulk Reminder Queue</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Open each unpaid customer one by one, send the message, then continue to the next.
+                  </p>
+
+                  <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <div className="text-sm text-white/45">
+                      Customer {bulkReminderIndex + 1} of {bulkReminderTargets.length}
+                    </div>
+
+                    <div className="mt-2 text-lg font-semibold text-white">
+                      {currentBulkReminderOrder.fullName || "Unnamed booking"}
+                    </div>
+
+                    <div className="mt-1 text-sm text-white/55">
+                      {orderReference(currentBulkReminderOrder.id)} •{" "}
+                      {currentBulkReminderOrder.phone || "No phone"}
+                    </div>
+
+                    <div className="mt-1 text-sm text-[#d8b67e]">
+                      {sheepSummary(currentBulkReminderOrder)}
+                    </div>
+
+                    <div className="mt-1 text-sm font-medium text-white">
+                      {formatZAR(currentBulkReminderOrder.totalPrice || 0)}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={openCurrentBulkReminder}
+                        className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
+                      >
+                        Open WhatsApp
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={goToNextBulkReminder}
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                      >
+                        Next Customer
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={skipBulkReminder}
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                      >
+                        Skip
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={stopBulkReminder}
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-rose-400/20 bg-rose-400/10 px-5 text-sm font-medium text-rose-200 transition hover:bg-rose-400/20"
+                      >
+                        End Bulk Session
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : null}
 
