@@ -272,6 +272,17 @@ function bookingAmountLabel(order: OrderItem) {
   }
   return formatZAR(order.totalPrice || 0);
 }
+function getLiveCalculatedTotal(editForm: EditFormState | null) {
+  if (!editForm) return 0;
+  return Number(editForm.liveQuantity || 0) * Number(editForm.livePricePerSheep || 0);
+}
+
+function livePricingLabel(order: OrderItem) {
+  if (order.orderType !== "live") return "";
+  if (order.pricingVisible === false) return "Awaiting Price";
+  if ((order.livePricePerSheep || 0) > 0) return "Price Set";
+  return "Awaiting Price";
+}
 
 function buildPaymentReminderMessage(order: OrderItem, settings: AppSettings) {
   const ref = orderReference(order.id);
@@ -322,7 +333,29 @@ function PaymentBadge({ value }: { value?: string }) {
   );
 }
 
+function LivePricingBadge({ order }: { order: OrderItem }) {
+  if (order.orderType !== "live") return null;
+
+  const ready = order.pricingVisible !== false && (order.livePricePerSheep || 0) > 0;
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+        ready
+          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+          : "border-amber-400/20 bg-amber-400/10 text-amber-200"
+      }`}
+    >
+      {ready ? "Price Set" : "Awaiting Price"}
+    </span>
+  );
+}
+
 function WorkflowBadge({ order }: { order: OrderItem }) {
+  if (order.orderType === "live" && !order.cancelled && !order.delivered) {
+    return null;
+  }
+
   const label = statusLabel(order);
   const className =
     label === "Delivered"
@@ -339,11 +372,10 @@ function WorkflowBadge({ order }: { order: OrderItem }) {
     <span
       className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${className}`}
     >
-      {label}
+      {order.orderType === "live" && label === "Delivered" ? "Collected" : label}
     </span>
   );
 }
-
 function FilterButton({
   active,
   label,
@@ -481,6 +513,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
+  const [livePricingFilter, setLivePricingFilter] = useState("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState("all");
 
   const [mode, setMode] = useState<"simple" | "management">("simple");
@@ -657,54 +690,69 @@ export default function AdminPage() {
   }, [activeQurbaniOrders]);
 
   const filteredOrders = useMemo(() => {
-    const term = search.trim().toLowerCase();
+  const term = search.trim().toLowerCase();
 
-    const next = orders.filter((order) => {
-      const matchesSearch =
-        !term ||
-        order.fullName?.toLowerCase().includes(term) ||
-        order.phone?.toLowerCase().includes(term) ||
-        order.email?.toLowerCase().includes(term) ||
-        orderReference(order.id).toLowerCase().includes(term) ||
-        sheepSummary(order).toLowerCase().includes(term);
+  const next = orders.filter((order) => {
+    const matchesSearch =
+      !term ||
+      order.fullName?.toLowerCase().includes(term) ||
+      order.phone?.toLowerCase().includes(term) ||
+      order.email?.toLowerCase().includes(term) ||
+      orderReference(order.id).toLowerCase().includes(term) ||
+      sheepSummary(order).toLowerCase().includes(term);
 
-      const payment = (order.paymentStatus || "pending").toLowerCase();
-      const matchesPayment =
-        paymentFilter === "all" ||
-        (paymentFilter === "paid" && payment === "paid") ||
-        (paymentFilter === "unpaid" && payment !== "paid");
+    const payment = (order.paymentStatus || "pending").toLowerCase();
+    const matchesPayment =
+      paymentFilter === "all" ||
+      (paymentFilter === "paid" && payment === "paid") ||
+      (paymentFilter === "unpaid" && payment !== "paid");
 
-      const matchesOrderType =
-        orderTypeFilter === "all" ||
-        (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
-        (orderTypeFilter === "live" && order.orderType === "live");
+    const matchesOrderType =
+      orderTypeFilter === "all" ||
+      (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
+      (orderTypeFilter === "live" && order.orderType === "live");
 
-      const matchesWorkflow =
-        workflowFilter === "all" ||
-        (workflowFilter === "pending" &&
-          !order.cancelled &&
-          !order.delivered &&
-          (order.orderType === "live" ? true : !order.slaughtered)) ||
-        (workflowFilter === "slaughtered" &&
-          order.orderType !== "live" &&
-          !order.cancelled &&
-          !!order.slaughtered &&
-          !order.delivered) ||
-        (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
-        (workflowFilter === "cancelled" && !!order.cancelled);
+    const matchesWorkflow =
+      workflowFilter === "all" ||
+      (workflowFilter === "pending" &&
+        !order.cancelled &&
+        !order.delivered &&
+        (order.orderType === "live" ? true : !order.slaughtered)) ||
+      (workflowFilter === "slaughtered" &&
+        order.orderType !== "live" &&
+        !order.cancelled &&
+        !!order.slaughtered &&
+        !order.delivered) ||
+      (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+      (workflowFilter === "cancelled" && !!order.cancelled);
 
-      return matchesSearch && matchesPayment && matchesOrderType && matchesWorkflow;
-    });
+    const matchesLivePricing =
+      livePricingFilter === "all" ||
+      order.orderType !== "live" ||
+      (livePricingFilter === "priced" &&
+        order.pricingVisible !== false &&
+        (order.livePricePerSheep || 0) > 0) ||
+      (livePricingFilter === "awaiting" &&
+        (order.pricingVisible === false || (order.livePricePerSheep || 0) <= 0));
 
-    return [...next].sort((a, b) => {
-      const nameA = (a.fullName || "").trim();
-      const nameB = (b.fullName || "").trim();
-      if (!nameA && !nameB) return 0;
-      if (!nameA) return 1;
-      if (!nameB) return -1;
-      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
-    });
-  }, [orders, search, paymentFilter, workflowFilter, orderTypeFilter]);
+    return (
+      matchesSearch &&
+      matchesPayment &&
+      matchesOrderType &&
+      matchesWorkflow &&
+      matchesLivePricing
+    );
+  });
+
+  return [...next].sort((a, b) => {
+    const nameA = (a.fullName || "").trim();
+    const nameB = (b.fullName || "").trim();
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
+    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+  });
+}, [orders, search, paymentFilter, workflowFilter, orderTypeFilter, livePricingFilter]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -743,7 +791,18 @@ export default function AdminPage() {
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
   const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalOutstanding = unpaidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-  const liveOrders = activeOrders.filter((o) => o.orderType === "live");
+ const liveOrders = activeOrders.filter((o) => o.orderType === "live");
+
+const totalLiveSheepOrdered = liveOrders.reduce(
+  (sum, order) => sum + (order.liveQuantity || order.quantity || 0),
+  0
+);
+
+const totalLiveValue = liveOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+
+const liveOutstandingValue = liveOrders
+  .filter((o) => (o.paymentStatus || "pending").toLowerCase() !== "paid")
+  .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
   const sizeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -1315,7 +1374,14 @@ export default function AdminPage() {
                             {orderReference(order.id)} • {order.phone || "No phone"}
                           </div>
 
-                          <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
+                          <div className="mt-1 text-sm text-[#d8b67e]">
+  {sheepSummary(order)}
+  {order.orderType === "live" &&
+  order.pricingVisible !== false &&
+  (order.livePricePerSheep || 0) > 0
+    ? ` • ${formatZAR(order.livePricePerSheep)} each`
+    : ""}
+</div>
 
                           <div className="mt-4 flex flex-wrap items-center gap-3">
                             {alreadyInQueue ? (
@@ -1444,30 +1510,43 @@ export default function AdminPage() {
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <SummaryCard
-                label="Total Bookings"
-                value={String(activeOrders.length)}
-                helper={`${cancelledOrders.length} cancelled`}
-              />
-              <SummaryCard
-                label="Collected"
-                value={formatZAR(totalCollected)}
-                helper={`${paidOrders.length} paid`}
-              />
-              <SummaryCard
-                label="Outstanding"
-                value={formatZAR(totalOutstanding)}
-                helper={`${unpaidOrders.length} unpaid`}
-              />
-              <SummaryCard
-                label="Slaughtered"
-                value={String(slaughteredOrders.length)}
-                helper={`${deliveredOrders.length} delivered`}
-              />
-              <SummaryCard label="Live Sheep" value={String(liveOrders.length)} helper="Separate flow" />
-            </div>
-
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
+  <SummaryCard
+    label="Total Bookings"
+    value={String(activeOrders.length)}
+    helper={`${cancelledOrders.length} cancelled`}
+  />
+  <SummaryCard
+    label="Collected"
+    value={formatZAR(totalCollected)}
+    helper={`${paidOrders.length} paid`}
+  />
+  <SummaryCard
+    label="Live Sheep Value"
+    value={formatZAR(totalLiveValue)}
+    helper="All live sheep totals"
+  />
+  <SummaryCard
+    label="Live Unpaid"
+    value={formatZAR(liveOutstandingValue)}
+    helper="Outstanding live sheep"
+  />
+  <SummaryCard
+    label="Outstanding"
+    value={formatZAR(totalOutstanding)}
+    helper={`${unpaidOrders.length} unpaid`}
+  />
+  <SummaryCard
+    label="Slaughtered"
+    value={String(slaughteredOrders.length)}
+    helper={`${deliveredOrders.length} delivered`}
+  />
+  <SummaryCard
+    label="Live Sheep Ordered"
+    value={String(totalLiveSheepOrdered)}
+    helper={`${liveOrders.length} live bookings`}
+  />
+</div>
             <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
             </div>
@@ -1597,7 +1676,7 @@ export default function AdminPage() {
                 </div>
               ) : null}
 
-              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
+              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
                   <input
@@ -1650,6 +1729,27 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
+
+                <div>
+  <div className="mb-2 text-sm font-medium text-white/82">Live Pricing</div>
+  <div className="flex flex-wrap gap-2">
+    <FilterButton
+      active={livePricingFilter === "all"}
+      label="All"
+      onClick={() => setLivePricingFilter("all")}
+    />
+    <FilterButton
+      active={livePricingFilter === "awaiting"}
+      label="Awaiting Price"
+      onClick={() => setLivePricingFilter("awaiting")}
+    />
+    <FilterButton
+      active={livePricingFilter === "priced"}
+      label="Price Set"
+      onClick={() => setLivePricingFilter("priced")}
+    />
+  </div>
+</div>
 
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Status</div>
@@ -2004,13 +2104,14 @@ export default function AdminPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <div className="font-medium text-white">{order.fullName}</div>
-                                {order.orderType === "live" && (
-                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-                                    Live Sheep
-                                  </span>
-                                )}
-                              </div>
+  <div className="font-medium text-white">{order.fullName}</div>
+  {order.orderType === "live" && (
+    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+      Live Sheep
+    </span>
+  )}
+  <LivePricingBadge order={order} />
+</div>
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
                             </div>
                             <div className="text-sm font-semibold text-[#d8b67e]">
@@ -2069,16 +2170,17 @@ export default function AdminPage() {
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <div className="text-base font-semibold text-white">
-                                  {order.fullName || "Unnamed booking"}
-                                </div>
-                                <PaymentBadge value={order.paymentStatus} />
-                                <WorkflowBadge order={order} />
-                                {order.orderType === "live" && (
-                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-                                    Live Sheep
-                                  </span>
-                                )}
+  <div className="text-base font-semibold text-white">
+    {order.fullName || "Unnamed booking"}
+  </div>
+  <PaymentBadge value={order.paymentStatus} />
+  <WorkflowBadge order={order} />
+  {order.orderType === "live" && (
+    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+      Live Sheep
+    </span>
+  )}
+  <LivePricingBadge order={order} />
                                 {order.manualEntry && (
                                   <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
                                     Manual
@@ -2090,7 +2192,12 @@ export default function AdminPage() {
                                 {orderReference(order.id)} • {order.phone || "No phone"}
                               </div>
 
-                              <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
+                              <div className="mt-1 text-sm text-[#d8b67e]">
+  {sheepSummary(order)}
+  {order.orderType === "live" && order.pricingVisible !== false && (order.livePricePerSheep || 0) > 0
+    ? ` • ${formatZAR(order.livePricePerSheep)} each`
+    : ""}
+</div>
 
                               <div className="mt-2 text-sm font-medium text-white">
                                 {bookingAmountLabel(order)}
@@ -2184,9 +2291,18 @@ export default function AdminPage() {
                             value={`${selectedOrder.liveQuantity || selectedOrder.quantity || 0} sheep`}
                           />
                           <DetailRow
-                            label="Total"
-                            value={bookingAmountLabel(selectedOrder)}
-                          />
+  label="Total"
+  value={
+    editForm.pricingVisible
+      ? formatZAR(getLiveCalculatedTotal(editForm))
+      : "To be confirmed"
+  }
+/>
+{(!editForm.pricingVisible || Number(editForm.livePricePerSheep || 0) <= 0) && (
+    <div className="rounded-[20px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+      This live sheep booking is still awaiting admin pricing.
+    </div>
+  )}
                           <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
                           <DetailRow label="Queue" value="Not used for live sheep" />
                         </div>
@@ -2254,6 +2370,11 @@ export default function AdminPage() {
                                 className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                               />
                             </div>
+                            <div className="mt-2 text-2xl font-semibold text-white">
+    {editForm.pricingVisible
+      ? formatZAR(getLiveCalculatedTotal(editForm))
+      : "To be confirmed"}
+  </div>
                           </div>
 
                           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
@@ -2286,13 +2407,8 @@ export default function AdminPage() {
                             <div className="mt-4 rounded-[20px] border border-white/10 bg-black/10 p-4">
                               <div className="text-sm text-white/55">Calculated total</div>
                               <div className="mt-2 text-2xl font-semibold text-white">
-                                {editForm.pricingVisible
-                                  ? formatZAR(
-                                      Number(editForm.liveQuantity || 0) *
-                                        Number(editForm.livePricePerSheep || 0)
-                                    )
-                                  : "To be confirmed"}
-                              </div>
+  {editForm.pricingVisible ? formatZAR(getLiveCalculatedTotal(editForm)) : "To be confirmed"}
+</div>
                             </div>
                           </div>
 
@@ -2424,8 +2540,22 @@ export default function AdminPage() {
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
                           <DetailRow label="Booking" value={sheepSummary(selectedOrder)} />
-                          <DetailRow label="Total" value={bookingAmountLabel(selectedOrder)} />
-                          <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
+                          <DetailRow
+  label="Total"
+  value={
+    editForm.pricingVisible
+      ? formatZAR(getLiveCalculatedTotal(editForm))
+      : "To be confirmed"
+  }
+/>
+                          <DetailRow
+  label="Current Status"
+  value={
+    statusLabel(selectedOrder) === "Delivered"
+      ? "Collected"
+      : statusLabel(selectedOrder)
+  }
+/>
                           <DetailRow
                             label="Queue"
                             value={
