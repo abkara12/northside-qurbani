@@ -56,8 +56,9 @@ type OrderItem = {
   manualEntry?: boolean;
   bookingYear?: number;
   orderType?: "qurbani" | "live";
-liveQuantity?: number;
-pricingVisible?: boolean;
+  liveQuantity?: number;
+  livePricePerSheep?: number;
+  pricingVisible?: boolean;
 };
 
 type SettingsWeightOption = {
@@ -96,6 +97,9 @@ type EditFormState = {
     label: string;
     quantity: string;
   }>;
+  liveQuantity: string;
+  livePricePerSheep: string;
+  pricingVisible: boolean;
 };
 
 type ManualFormState = {
@@ -133,17 +137,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     { label: "56–60 kg", price: 4200 },
   ],
 };
-
-const CUT_PREFERENCE_OPTIONS = [
-  "Curry packs",
-  "Chops",
-  "Ribs",
-  "Whole leg",
-  "Liver",
-  "Back legs sliced",
-  "Front legs whole",
-  "Front legs sliced",
-];
 
 function formatZAR(value?: number) {
   return new Intl.NumberFormat("en-ZA", {
@@ -208,24 +201,23 @@ function sheepSummary(order: OrderItem) {
 
 function statusLabel(order: OrderItem) {
   if (order.cancelled) return "Cancelled";
+
+  if (order.orderType === "live") {
+    if (order.delivered) return "Delivered";
+    return "Pending";
+  }
+
   if (order.delivered) return "Delivered";
   if (order.slaughtered) return "Slaughtered";
   if ((order.queueNumber || 0) > 0) return "In Queue";
   return "Pending";
 }
 
-function totalSheep(order: OrderItem) {
-  if (order.weightBreakdown?.length) {
-    return order.weightBreakdown.reduce((sum, row) => sum + (row.quantity || 0), 0);
-  }
-  return order.quantity || 0;
-}
-
-function buildLegacyPreferredWeight(weightBreakdown: WeightBreakdownItem[]) {
-  return weightBreakdown.map((row) => `${row.label} x${row.quantity}`).join(", ");
-}
-
 function rowsFromOrder(order: OrderItem) {
+  if (order.orderType === "live") {
+    return [];
+  }
+
   if (order.weightBreakdown?.length) {
     return order.weightBreakdown.map((row) => ({
       id: row.id || slugId(),
@@ -233,6 +225,7 @@ function rowsFromOrder(order: OrderItem) {
       quantity: String(row.quantity || 1),
     }));
   }
+
   return [
     {
       id: slugId(),
@@ -240,6 +233,10 @@ function rowsFromOrder(order: OrderItem) {
       quantity: String(order.quantity || 1),
     },
   ];
+}
+
+function buildLegacyPreferredWeight(weightBreakdown: WeightBreakdownItem[]) {
+  return weightBreakdown.map((row) => `${row.label} x${row.quantity}`).join(", ");
 }
 
 function getPriceForLabel(label: string, settings: AppSettings) {
@@ -269,15 +266,26 @@ function computeBreakdownFromRows(
   })) as WeightBreakdownItem[];
 }
 
+function bookingAmountLabel(order: OrderItem) {
+  if (order.orderType === "live" && order.pricingVisible === false) {
+    return "To be confirmed";
+  }
+  return formatZAR(order.totalPrice || 0);
+}
+
 function buildPaymentReminderMessage(order: OrderItem, settings: AppSettings) {
   const ref = orderReference(order.id);
   const summary = sheepSummary(order);
-  const total = formatZAR(order.totalPrice || 0);
+  const amountLine =
+    order.orderType === "live" && order.pricingVisible === false
+      ? "Amount Due: To be confirmed by admin"
+      : `Amount Due: ${formatZAR(order.totalPrice || 0)}`;
+
   return `${settings.reminderMessageIntro}
 
 Booking Ref: ${ref}
 Booking: ${summary}
-Amount Due: ${total}
+${amountLine}
 
 Bank: ${settings.bankName}
 Account Name: ${settings.accountName}
@@ -297,15 +305,6 @@ Your Northside Qurbani booking (${ref}) has been cancelled.
 Reason: ${reason || "No reason provided"}
 
 If this was done in error, please contact the team directly.`;
-}
-
-function buildSlaughteredMessage(order: OrderItem) {
-  const ref = orderReference(order.id);
-  return `Assalaamu alaikum.
-
-Your Northside Qurbani booking (${ref}) has been marked as slaughtered.
-
-Jazakumullahu khayran.`;
 }
 
 function PaymentBadge({ value }: { value?: string }) {
@@ -482,6 +481,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
+  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
 
   const [mode, setMode] = useState<"simple" | "management">("simple");
 
@@ -623,6 +623,9 @@ export default function AdminPage() {
       cancelled: !!selectedOrder.cancelled,
       cancelReason: selectedOrder.cancelReason || "",
       weightRows: rowsFromOrder(selectedOrder),
+      liveQuantity: String(selectedOrder.liveQuantity || selectedOrder.quantity || 1),
+      livePricePerSheep: String(selectedOrder.livePricePerSheep || 0),
+      pricingVisible: selectedOrder.pricingVisible !== false,
     });
 
     setHasUnsavedChanges(false);
@@ -640,71 +643,68 @@ export default function AdminPage() {
 
   const activeOrders = useMemo(() => orders.filter((o) => !o.cancelled), [orders]);
 
-const activeQurbaniOrders = useMemo(
-  () => activeOrders.filter((o) => o.orderType !== "live"),
-  [activeOrders]
-);
+  const activeQurbaniOrders = useMemo(
+    () => activeOrders.filter((o) => o.orderType !== "live"),
+    [activeOrders]
+  );
 
   const nextQueueNumber = useMemo(() => {
-    const maxQueue = activeOrders.reduce((max, order) => {
+    const maxQueue = activeQurbaniOrders.reduce((max, order) => {
       const value = order.queueNumber || 0;
       return value > max ? value : max;
     }, 0);
     return maxQueue + 1;
   }, [activeQurbaniOrders]);
 
+  const filteredOrders = useMemo(() => {
+    const term = search.trim().toLowerCase();
 
-  
- const filteredOrders = useMemo(() => {
-  const term = search.trim().toLowerCase();
+    const next = orders.filter((order) => {
+      const matchesSearch =
+        !term ||
+        order.fullName?.toLowerCase().includes(term) ||
+        order.phone?.toLowerCase().includes(term) ||
+        order.email?.toLowerCase().includes(term) ||
+        orderReference(order.id).toLowerCase().includes(term) ||
+        sheepSummary(order).toLowerCase().includes(term);
 
-  const next = orders.filter((order) => {
-    const matchesSearch =
-      !term ||
-      order.fullName?.toLowerCase().includes(term) ||
-      order.phone?.toLowerCase().includes(term) ||
-      order.email?.toLowerCase().includes(term) ||
-      orderReference(order.id).toLowerCase().includes(term) ||
-      sheepSummary(order).toLowerCase().includes(term);
+      const payment = (order.paymentStatus || "pending").toLowerCase();
+      const matchesPayment =
+        paymentFilter === "all" ||
+        (paymentFilter === "paid" && payment === "paid") ||
+        (paymentFilter === "unpaid" && payment !== "paid");
 
-    const payment = (order.paymentStatus || "pending").toLowerCase();
-    const matchesPayment =
-      paymentFilter === "all" ||
-      (paymentFilter === "paid" && payment === "paid") ||
-      (paymentFilter === "unpaid" && payment !== "paid");
+      const matchesOrderType =
+        orderTypeFilter === "all" ||
+        (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
+        (orderTypeFilter === "live" && order.orderType === "live");
 
-    const matchesWorkflow =
-      order.orderType === "live"
-        ? workflowFilter === "all" ||
-          workflowFilter === "pending" ||
-          (workflowFilter === "delivered" && !!order.delivered) ||
-          (workflowFilter === "cancelled" && !!order.cancelled)
-        : workflowFilter === "all" ||
-          (workflowFilter === "pending" &&
-            !order.cancelled &&
-            !order.slaughtered &&
-            !order.delivered) ||
-          (workflowFilter === "slaughtered" &&
-            !order.cancelled &&
-            !!order.slaughtered &&
-            !order.delivered) ||
-          (workflowFilter === "delivered" &&
-            !order.cancelled &&
-            !!order.delivered) ||
-          (workflowFilter === "cancelled" && !!order.cancelled);
+      const matchesWorkflow =
+        workflowFilter === "all" ||
+        (workflowFilter === "pending" &&
+          !order.cancelled &&
+          !order.delivered &&
+          (order.orderType === "live" ? true : !order.slaughtered)) ||
+        (workflowFilter === "slaughtered" &&
+          order.orderType !== "live" &&
+          !order.cancelled &&
+          !!order.slaughtered &&
+          !order.delivered) ||
+        (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+        (workflowFilter === "cancelled" && !!order.cancelled);
 
-    return matchesSearch && matchesPayment && matchesWorkflow;
-  });
+      return matchesSearch && matchesPayment && matchesOrderType && matchesWorkflow;
+    });
 
-  return [...next].sort((a, b) => {
-    const nameA = (a.fullName || "").trim();
-    const nameB = (b.fullName || "").trim();
-    if (!nameA && !nameB) return 0;
-    if (!nameA) return 1;
-    if (!nameB) return -1;
-    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
-  });
-}, [orders, search, paymentFilter, workflowFilter]);
+    return [...next].sort((a, b) => {
+      const nameA = (a.fullName || "").trim();
+      const nameB = (b.fullName || "").trim();
+      if (!nameA && !nameB) return 0;
+      if (!nameA) return 1;
+      if (!nameB) return -1;
+      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+    });
+  }, [orders, search, paymentFilter, workflowFilter, orderTypeFilter]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -737,9 +737,9 @@ const activeQurbaniOrders = useMemo(
   const unpaidOrders = activeOrders.filter(
     (o) => (o.paymentStatus || "pending").toLowerCase() !== "paid"
   );
-  const slaughteredOrders = activeOrders.filter((o) => !!o.slaughtered);
+  const slaughteredOrders = activeQurbaniOrders.filter((o) => !!o.slaughtered);
   const deliveredOrders = activeOrders.filter((o) => !!o.delivered);
-  const pendingOrders = activeOrders.filter((o) => !o.slaughtered && !o.cancelled);
+  const pendingOrders = activeQurbaniOrders.filter((o) => !o.slaughtered && !o.cancelled);
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
   const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalOutstanding = unpaidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -747,7 +747,7 @@ const activeQurbaniOrders = useMemo(
 
   const sizeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    activeOrders.forEach((order) => {
+    activeQurbaniOrders.forEach((order) => {
       (order.weightBreakdown || []).forEach((row) => {
         map.set(row.label, (map.get(row.label) || 0) + (row.quantity || 0));
       });
@@ -756,7 +756,7 @@ const activeQurbaniOrders = useMemo(
       label: option.label,
       value: map.get(option.label) || 0,
     }));
-  }, [activeOrders, settings.weightOptions]);
+  }, [activeQurbaniOrders, settings.weightOptions]);
 
   const currentBulkReminderOrder = bulkReminderTargets[bulkReminderIndex] || null;
 
@@ -880,13 +880,13 @@ const activeQurbaniOrders = useMemo(
     }
 
     if (field === "slaughtered") {
-      const next = !order.slaughtered;
+      if (order.orderType === "live") return;
 
+      const next = !order.slaughtered;
       await updateField(order.id, {
         slaughtered: next,
         queueNumber: next ? null : order.queueNumber || null,
       });
-
       return;
     }
 
@@ -901,6 +901,7 @@ const activeQurbaniOrders = useMemo(
   }
 
   async function handleCheckIn(order: OrderItem) {
+    if (order.orderType === "live") return;
     if (order.cancelled || order.delivered || order.slaughtered) return;
     if (order.queueNumber && order.queueNumber > 0) return;
     await updateField(order.id, {
@@ -910,23 +911,23 @@ const activeQurbaniOrders = useMemo(
     setSimpleSearch("");
   }
 
-function handleOpenBooking(order: OrderItem) {
-  setMode("management");
-  setShowOutstandingPanel(false);
-  setShowManualForm(false);
-  setShowSettings(false);
-  setSelectedOrder(order);
+  function handleOpenBooking(order: OrderItem) {
+    setMode("management");
+    setShowOutstandingPanel(false);
+    setShowManualForm(false);
+    setShowSettings(false);
+    setSelectedOrder(order);
 
-  setTimeout(() => {
-    selectedBookingRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, 150);
-}
+    setTimeout(() => {
+      selectedBookingRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+  }
+
   async function saveEditForm() {
     if (!selectedOrder || !editForm) return;
-    const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
 
     if (!editForm.fullName.trim()) {
       alert("Please enter the customer name.");
@@ -936,23 +937,6 @@ function handleOpenBooking(order: OrderItem) {
       alert("Please enter the customer phone number.");
       return;
     }
-    if (!weightBreakdown.length) {
-      alert("Please add at least one valid sheep selection.");
-      return;
-    }
-
-    const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
-    const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-    const servicesPerSheep = editForm.addServices ? 400 : 0;
-    const deliveryPerSheep = editForm.delivery ? 100 : 0;
-    const servicesTotal = quantity * servicesPerSheep;
-    const deliveryTotal = quantity * deliveryPerSheep;
-    const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-    const cutPreferences = editForm.cutPreferences
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
     if (editForm.cancelled && !editForm.cancelReason.trim()) {
       alert("Please enter a cancellation reason.");
       return;
@@ -960,6 +944,88 @@ function handleOpenBooking(order: OrderItem) {
 
     try {
       setSavingEdit(true);
+
+      if (selectedOrder.orderType === "live") {
+        const liveQuantity = Number(editForm.liveQuantity || 0);
+        const livePricePerSheep = Number(editForm.livePricePerSheep || 0);
+        const pricingVisible = !!editForm.pricingVisible;
+
+        if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
+          alert("Please enter a valid live sheep quantity.");
+          return;
+        }
+
+        if (pricingVisible && livePricePerSheep < 0) {
+          alert("Please enter a valid price per sheep.");
+          return;
+        }
+
+        const totalPrice = pricingVisible ? liveQuantity * livePricePerSheep : 0;
+
+        await updateDoc(doc(db, "orders", selectedOrder.id), {
+          fullName: editForm.fullName.trim(),
+          phone: editForm.phone.trim(),
+          email: editForm.email.trim(),
+          notes: editForm.notes.trim(),
+          quantity: liveQuantity,
+          liveQuantity,
+          livePricePerSheep,
+          pricingVisible,
+          totalPrice,
+          paymentStatus: editForm.paymentStatus,
+          delivered: editForm.cancelled ? false : editForm.delivered,
+          cancelled: editForm.cancelled,
+          cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
+          slaughtered: false,
+          queueNumber: null,
+          queueCheckedInAt: null,
+          addServices: false,
+          delivery: false,
+          servicesPerSheep: 0,
+          servicesTotal: 0,
+          deliveryPerSheep: 0,
+          deliveryTotal: 0,
+          basePriceTotal: pricingVisible ? totalPrice : 0,
+          preferredWeight: "",
+          weightBreakdown: [],
+          cutPreferences: [],
+          updatedAt: serverTimestamp(),
+        });
+
+        if (editForm.cancelled) {
+          if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
+            openWhatsAppForOrder(
+              selectedOrder,
+              buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
+            );
+          }
+        }
+
+        setHasUnsavedChanges(false);
+        setSaveMessage("Saved successfully.");
+        setTimeout(() => setSaveMessage(""), 3000);
+        return;
+      }
+
+      const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
+
+      if (!weightBreakdown.length) {
+        alert("Please add at least one valid sheep selection.");
+        return;
+      }
+
+      const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
+      const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
+      const servicesPerSheep = editForm.addServices ? 400 : 0;
+      const deliveryPerSheep = editForm.delivery ? 100 : 0;
+      const servicesTotal = quantity * servicesPerSheep;
+      const deliveryTotal = quantity * deliveryPerSheep;
+      const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+      const cutPreferences = editForm.cutPreferences
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
       await updateDoc(doc(db, "orders", selectedOrder.id), {
         fullName: editForm.fullName.trim(),
         phone: editForm.phone.trim(),
@@ -1062,6 +1128,7 @@ function handleOpenBooking(order: OrderItem) {
         queueNumber: null,
         manualEntry: true,
         bookingYear: new Date().getFullYear(),
+        orderType: "qurbani",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -1111,7 +1178,7 @@ function handleOpenBooking(order: OrderItem) {
         <div className="absolute bottom-[-18rem] left-[-12rem] h-[40rem] w-[40rem] rounded-full bg-[#7a5a45]/[0.06] blur-3xl" />
       </div>
 
-      <header className="mx-auto max-w-7xl px-4 pt-5 pb-0 sm:px-10">
+      <header className="mx-auto max-w-7xl px-4 pb-0 pt-5 sm:px-10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="grid h-[56px] w-[56px] flex-shrink-0 place-items-center rounded-[18px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:h-[72px] sm:w-[72px] sm:rounded-[22px]">
@@ -1185,8 +1252,8 @@ function handleOpenBooking(order: OrderItem) {
           </h1>
           <p className="mx-auto mt-4 max-w-3xl text-[0.95rem] leading-7 text-white/62 sm:text-[1.04rem] sm:leading-8 xl:mx-0">
             {mode === "simple"
-              ? "When a customer arrives at the farm, search for the booking and place them into the queue. Staff can then mark paid or slaughtered directly from the live queue."
-              : "Owner control for bookings, payments, settings, reminders, manual bookings, and full booking edits."}
+              ? "When a customer arrives at the farm, search for the qurbani booking and place them into the queue. Live sheep bookings stay out of this flow."
+              : "Owner control for bookings, live sheep pricing, payments, settings, reminders, manual bookings, and full booking edits."}
           </p>
         </div>
 
@@ -1206,7 +1273,8 @@ function handleOpenBooking(order: OrderItem) {
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-white">Add Customer To Queue</h3>
                 <p className="mt-1 text-sm text-white/55">
-                  When the customer arrives at the farm, search for their booking below and press the button to place them next in queue.
+                  Search qurbani customers below and place them into the queue in order of arrival.
+                  Live sheep orders do not appear here.
                 </p>
               </div>
 
@@ -1236,17 +1304,11 @@ function handleOpenBooking(order: OrderItem) {
                           className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 sm:p-5"
                         >
                           <div className="flex flex-wrap items-center gap-2">
-  {order.orderType === "live" && (
-    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-      Live Sheep
-    </span>
-  )}
-
-  <div className="text-base font-semibold text-white">
-    {order.fullName || "Unnamed booking"}
-  </div>
-  <PaymentBadge value={order.paymentStatus} />
-  <WorkflowBadge order={order} />
+                            <div className="text-base font-semibold text-white">
+                              {order.fullName || "Unnamed booking"}
+                            </div>
+                            <PaymentBadge value={order.paymentStatus} />
+                            <WorkflowBadge order={order} />
                           </div>
 
                           <div className="mt-2 text-sm text-white/55">
@@ -1272,7 +1334,6 @@ function handleOpenBooking(order: OrderItem) {
                                   : `Put Customer Next In Queue (#${nextQueueNumber})`}
                               </button>
                             )}
-
                           </div>
                         </div>
                       );
@@ -1281,7 +1342,8 @@ function handleOpenBooking(order: OrderItem) {
                 </div>
               ) : (
                 <div className="mt-5 rounded-[22px] border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/45">
-                  Start typing the customer name, phone number, email, or booking reference to place them into the slaughter queue.
+                  Start typing the customer name, phone number, email, or booking reference to place
+                  them into the slaughter queue.
                 </div>
               )}
             </div>
@@ -1291,7 +1353,7 @@ function handleOpenBooking(order: OrderItem) {
                 <div>
                   <h3 className="text-lg font-semibold text-white">Slaughter Queue</h3>
                   <p className="mt-1 text-sm text-white/55">
-                    In order of arrival. Mark paid or slaughtered directly here.
+                    In order of arrival. Live sheep orders stay out of this queue.
                   </p>
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
@@ -1325,7 +1387,7 @@ function handleOpenBooking(order: OrderItem) {
                           <PaymentBadge value={order.paymentStatus} />
                         </div>
                         <span className="text-sm font-semibold text-[#d8b67e]">
-                          {formatZAR(order.totalPrice || 0)}
+                          {bookingAmountLabel(order)}
                         </span>
                       </div>
 
@@ -1346,21 +1408,33 @@ function handleOpenBooking(order: OrderItem) {
                       )}
 
                       <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={updatingField === order.id}
+                          onClick={() => handleQuickToggle(order, "paymentStatus")}
+                          className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                            (order.paymentStatus || "pending").toLowerCase() === "paid"
+                              ? "bg-[#c6a268] text-[#161015]"
+                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                          }`}
+                        >
+                          {(order.paymentStatus || "pending").toLowerCase() === "paid"
+                            ? "Paid"
+                            : "Mark Paid"}
+                        </button>
 
-                        {order.orderType !== "live" && (
-  <button
-    type="button"
-    disabled={updatingField === order.id || !!order.cancelled}
-    onClick={() => handleQuickToggle(order, "slaughtered")}
-    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-      order.slaughtered
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
-  </button>
-)}
+                        <button
+                          type="button"
+                          disabled={updatingField === order.id || !!order.cancelled}
+                          onClick={() => handleQuickToggle(order, "slaughtered")}
+                          className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                            order.slaughtered
+                              ? "bg-[#c6a268] text-[#161015]"
+                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                          }`}
+                        >
+                          {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+                        </button>
                       </div>
                     </div>
                   ))
@@ -1391,12 +1465,8 @@ function handleOpenBooking(order: OrderItem) {
                 value={String(slaughteredOrders.length)}
                 helper={`${deliveredOrders.length} delivered`}
               />
-                          <SummaryCard
-              label="Live Sheep"
-              value={String(liveOrders.length)}
-              helper="Management only"
-            />
-                        </div>
+              <SummaryCard label="Live Sheep" value={String(liveOrders.length)} helper="Separate flow" />
+            </div>
 
             <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
@@ -1487,7 +1557,7 @@ function handleOpenBooking(order: OrderItem) {
                     </div>
 
                     <div className="mt-1 text-sm font-medium text-white">
-                      {formatZAR(currentBulkReminderOrder.totalPrice || 0)}
+                      {bookingAmountLabel(currentBulkReminderOrder)}
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -1527,7 +1597,7 @@ function handleOpenBooking(order: OrderItem) {
                 </div>
               ) : null}
 
-              <div className="mt-6 grid gap-4 xl:grid-cols-[1.4fr_auto_auto] xl:items-end">
+              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
                   <input
@@ -1556,6 +1626,27 @@ function handleOpenBooking(order: OrderItem) {
                       active={paymentFilter === "paid"}
                       label="Paid"
                       onClick={() => setPaymentFilter("paid")}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-sm font-medium text-white/82">Type</div>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterButton
+                      active={orderTypeFilter === "all"}
+                      label="All"
+                      onClick={() => setOrderTypeFilter("all")}
+                    />
+                    <FilterButton
+                      active={orderTypeFilter === "qurbani"}
+                      label="Qurbani"
+                      onClick={() => setOrderTypeFilter("qurbani")}
+                    />
+                    <FilterButton
+                      active={orderTypeFilter === "live"}
+                      label="Live Sheep"
+                      onClick={() => setOrderTypeFilter("live")}
                     />
                   </div>
                 </div>
@@ -1596,7 +1687,7 @@ function handleOpenBooking(order: OrderItem) {
                 <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
                   <h3 className="text-lg font-semibold text-white">Add Manual Booking</h3>
                   <p className="mt-1 text-sm text-white/55">
-                    Add a booking directly for a customer without using the order page.
+                    Add a qurbani booking directly for a customer without using the order page.
                   </p>
 
                   <form onSubmit={submitManualBooking} className="mt-5 grid gap-5">
@@ -1698,8 +1789,6 @@ function handleOpenBooking(order: OrderItem) {
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      
-
                       <div>
                         <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
                         <textarea
@@ -1915,20 +2004,18 @@ function handleOpenBooking(order: OrderItem) {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-  <div className="font-medium text-white">{order.fullName}</div>
-  {order.orderType === "live" && (
-    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-      Live Sheep
-    </span>
-  )}
-</div>
+                                <div className="font-medium text-white">{order.fullName}</div>
+                                {order.orderType === "live" && (
+                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+                                    Live Sheep
+                                  </span>
+                                )}
+                              </div>
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
                             </div>
                             <div className="text-sm font-semibold text-[#d8b67e]">
-  {order.pricingVisible === false
-    ? "To be confirmed"
-    : formatZAR(order.totalPrice || 0)}
-</div>
+                              {bookingAmountLabel(order)}
+                            </div>
                           </div>
                           <div className="mt-3 flex gap-2">
                             <button
@@ -1987,6 +2074,11 @@ function handleOpenBooking(order: OrderItem) {
                                 </div>
                                 <PaymentBadge value={order.paymentStatus} />
                                 <WorkflowBadge order={order} />
+                                {order.orderType === "live" && (
+                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+                                    Live Sheep
+                                  </span>
+                                )}
                                 {order.manualEntry && (
                                   <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
                                     Manual
@@ -2001,10 +2093,8 @@ function handleOpenBooking(order: OrderItem) {
                               <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
 
                               <div className="mt-2 text-sm font-medium text-white">
-  {order.pricingVisible === false
-    ? "To be confirmed"
-    : formatZAR(order.totalPrice || 0)}
-</div>
+                                {bookingAmountLabel(order)}
+                              </div>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -2023,18 +2113,20 @@ function handleOpenBooking(order: OrderItem) {
                                   : "Mark Paid"}
                               </button>
 
-                              <button
-                                type="button"
-                                disabled={updatingField === order.id || !!order.cancelled}
-                                onClick={() => handleQuickToggle(order, "slaughtered")}
-                                className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-                                  order.slaughtered
-                                    ? "bg-[#c6a268] text-[#161015]"
-                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                }`}
-                              >
-                                {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
-                              </button>
+                              {order.orderType !== "live" && (
+                                <button
+                                  type="button"
+                                  disabled={updatingField === order.id || !!order.cancelled}
+                                  onClick={() => handleQuickToggle(order, "slaughtered")}
+                                  className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                                    order.slaughtered
+                                      ? "bg-[#c6a268] text-[#161015]"
+                                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                  }`}
+                                >
+                                  {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -2078,13 +2170,261 @@ function handleOpenBooking(order: OrderItem) {
                   >
                     {!selectedOrder || !editForm ? (
                       <div className="text-sm text-white/55">No booking selected yet.</div>
+                    ) : selectedOrder.orderType === "live" ? (
+                      <div className="space-y-5">
+                        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                          <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
+                          <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
+                          <DetailRow
+                            label="Booking Type"
+                            value="Live Sheep Booking"
+                          />
+                          <DetailRow
+                            label="Live Sheep Quantity"
+                            value={`${selectedOrder.liveQuantity || selectedOrder.quantity || 0} sheep`}
+                          />
+                          <DetailRow
+                            label="Total"
+                            value={bookingAmountLabel(selectedOrder)}
+                          />
+                          <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
+                          <DetailRow label="Queue" value="Not used for live sheep" />
+                        </div>
+
+                        {hasUnsavedChanges ? (
+                          <div className="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm text-amber-200">
+                            Unsaved changes
+                          </div>
+                        ) : null}
+
+                        <div className="space-y-4">
+                          {[["Full name", "fullName"], ["Phone", "phone"], ["Email", "email"]].map(
+                            ([label, key]) => (
+                              <div key={key}>
+                                <label className="mb-2 block text-sm font-medium text-white/82">
+                                  {label}
+                                </label>
+                                <input
+                                  value={(editForm as any)[key]}
+                                  onChange={(e) => {
+                                    markDirty();
+                                    setEditForm((prev) =>
+                                      prev ? { ...prev, [key]: e.target.value } : prev
+                                    );
+                                  }}
+                                  className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                />
+                              </div>
+                            )
+                          )}
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-white/82">
+                                Live sheep quantity
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={editForm.liveQuantity}
+                                onChange={(e) => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, liveQuantity: e.target.value } : prev
+                                  );
+                                }}
+                                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-white/82">
+                                Price per sheep
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={editForm.livePricePerSheep}
+                                onChange={(e) => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, livePricePerSheep: e.target.value } : prev
+                                  );
+                                }}
+                                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-white">Live pricing</p>
+                                <p className="text-sm text-white/55">
+                                  Admin controls the price for live sheep bookings here.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, pricingVisible: !prev.pricingVisible } : prev
+                                  );
+                                }}
+                                className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                  editForm.pricingVisible
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {editForm.pricingVisible ? "Pricing Visible" : "Pricing Hidden"}
+                              </button>
+                            </div>
+
+                            <div className="mt-4 rounded-[20px] border border-white/10 bg-black/10 p-4">
+                              <div className="text-sm text-white/55">Calculated total</div>
+                              <div className="mt-2 text-2xl font-semibold text-white">
+                                {editForm.pricingVisible
+                                  ? formatZAR(
+                                      Number(editForm.liveQuantity || 0) *
+                                        Number(editForm.livePricePerSheep || 0)
+                                    )
+                                  : "To be confirmed"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">
+                              Notes
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={editForm.notes}
+                              onChange={(e) => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, notes: e.target.value } : prev
+                                );
+                              }}
+                              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        paymentStatus:
+                                          prev.paymentStatus === "paid" ? "pending" : "paid",
+                                      }
+                                    : prev
+                                );
+                              }}
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.paymentStatus === "paid"
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, delivered: !prev.delivered } : prev
+                                );
+                              }}
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.delivered
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.delivered ? "Delivered" : "Awaiting Collection"}
+                            </button>
+                          </div>
+
+                          <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/10 p-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, cancelled: !prev.cancelled } : prev
+                                );
+                              }}
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.cancelled
+                                  ? "bg-rose-300 text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.cancelled ? "Booking Cancelled" : "Cancel Booking"}
+                            </button>
+
+                            {editForm.cancelled ? (
+                              <div className="mt-4">
+                                <label className="mb-2 block text-sm font-medium text-white/90">
+                                  Cancellation reason
+                                </label>
+                                <textarea
+                                  rows={3}
+                                  value={editForm.cancelReason}
+                                  onChange={(e) => {
+                                    markDirty();
+                                    setEditForm((prev) =>
+                                      prev ? { ...prev, cancelReason: e.target.value } : prev
+                                    );
+                                  }}
+                                  className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              disabled={savingEdit}
+                              onClick={saveEditForm}
+                              className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+                            >
+                              {savingEdit ? "Saving..." : "Save Live Booking Changes"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openWhatsAppForOrder(
+                                  selectedOrder,
+                                  buildPaymentReminderMessage(selectedOrder, settings)
+                                )
+                              }
+                              className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
+                            >
+                              WhatsApp Reminder
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="space-y-5">
                         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
                           <DetailRow label="Booking" value={sheepSummary(selectedOrder)} />
-                          <DetailRow label="Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
+                          <DetailRow label="Total" value={bookingAmountLabel(selectedOrder)} />
                           <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
                           <DetailRow
                             label="Queue"
@@ -2240,23 +2580,6 @@ function handleOpenBooking(order: OrderItem) {
 
                           <div>
                             <label className="mb-2 block text-sm font-medium text-white/82">
-                              Cut preferences
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={editForm.cutPreferences}
-                              onChange={(e) => {
-                                markDirty();
-                                setEditForm((prev) =>
-                                  prev ? { ...prev, cutPreferences: e.target.value } : prev
-                                );
-                              }}
-                              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-sm font-medium text-white/82">
                               Notes
                             </label>
                             <textarea
@@ -2319,24 +2642,22 @@ function handleOpenBooking(order: OrderItem) {
                               {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
                             </button>
 
-                            {selectedOrder?.orderType !== "live" && (
-  <button
-    type="button"
-    onClick={() => {
-      markDirty();
-      setEditForm((prev) =>
-        prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
-      );
-    }}
-    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-      editForm.slaughtered
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {editForm.slaughtered ? "Slaughtered" : "Pending"}
-  </button>
-)}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
+                                );
+                              }}
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.slaughtered
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.slaughtered ? "Slaughtered" : "Pending"}
+                            </button>
 
                             <button
                               type="button"
