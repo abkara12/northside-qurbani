@@ -55,6 +55,9 @@ type OrderItem = {
   queueCheckedInAt?: any;
   manualEntry?: boolean;
   bookingYear?: number;
+  orderType?: "qurbani" | "live";
+liveQuantity?: number;
+pricingVisible?: boolean;
 };
 
 type SettingsWeightOption = {
@@ -185,11 +188,16 @@ function cleanPhoneForWhatsApp(phone?: string) {
 }
 
 function sheepSummary(order: OrderItem) {
+  if (order.orderType === "live") {
+    return `${order.liveQuantity || order.quantity || 0} live sheep`;
+  }
+
   if (order.weightBreakdown?.length) {
     return order.weightBreakdown
       .map((row) => `${row.quantity} × ${row.label}`)
       .join(" • ");
   }
+
   const qty = order.quantity || 0;
   const weight = order.preferredWeight?.trim();
   if (qty && weight) return `${qty} sheep • ${weight}`;
@@ -632,15 +640,22 @@ export default function AdminPage() {
 
   const activeOrders = useMemo(() => orders.filter((o) => !o.cancelled), [orders]);
 
+const activeQurbaniOrders = useMemo(
+  () => activeOrders.filter((o) => o.orderType !== "live"),
+  [activeOrders]
+);
+
   const nextQueueNumber = useMemo(() => {
     const maxQueue = activeOrders.reduce((max, order) => {
       const value = order.queueNumber || 0;
       return value > max ? value : max;
     }, 0);
     return maxQueue + 1;
-  }, [activeOrders]);
+  }, [activeQurbaniOrders]);
 
-  const filteredOrders = useMemo(() => {
+
+  
+ const filteredOrders = useMemo(() => {
   const term = search.trim().toLowerCase();
 
   const next = orders.filter((order) => {
@@ -659,20 +674,24 @@ export default function AdminPage() {
       (paymentFilter === "unpaid" && payment !== "paid");
 
     const matchesWorkflow =
-      workflowFilter === "all" ||
-      (workflowFilter === "pending" &&
-        !order.cancelled &&
-        !order.slaughtered &&
-        !order.delivered) ||
-      (workflowFilter === "slaughtered" &&
-        !order.cancelled &&
-        !!order.slaughtered &&
-        !order.delivered) ||
-      (workflowFilter === "delivered" &&
-        !order.cancelled &&
-        !!order.delivered) ||
-      (workflowFilter === "cancelled" &&
-        !!order.cancelled);
+      order.orderType === "live"
+        ? workflowFilter === "all" ||
+          workflowFilter === "pending" ||
+          (workflowFilter === "delivered" && !!order.delivered) ||
+          (workflowFilter === "cancelled" && !!order.cancelled)
+        : workflowFilter === "all" ||
+          (workflowFilter === "pending" &&
+            !order.cancelled &&
+            !order.slaughtered &&
+            !order.delivered) ||
+          (workflowFilter === "slaughtered" &&
+            !order.cancelled &&
+            !!order.slaughtered &&
+            !order.delivered) ||
+          (workflowFilter === "delivered" &&
+            !order.cancelled &&
+            !!order.delivered) ||
+          (workflowFilter === "cancelled" && !!order.cancelled);
 
     return matchesSearch && matchesPayment && matchesWorkflow;
   });
@@ -690,7 +709,7 @@ export default function AdminPage() {
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
     if (!term) return [];
-    return activeOrders
+    return activeQurbaniOrders
       .filter(
         (order) =>
           order.fullName?.toLowerCase().includes(term) ||
@@ -704,13 +723,13 @@ export default function AdminPage() {
         })
       )
       .slice(0, 12);
-  }, [activeOrders, simpleSearch]);
+  }, [activeQurbaniOrders, simpleSearch]);
 
   const queueOrders = useMemo(() => {
-    return activeOrders
+    return activeQurbaniOrders
       .filter((order) => !order.cancelled && !order.slaughtered && (order.queueNumber || 0) > 0)
       .sort((a, b) => (a.queueNumber || 999999) - (b.queueNumber || 999999));
-  }, [activeOrders]);
+  }, [activeQurbaniOrders]);
 
   const paidOrders = activeOrders.filter(
     (o) => (o.paymentStatus || "pending").toLowerCase() === "paid"
@@ -724,6 +743,7 @@ export default function AdminPage() {
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
   const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const totalOutstanding = unpaidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const liveOrders = activeOrders.filter((o) => o.orderType === "live");
 
   const sizeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -1216,11 +1236,17 @@ function handleOpenBooking(order: OrderItem) {
                           className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 sm:p-5"
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-base font-semibold text-white">
-                              {order.fullName || "Unnamed booking"}
-                            </div>
-                            <PaymentBadge value={order.paymentStatus} />
-                            <WorkflowBadge order={order} />
+  {order.orderType === "live" && (
+    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+      Live Sheep
+    </span>
+  )}
+
+  <div className="text-base font-semibold text-white">
+    {order.fullName || "Unnamed booking"}
+  </div>
+  <PaymentBadge value={order.paymentStatus} />
+  <WorkflowBadge order={order} />
                           </div>
 
                           <div className="mt-2 text-sm text-white/55">
@@ -1321,18 +1347,20 @@ function handleOpenBooking(order: OrderItem) {
 
                       <div className="mt-4 flex flex-wrap gap-2">
 
-                        <button
-                          type="button"
-                          disabled={updatingField === order.id || !!order.cancelled}
-                          onClick={() => handleQuickToggle(order, "slaughtered")}
-                          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition disabled:opacity-50 ${
-                            order.slaughtered
-                              ? "border border-sky-400/30 bg-sky-500/20 text-sky-200 hover:bg-sky-500/30"
-                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                          }`}
-                        >
-                          {order.slaughtered ? "✓ Slaughtered" : "Mark Slaughtered"}
-                        </button>
+                        {order.orderType !== "live" && (
+  <button
+    type="button"
+    disabled={updatingField === order.id || !!order.cancelled}
+    onClick={() => handleQuickToggle(order, "slaughtered")}
+    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+      order.slaughtered
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
+  </button>
+)}
                       </div>
                     </div>
                   ))
@@ -1342,7 +1370,7 @@ function handleOpenBooking(order: OrderItem) {
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <SummaryCard
                 label="Total Bookings"
                 value={String(activeOrders.length)}
@@ -1363,7 +1391,12 @@ function handleOpenBooking(order: OrderItem) {
                 value={String(slaughteredOrders.length)}
                 helper={`${deliveredOrders.length} delivered`}
               />
-            </div>
+                          <SummaryCard
+              label="Live Sheep"
+              value={String(liveOrders.length)}
+              helper="Management only"
+            />
+                        </div>
 
             <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
@@ -1665,18 +1698,7 @@ function handleOpenBooking(order: OrderItem) {
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-white/82">Cut preferences</label>
-                        <textarea
-                          rows={4}
-                          value={manualForm.cutPreferences}
-                          onChange={(e) =>
-                            setManualForm((prev) => ({ ...prev, cutPreferences: e.target.value }))
-                          }
-                          placeholder={CUT_PREFERENCE_OPTIONS.join(", ")}
-                          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                        />
-                      </div>
+                      
 
                       <div>
                         <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
@@ -1892,12 +1914,21 @@ function handleOpenBooking(order: OrderItem) {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <div className="font-medium text-white">{order.fullName}</div>
+                              <div className="flex flex-wrap items-center gap-2">
+  <div className="font-medium text-white">{order.fullName}</div>
+  {order.orderType === "live" && (
+    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+      Live Sheep
+    </span>
+  )}
+</div>
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
                             </div>
                             <div className="text-sm font-semibold text-[#d8b67e]">
-                              {formatZAR(order.totalPrice || 0)}
-                            </div>
+  {order.pricingVisible === false
+    ? "To be confirmed"
+    : formatZAR(order.totalPrice || 0)}
+</div>
                           </div>
                           <div className="mt-3 flex gap-2">
                             <button
@@ -1970,8 +2001,10 @@ function handleOpenBooking(order: OrderItem) {
                               <div className="mt-1 text-sm text-[#d8b67e]">{sheepSummary(order)}</div>
 
                               <div className="mt-2 text-sm font-medium text-white">
-                                {formatZAR(order.totalPrice || 0)}
-                              </div>
+  {order.pricingVisible === false
+    ? "To be confirmed"
+    : formatZAR(order.totalPrice || 0)}
+</div>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -2286,22 +2319,24 @@ function handleOpenBooking(order: OrderItem) {
                               {editForm.paymentStatus === "paid" ? "Marked Paid" : "Marked Unpaid"}
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDirty();
-                                setEditForm((prev) =>
-                                  prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
-                                );
-                              }}
-                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                                editForm.slaughtered
-                                  ? "bg-[#c6a268] text-[#161015]"
-                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                              }`}
-                            >
-                              {editForm.slaughtered ? "Slaughtered" : "Pending"}
-                            </button>
+                            {selectedOrder?.orderType !== "live" && (
+  <button
+    type="button"
+    onClick={() => {
+      markDirty();
+      setEditForm((prev) =>
+        prev ? { ...prev, slaughtered: !prev.slaughtered } : prev
+      );
+    }}
+    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+      editForm.slaughtered
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {editForm.slaughtered ? "Slaughtered" : "Pending"}
+  </button>
+)}
 
                             <button
                               type="button"

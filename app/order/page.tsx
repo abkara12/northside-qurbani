@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
+type OrderType = "qurbani" | "live";
+
 type WeightOption = {
   label: string;
   price: number;
@@ -42,26 +44,37 @@ type AppSettings = {
   referenceHint: string;
   reminderMessageIntro: string;
   weightOptions: WeightOption[];
+  liveSheepPriceEnabled: boolean;
+  liveSheepPrice: number;
+  liveSheepNote: string;
 };
 
 type FormData = {
+  orderType: OrderType;
   fullName: string;
   phone: string;
   email: string;
+
+  // Qurbani
   weightSelections: WeightSelectionRow[];
   addServices: boolean;
   delivery: boolean;
-  cutPreferences: string[];
+
+  // Live sheep
+  liveQuantity: string;
+  liveDelivery: boolean;
+
   notes: string;
   agree: boolean;
 };
 
 type Errors = {
+  orderType?: string;
   fullName?: string;
   phone?: string;
   email?: string;
   weightSelections?: string;
-  cutPreferences?: string;
+  liveQuantity?: string;
   notes?: string;
   agree?: string;
 };
@@ -84,18 +97,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     { label: "51–55 kg", price: 3850 },
     { label: "56–60 kg", price: 4200 },
   ],
+  liveSheepPriceEnabled: false,
+  liveSheepPrice: 0,
+  liveSheepNote:
+    "Live sheep purchases are handled separately from qurbani processing bookings.",
 };
-
-const cutPreferenceOptions = [
-  "Curry packs",
-  "Chops",
-  "Ribs",
-  "Whole leg",
-  "Liver",
-  "Back legs sliced",
-  "Front legs whole",
-  "Front legs sliced",
-];
 
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -106,6 +112,7 @@ function makeId() {
 
 function createInitialForm(): FormData {
   return {
+    orderType: "qurbani",
     fullName: "",
     phone: "",
     email: "",
@@ -118,7 +125,8 @@ function createInitialForm(): FormData {
     ],
     addServices: false,
     delivery: false,
-    cutPreferences: [],
+    liveQuantity: "1",
+    liveDelivery: false,
     notes: "",
     agree: false,
   };
@@ -310,130 +318,11 @@ function SummaryRow({
   );
 }
 
-function CutPreferenceCard({
-  label,
-  checked,
-  onToggle,
-  disabled = false,
-}: {
-  label: string;
-  checked: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={disabled}
-      className={`rounded-2xl border px-4 py-3 text-center text-sm transition lg:text-left disabled:cursor-not-allowed disabled:opacity-60 ${
-        checked
-          ? "border-[#c6a268]/60 bg-[#c6a268]/10 text-white"
-          : "border-white/10 bg-white/[0.05] text-white/75 hover:bg-white/[0.07]"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span>{label}</span>
-        <span
-          className={`grid h-5 w-5 place-items-center rounded-full border text-[11px] ${
-            checked
-              ? "border-[#c6a268] bg-[#c6a268] text-[#161015]"
-              : "border-white/20 text-transparent"
-          }`}
-        >
-          ✓
-        </span>
-      </div>
-    </button>
-  );
-}
-
 function SmallInfoCard({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/75 lg:text-left">
       {children}
     </div>
-  );
-}
-
-function CopyField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (error) {
-      console.error("Copy failed:", error);
-    }
-  }
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
-          <p className="mt-2 break-all text-sm font-medium text-white">{value}</p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="inline-flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CopyAllBankDetails({
-  accountName,
-  bankName,
-  accountNumber,
-  accountType,
-  branchCode,
-}: {
-  accountName: string;
-  bankName: string;
-  accountNumber: string;
-  accountType: string;
-  branchCode: string;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopyAll() {
-    const text = `Account Name: ${accountName}
-Bank: ${bankName}
-Account Number: ${accountNumber}
-Account Type: ${accountType}
-Branch Code: ${branchCode}`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch (error) {
-      console.error("Copy all failed:", error);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopyAll}
-      className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
-    >
-      {copied ? "Copied All Details" : "Copy All Banking Details"}
-    </button>
   );
 }
 
@@ -463,7 +352,9 @@ function BookingRowCard({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-white">Selection {index + 1}</p>
-          <p className="mt-1 text-xs text-white/45">Choose a weight range and quantity.</p>
+          <p className="mt-1 text-xs text-white/45">
+            Choose a weight range and quantity.
+          </p>
         </div>
 
         {canRemove ? (
@@ -514,6 +405,47 @@ function BookingRowCard({
   );
 }
 
+function OrderTypeCard({
+  active,
+  title,
+  description,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[24px] border p-5 text-left transition ${
+        active
+          ? "border-[#c6a268]/60 bg-[#c6a268]/10 shadow-[0_16px_32px_rgba(198,162,104,0.10)]"
+          : "border-white/10 bg-white/[0.04] hover:bg-white/[0.06]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold text-white">{title}</p>
+          <p className="mt-2 text-sm leading-6 text-white/60">{description}</p>
+        </div>
+
+        <div
+          className={`mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[11px] ${
+            active
+              ? "border-[#c6a268] bg-[#c6a268] text-[#161015]"
+              : "border-white/20 text-transparent"
+          }`}
+        >
+          ✓
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function OrderPage() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -557,7 +489,8 @@ export default function OrderPage() {
     return form.weightSelections.map((row) => {
       const selectedOption =
         settings.weightOptions.find(
-          (option) => `${option.label} — ${formatZAR(option.price)}` === row.weightLabel
+          (option) =>
+            `${option.label} — ${formatZAR(option.price)}` === row.weightLabel
         ) || null;
 
       const quantity = Math.max(0, Number(row.quantity) || 0);
@@ -573,10 +506,15 @@ export default function OrderPage() {
     });
   }, [form.weightSelections, settings.weightOptions]);
 
-  const quantityNumber = parsedSelections.reduce(
+  const qurbaniQuantity = parsedSelections.reduce(
     (sum, row) => sum + row.quantityNumber,
     0
   );
+
+  const liveQuantityNumber = Math.max(0, Number(form.liveQuantity) || 0);
+
+  const effectiveQuantity =
+    form.orderType === "qurbani" ? qurbaniQuantity : liveQuantityNumber;
 
   const weightBreakdown: WeightBreakdownItem[] = parsedSelections
     .filter((row) => row.selectedOption && row.quantityNumber > 0)
@@ -589,11 +527,34 @@ export default function OrderPage() {
     }));
 
   const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-  const servicesPerSheep = form.addServices ? 400 : 0;
-  const deliveryPerSheep = form.delivery ? 100 : 0;
-  const servicesTotal = quantityNumber * servicesPerSheep;
-  const deliveryTotal = quantityNumber * deliveryPerSheep;
-  const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+
+  const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 400 : 0;
+  const deliveryPerSheep =
+    form.orderType === "qurbani"
+      ? form.delivery
+        ? 100
+        : 0
+      : form.liveDelivery
+      ? 100
+      : 0;
+
+  const servicesTotal = effectiveQuantity * servicesPerSheep;
+  const deliveryTotal = effectiveQuantity * deliveryPerSheep;
+
+  const liveBaseTotal =
+    settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0
+      ? liveQuantityNumber * settings.liveSheepPrice
+      : 0;
+
+  const totalPrice =
+    form.orderType === "qurbani"
+      ? basePriceTotal + servicesTotal + deliveryTotal
+      : liveBaseTotal + deliveryTotal;
+
+  const pricingVisible =
+    form.orderType === "qurbani"
+      ? totalPrice > 0
+      : settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0;
 
   const legacyPreferredWeight = weightBreakdown
     .map((row) => `${row.label} x${row.quantity}`)
@@ -601,15 +562,29 @@ export default function OrderPage() {
 
   const filledCount = useMemo(() => {
     const base =
-      (form.fullName ? 1 : 0) +
-      (form.phone ? 1 : 0) +
-      (weightBreakdown.length > 0 ? 1 : 0) +
-      (form.cutPreferences.length > 0 ? 1 : 0);
+      (form.orderType ? 1 : 0) +
+      (form.fullName.trim() ? 1 : 0) +
+      (form.phone.trim() ? 1 : 0) +
+      (form.orderType === "qurbani"
+        ? weightBreakdown.length > 0
+          ? 1
+          : 0
+        : liveQuantityNumber > 0
+        ? 1
+        : 0) +
+      (form.agree ? 1 : 0);
 
     return base;
-  }, [form.fullName, form.phone, form.cutPreferences.length, weightBreakdown.length]);
+  }, [
+    form.orderType,
+    form.fullName,
+    form.phone,
+    form.agree,
+    weightBreakdown.length,
+    liveQuantityNumber,
+  ]);
 
-  const progress = Math.round((filledCount / 4) * 100);
+  const progress = Math.round((filledCount / 5) * 100);
 
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -648,17 +623,20 @@ export default function OrderPage() {
     setErrors((prev) => ({ ...prev, weightSelections: undefined }));
   }
 
-  function toggleCutPreference(value: string) {
-    setForm((prev) => {
-      const exists = prev.cutPreferences.includes(value);
-      return {
-        ...prev,
-        cutPreferences: exists
-          ? prev.cutPreferences.filter((item) => item !== value)
-          : [...prev.cutPreferences, value],
-      };
-    });
-    setErrors((prev) => ({ ...prev, cutPreferences: undefined }));
+  function switchOrderType(type: OrderType) {
+    setForm((prev) => ({
+      ...prev,
+      orderType: type,
+      addServices: type === "qurbani" ? prev.addServices : false,
+      delivery: type === "qurbani" ? prev.delivery : false,
+      liveDelivery: type === "live" ? prev.liveDelivery : false,
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      orderType: undefined,
+      weightSelections: undefined,
+      liveQuantity: undefined,
+    }));
   }
 
   function validate() {
@@ -667,16 +645,26 @@ export default function OrderPage() {
     if (!form.fullName.trim()) nextErrors.fullName = "Please enter your full name.";
     if (!form.phone.trim()) nextErrors.phone = "Please enter your phone number.";
 
-    const hasValidWeightSelections =
-      form.weightSelections.length > 0 &&
-      form.weightSelections.every((row) => {
-        const qty = Number(row.quantity);
-        return row.weightLabel && Number.isInteger(qty) && qty >= 1;
-      });
+    if (form.orderType === "qurbani") {
+      const hasValidWeightSelections =
+        form.weightSelections.length > 0 &&
+        form.weightSelections.every((row) => {
+          const qty = Number(row.quantity);
+          return row.weightLabel && Number.isInteger(qty) && qty >= 1;
+        });
 
-    if (!hasValidWeightSelections) {
-      nextErrors.weightSelections =
-        "Please complete each sheep selection with a valid weight range and quantity.";
+      if (!hasValidWeightSelections) {
+        nextErrors.weightSelections =
+          "Please complete each sheep selection with a valid weight range and quantity.";
+      }
+    }
+
+    if (form.orderType === "live") {
+      const qty = Number(form.liveQuantity);
+      if (!Number.isInteger(qty) || qty < 1) {
+        nextErrors.liveQuantity =
+          "Please enter a valid number of live sheep required.";
+      }
     }
 
     if (!form.agree) {
@@ -701,23 +689,41 @@ export default function OrderPage() {
     try {
       setSubmitting(true);
 
+      const isQurbani = form.orderType === "qurbani";
       const orderRef = await addDoc(collection(db, "orders"), {
+        orderType: form.orderType,
+
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
-        quantity: quantityNumber,
-        preferredWeight: legacyPreferredWeight,
-        weightBreakdown,
-        cutPreferences: form.cutPreferences,
-        notes: form.notes.trim(),
-        addServices: form.addServices,
-        delivery: form.delivery,
-        basePriceTotal,
+
+        quantity: effectiveQuantity,
+
+        preferredWeight: isQurbani ? legacyPreferredWeight : "",
+        weightBreakdown: isQurbani ? weightBreakdown : [],
+
+        liveQuantity: isQurbani ? null : liveQuantityNumber,
+        livePriceEnabled: isQurbani ? false : settings.liveSheepPriceEnabled,
+        livePricePerSheep:
+          isQurbani || !settings.liveSheepPriceEnabled
+            ? null
+            : settings.liveSheepPrice,
+        liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
+
+        addServices: isQurbani ? form.addServices : false,
+        delivery: isQurbani ? form.delivery : form.liveDelivery,
+        liveDelivery: isQurbani ? false : form.liveDelivery,
+
+        basePriceTotal: isQurbani ? basePriceTotal : liveBaseTotal,
         servicesPerSheep,
         servicesTotal,
         deliveryPerSheep,
         deliveryTotal,
         totalPrice,
+        pricingVisible,
+
+        notes: form.notes.trim(),
+
         paymentStatus: "pending",
         slaughtered: false,
         delivered: false,
@@ -726,12 +732,16 @@ export default function OrderPage() {
         queueNumber: null,
         manualEntry: false,
         bookingYear: new Date().getFullYear(),
+
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
       const savedOrderId = orderRef.id;
-      const savedOrderReference = `NQ-${savedOrderId.slice(0, 8).toUpperCase()}`;
+      const prefix = form.orderType === "qurbani" ? "NQ" : "LS";
+      const savedOrderReference = `${prefix}-${savedOrderId
+        .slice(0, 8)
+        .toUpperCase()}`;
 
       if (typeof window !== "undefined") {
         localStorage.setItem("northside_last_order_id", savedOrderId);
@@ -773,7 +783,9 @@ export default function OrderPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">Premium qurbani service</div>
+            <div className="mt-1 text-sm text-white/55">
+              Premium qurbani and livestock bookings
+            </div>
           </div>
         </Link>
 
@@ -801,7 +813,7 @@ export default function OrderPage() {
               Bookings Closed
             </p>
             <h1 className="mt-4 text-[2rem] font-semibold text-white sm:text-[2.4rem]">
-              Qurbani bookings are currently closed
+              Orders are currently closed
             </h1>
             <p className="mt-4 text-amber-50/80">
               Please contact the team directly if you need assistance.
@@ -826,18 +838,19 @@ export default function OrderPage() {
         ) : (
           <div className="grid gap-8 xl:grid-cols-12">
             <div className="xl:col-span-7">
-              <div className="mx-auto lg:mx-0 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl">
+              <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-[#d8b67e] backdrop-blur-xl lg:mx-0">
                 Place Order
               </div>
 
               <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
-                Complete your qurbani
-                <span className="mt-1 block">booking with clarity</span>
-                <span className="mt-1 block">and confidence.</span>
+                Book qurbani or
+                <span className="mt-1 block">purchase live sheep</span>
+                <span className="mt-1 block">with confidence.</span>
               </h1>
 
-              <p className="mx-auto mt-5 max-w-2xl text-[0.98rem] leading-7 text-center text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-                Submit your booking with the exact sheep quantities and weight ranges you want.
+              <p className="mx-auto mt-5 max-w-2xl text-center text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+                Choose the type of order you need, complete your details, and submit
+                everything in one smooth premium flow.
               </p>
 
               <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
@@ -867,6 +880,34 @@ export default function OrderPage() {
                 className="mt-8 rounded-[34px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7"
               >
                 <div className="grid gap-8">
+                  <div>
+                    <div className="mb-5 text-center lg:text-left">
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                        Order type
+                      </p>
+                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                        What would you like to book?
+                      </h2>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <OrderTypeCard
+                        active={form.orderType === "qurbani"}
+                        title="Qurbani Service"
+                        description="Choose sheep by weight range and add services like processing and delivery."
+                        onClick={() => switchOrderType("qurbani")}
+                      />
+                      <OrderTypeCard
+                        active={form.orderType === "live"}
+                        title="Live Sheep Purchase"
+                        description="Submit a separate booking for customers buying live sheep directly."
+                        onClick={() => switchOrderType("live")}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10" />
+
                   <div>
                     <div className="mb-5 text-center lg:text-left">
                       <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
@@ -922,131 +963,227 @@ export default function OrderPage() {
 
                   <div className="h-px bg-white/10" />
 
-                  <div>
-                    <div className="mb-5 text-center lg:text-left">
-                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                        Sheep selection
-                      </p>
-                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                        Quantity and weight ranges
-                      </h2>
-                    </div>
-
-                    <div className="grid gap-4">
-                      {form.weightSelections.map((row, index) => (
-                        <BookingRowCard
-                          key={row.id}
-                          index={index}
-                          row={row}
-                          onWeightChange={(value) =>
-                            updateWeightRow(row.id, { weightLabel: value })
-                          }
-                          onQuantityChange={(value) =>
-                            updateWeightRow(row.id, { quantity: value })
-                          }
-                          onRemove={() => removeWeightRow(row.id)}
-                          canRemove={form.weightSelections.length > 1}
-                          error={errors.weightSelections}
-                          options={weightSelectOptions}
-                        />
-                      ))}
-                    </div>
-
-                    {errors.weightSelections ? (
-                      <p className="mt-3 text-xs text-red-300">{errors.weightSelections}</p>
-                    ) : null}
-
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={addWeightRow}
-                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                      >
-                        Add another weight category
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-white/10" />
-
-                  <div>
-                    <div className="mb-5 text-center lg:text-left">
-                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
-                        Order details
-                      </p>
-                      <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
-                        Booking preferences
-                      </h2>
-                    </div>
-
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                          <p className="text-sm font-medium text-white/80">Service package</p>
-                          <p className="mt-1 text-sm leading-6 text-white/55">
-                            Skinning, cleaning, storage, slicing, and packaging —
-                            <span className="font-medium text-[#d8b67e]">
-                              {" "}
-                              {formatZAR(400)} per sheep
-                            </span>
+                  {form.orderType === "qurbani" ? (
+                    <>
+                      <div>
+                        <div className="mb-5 text-center lg:text-left">
+                          <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                            Sheep selection
                           </p>
+                          <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                            Quantity and weight ranges
+                          </h2>
+                        </div>
 
-                          <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                            <input
-                              type="checkbox"
-                              checked={form.addServices}
-                              onChange={(e) => updateField("addServices", e.target.checked)}
-                              className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                        <div className="grid gap-4">
+                          {form.weightSelections.map((row, index) => (
+                            <BookingRowCard
+                              key={row.id}
+                              index={index}
+                              row={row}
+                              onWeightChange={(value) =>
+                                updateWeightRow(row.id, { weightLabel: value })
+                              }
+                              onQuantityChange={(value) =>
+                                updateWeightRow(row.id, { quantity: value })
+                              }
+                              onRemove={() => removeWeightRow(row.id)}
+                              canRemove={form.weightSelections.length > 1}
+                              error={errors.weightSelections}
+                              options={weightSelectOptions}
                             />
-                            <span className="text-sm text-white/75">
-                              Add the service package to this order
-                            </span>
-                          </label>
+                          ))}
+                        </div>
+
+                        {errors.weightSelections ? (
+                          <p className="mt-3 text-xs text-red-300">
+                            {errors.weightSelections}
+                          </p>
+                        ) : null}
+
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={addWeightRow}
+                            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                          >
+                            Add another weight category
+                          </button>
                         </div>
                       </div>
 
-                      <div className="sm:col-span-2">
-                        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                          <p className="text-sm font-medium text-white/80">Delivery</p>
-                          <p className="mt-1 text-sm leading-6 text-white/55">
-                            Delivery is charged at
-                            <span className="font-medium text-[#d8b67e]">
-                              {" "}
-                              {formatZAR(100)} per sheep
-                            </span>
-                          </p>
+                      <div className="h-px bg-white/10" />
 
-                          <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                            <input
-                              type="checkbox"
-                              checked={form.delivery}
-                              onChange={(e) => updateField("delivery", e.target.checked)}
-                              className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                      <div>
+                        <div className="mb-5 text-center lg:text-left">
+                          <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                            Order details
+                          </p>
+                          <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                            Booking preferences
+                          </h2>
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                              <p className="text-sm font-medium text-white/80">
+                                Service package
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-white/55">
+                                Skinning, cleaning, storage, slicing, and packaging —
+                                <span className="font-medium text-[#d8b67e]">
+                                  {" "}
+                                  {formatZAR(400)} per sheep
+                                </span>
+                              </p>
+
+                              <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                                <input
+                                  type="checkbox"
+                                  checked={form.addServices}
+                                  onChange={(e) =>
+                                    updateField("addServices", e.target.checked)
+                                  }
+                                  className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                                />
+                                <span className="text-sm text-white/75">
+                                  Add the service package to this order
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                              <p className="text-sm font-medium text-white/80">
+                                Delivery
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-white/55">
+                                Delivery is charged at
+                                <span className="font-medium text-[#d8b67e]">
+                                  {" "}
+                                  {formatZAR(100)} per sheep
+                                </span>
+                              </p>
+
+                              <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                                <input
+                                  type="checkbox"
+                                  checked={form.delivery}
+                                  onChange={(e) =>
+                                    updateField("delivery", e.target.checked)
+                                  }
+                                  className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                                />
+                                <span className="text-sm text-white/75">
+                                  Add delivery to this order
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <Label htmlFor="notes">
+                              Additional notes{" "}
+                              <span className="text-white/35">(optional)</span>
+                            </Label>
+                            <TextArea
+                              id="notes"
+                              value={form.notes}
+                              onChange={(value) => updateField("notes", value)}
+                              placeholder="Add any additional notes or special requests"
+                              error={errors.notes}
                             />
-                            <span className="text-sm text-white/75">
-                              Add delivery to this order
-                            </span>
-                          </label>
+                          </div>
                         </div>
                       </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="mb-5 text-center lg:text-left">
+                          <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                            Live sheep order
+                          </p>
+                          <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                            Purchase details
+                          </h2>
+                        </div>
 
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="notes">
-                          Additional notes <span className="text-white/35">(optional)</span>
-                        </Label>
-                        <TextArea
-                          id="notes"
-                          value={form.notes}
-                          onChange={(value) => updateField("notes", value)}
-                          placeholder="Add any additional notes or special requests"
-                          error={errors.notes}
-                        />
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <Label htmlFor="liveQuantity" required>
+                              Number of live sheep
+                            </Label>
+                            <Input
+                              id="liveQuantity"
+                              type="number"
+                              min={1}
+                              value={form.liveQuantity}
+                              onChange={(value) => updateField("liveQuantity", value)}
+                              placeholder="Enter number of sheep"
+                              error={errors.liveQuantity}
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                              <p className="text-sm font-medium text-white/80">
+                                Delivery
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-white/55">
+                                Add delivery only if live sheep delivery is required.
+                                <span className="font-medium text-[#d8b67e]">
+                                  {" "}
+                                  {formatZAR(100)} per sheep
+                                </span>
+                              </p>
+
+                              <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                                <input
+                                  type="checkbox"
+                                  checked={form.liveDelivery}
+                                  onChange={(e) =>
+                                    updateField("liveDelivery", e.target.checked)
+                                  }
+                                  className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                                />
+                                <span className="text-sm text-white/75">
+                                  Add delivery to this live sheep order
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <div className="rounded-[24px] border border-white/10 bg-[#c6a268]/[0.06] p-4">
+                              <p className="text-sm font-medium text-white">
+                                Live sheep note
+                              </p>
+                              <p className="mt-2 text-sm leading-6 text-white/60">
+                                {settings.liveSheepNote}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <Label htmlFor="notes">
+                              Additional notes{" "}
+                              <span className="text-white/35">(optional)</span>
+                            </Label>
+                            <TextArea
+                              id="notes"
+                              value={form.notes}
+                              onChange={(value) => updateField("notes", value)}
+                              placeholder="Add any special requests, preferred timing, or collection details"
+                              error={errors.notes}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-
-
+                    </>
+                  )}
 
                   <div>
                     <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -1082,7 +1219,11 @@ export default function OrderPage() {
                       disabled={submitting}
                       className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:brightness-105 hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[15px]"
                     >
-                      {submitting ? "Submitting..." : "Submit Booking"}
+                      {submitting
+                        ? "Submitting..."
+                        : form.orderType === "qurbani"
+                        ? "Submit Qurbani Booking"
+                        : "Submit Live Sheep Order"}
                     </button>
                   </div>
 
@@ -1103,7 +1244,7 @@ export default function OrderPage() {
             <div className="xl:col-span-5">
               <div className="space-y-6 xl:sticky xl:top-6">
                 <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                  <p className="text-center text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] lg:text-left">
                     Booking summary
                   </p>
                   <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white lg:text-left">
@@ -1111,81 +1252,156 @@ export default function OrderPage() {
                   </h2>
 
                   <div className="mt-6">
+                    <SummaryRow
+                      label="Order type"
+                      value={
+                        form.orderType === "qurbani"
+                          ? "Qurbani Service"
+                          : "Live Sheep Purchase"
+                      }
+                    />
                     <SummaryRow label="Full name" value={form.fullName} />
                     <SummaryRow label="Phone" value={form.phone} />
 
-                    <div className="border-b border-white/10 py-3">
-                      <div className="mb-2 text-sm text-white/45">Sheep selected</div>
-                      {weightBreakdown.length ? (
-                        <div className="space-y-2">
-                          {weightBreakdown.map((row) => (
-                            <div
-                              key={row.id}
-                              className="flex items-start justify-between gap-4 text-sm"
-                            >
-                              <span className="text-white">
-                                {row.quantity} × {row.label}
-                              </span>
-                              <span className="font-medium text-white">
-                                {formatZAR(row.subtotal)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium text-white">—</div>
-                      )}
-                    </div>
+                    {form.orderType === "qurbani" ? (
+                      <div className="border-b border-white/10 py-3">
+                        <div className="mb-2 text-sm text-white/45">Sheep selected</div>
+                        {weightBreakdown.length ? (
+                          <div className="space-y-2">
+                            {weightBreakdown.map((row) => (
+                              <div
+                                key={row.id}
+                                className="flex items-start justify-between gap-4 text-sm"
+                              >
+                                <span className="text-white">
+                                  {row.quantity} × {row.label}
+                                </span>
+                                <span className="font-medium text-white">
+                                  {formatZAR(row.subtotal)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm font-medium text-white">—</div>
+                        )}
+                      </div>
+                    ) : (
+                      <SummaryRow
+                        label="Live sheep required"
+                        value={liveQuantityNumber ? String(liveQuantityNumber) : "—"}
+                      />
+                    )}
 
                     <SummaryRow
                       label="Service package"
-                      value={form.addServices ? "Included" : "Not added"}
+                      value={
+                        form.orderType === "qurbani"
+                          ? form.addServices
+                            ? "Included"
+                            : "Not added"
+                          : "Not applicable"
+                      }
                     />
                     <SummaryRow
                       label="Delivery"
-                      value={form.delivery ? "Included" : "Not added"}
+                      value={
+                        form.orderType === "qurbani"
+                          ? form.delivery
+                            ? "Included"
+                            : "Not added"
+                          : form.liveDelivery
+                          ? "Included"
+                          : "Not added"
+                      }
                     />
                   </div>
 
                   <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                    <SummaryRow label="Total sheep" value={String(quantityNumber)} />
                     <SummaryRow
-                      label="Base sheep total"
-                      value={basePriceTotal ? formatZAR(basePriceTotal) : "—"}
+                      label="Total sheep"
+                      value={effectiveQuantity ? String(effectiveQuantity) : "—"}
                     />
-                    <SummaryRow
-                      label="Service total"
-                      value={formatZAR(servicesTotal)}
-                    />
-                    <SummaryRow
-                      label="Delivery total"
-                      value={formatZAR(deliveryTotal)}
-                    />
+
+                    {form.orderType === "qurbani" ? (
+                      <>
+                        <SummaryRow
+                          label="Base sheep total"
+                          value={basePriceTotal ? formatZAR(basePriceTotal) : "—"}
+                        />
+                        <SummaryRow
+                          label="Service total"
+                          value={servicesTotal ? formatZAR(servicesTotal) : "—"}
+                        />
+                        <SummaryRow
+                          label="Delivery total"
+                          value={deliveryTotal ? formatZAR(deliveryTotal) : "—"}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <SummaryRow
+                          label="Live sheep total"
+                          value={
+                            settings.liveSheepPriceEnabled && liveBaseTotal
+                              ? formatZAR(liveBaseTotal)
+                              : settings.liveSheepPriceEnabled
+                              ? formatZAR(0)
+                              : "Price confirmed manually"
+                          }
+                        />
+                        <SummaryRow
+                          label="Delivery total"
+                          value={
+                            deliveryTotal
+                              ? formatZAR(deliveryTotal)
+                              : form.liveDelivery
+                              ? formatZAR(0)
+                              : "—"
+                          }
+                        />
+                      </>
+                    )}
+
                     <SummaryRow
                       label="Total due"
-                      value={totalPrice ? formatZAR(totalPrice) : "—"}
+                      value={
+                        pricingVisible
+                          ? formatZAR(totalPrice)
+                          : "To be confirmed"
+                      }
                       strong
                     />
                   </div>
                 </div>
 
                 <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                  <p className="text-center text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] lg:text-left">
                     Included pricing
                   </p>
                   <div className="mt-4 grid gap-3">
                     <SmallInfoCard>
-                      Multiple weight categories can be booked in one order
+                      Switch between qurbani service and live sheep purchase on one page
                     </SmallInfoCard>
                     <SmallInfoCard>
-                      Skinning, slicing, cleaning, storage and packaging at {formatZAR(400)} per sheep
+                      Multiple weight categories can be booked in one qurbani order
+                    </SmallInfoCard>
+                    <SmallInfoCard>
+                      Skinning, slicing, cleaning, storage and packaging at{" "}
+                      {formatZAR(400)} per sheep
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Delivery at {formatZAR(100)} per sheep
                     </SmallInfoCard>
-                    <SmallInfoCard>Live total shown before submission</SmallInfoCard>
                     <SmallInfoCard>
-                      Prices and bank details now pull from admin settings
+                      {settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0
+                        ? `Live sheep pricing currently set at ${formatZAR(
+                            settings.liveSheepPrice
+                          )} per sheep`
+                        : "Live sheep pricing can stay manual until you are ready to set a fixed amount"}
+                    </SmallInfoCard>
+                    <SmallInfoCard>
+                      Prices and bank details pull from admin settings
                     </SmallInfoCard>
                   </div>
                 </div>
