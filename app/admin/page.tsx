@@ -277,12 +277,6 @@ function getLiveCalculatedTotal(editForm: EditFormState | null) {
   return Number(editForm.liveQuantity || 0) * Number(editForm.livePricePerSheep || 0);
 }
 
-function livePricingLabel(order: OrderItem) {
-  if (order.orderType !== "live") return "";
-  if (order.pricingVisible === false) return "Awaiting Price";
-  if ((order.livePricePerSheep || 0) > 0) return "Price Set";
-  return "Awaiting Price";
-}
 
 function buildPaymentReminderMessage(order: OrderItem, settings: AppSettings) {
   const ref = orderReference(order.id);
@@ -333,23 +327,7 @@ function PaymentBadge({ value }: { value?: string }) {
   );
 }
 
-function LivePricingBadge({ order }: { order: OrderItem }) {
-  if (order.orderType !== "live") return null;
 
-  const ready = order.pricingVisible !== false && (order.livePricePerSheep || 0) > 0;
-
-  return (
-    <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-        ready
-          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-          : "border-amber-400/20 bg-amber-400/10 text-amber-200"
-      }`}
-    >
-      {ready ? "Price Set" : "Awaiting Price"}
-    </span>
-  );
-}
 
 function WorkflowBadge({ order }: { order: OrderItem }) {
   if (order.orderType === "live" && !order.cancelled && !order.delivered) {
@@ -513,7 +491,6 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
-  const [livePricingFilter, setLivePricingFilter] = useState("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState("all");
 
   const [mode, setMode] = useState<"simple" | "management">("simple");
@@ -726,22 +703,13 @@ export default function AdminPage() {
       (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
       (workflowFilter === "cancelled" && !!order.cancelled);
 
-    const matchesLivePricing =
-      livePricingFilter === "all" ||
-      order.orderType !== "live" ||
-      (livePricingFilter === "priced" &&
-        order.pricingVisible !== false &&
-        (order.livePricePerSheep || 0) > 0) ||
-      (livePricingFilter === "awaiting" &&
-        (order.pricingVisible === false || (order.livePricePerSheep || 0) <= 0));
 
     return (
       matchesSearch &&
       matchesPayment &&
       matchesOrderType &&
-      matchesWorkflow &&
-      matchesLivePricing
-    );
+      matchesWorkflow 
+        );
   });
 
   return [...next].sort((a, b) => {
@@ -752,7 +720,7 @@ export default function AdminPage() {
     if (!nameB) return -1;
     return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
   });
-}, [orders, search, paymentFilter, workflowFilter, orderTypeFilter, livePricingFilter]);
+}, [orders, search, paymentFilter, workflowFilter, orderTypeFilter]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -1061,9 +1029,10 @@ const liveOutstandingValue = liveOrders
         }
 
         setHasUnsavedChanges(false);
-        setSaveMessage("Saved successfully.");
-        setTimeout(() => setSaveMessage(""), 3000);
-        return;
+setSelectedOrder(null);
+setSaveMessage("Saved successfully.");
+setTimeout(() => setSaveMessage(""), 3000);
+return;
       }
 
       const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
@@ -1118,10 +1087,10 @@ const liveOutstandingValue = liveOrders
           );
         }
       }
-
-      setHasUnsavedChanges(false);
-      setSaveMessage("Saved successfully.");
-      setTimeout(() => setSaveMessage(""), 3000);
+setHasUnsavedChanges(false);
+setSelectedOrder(null);
+setSaveMessage("Saved successfully.");
+setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Failed saving edit form:", error);
       alert("Could not save this booking.");
@@ -1676,7 +1645,7 @@ const liveOutstandingValue = liveOrders
                 </div>
               ) : null}
 
-              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto_auto] xl:items-end">
+              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
                   <input
@@ -1730,27 +1699,7 @@ const liveOutstandingValue = liveOrders
                   </div>
                 </div>
 
-                <div>
-  <div className="mb-2 text-sm font-medium text-white/82">Live Pricing</div>
-  <div className="flex flex-wrap gap-2">
-    <FilterButton
-      active={livePricingFilter === "all"}
-      label="All"
-      onClick={() => setLivePricingFilter("all")}
-    />
-    <FilterButton
-      active={livePricingFilter === "awaiting"}
-      label="Awaiting Price"
-      onClick={() => setLivePricingFilter("awaiting")}
-    />
-    <FilterButton
-      active={livePricingFilter === "priced"}
-      label="Price Set"
-      onClick={() => setLivePricingFilter("priced")}
-    />
-  </div>
-</div>
-
+                
                 <div>
                   <div className="mb-2 text-sm font-medium text-white/82">Status</div>
                   <div className="flex flex-wrap gap-2">
@@ -2110,7 +2059,6 @@ const liveOutstandingValue = liveOrders
       Live Sheep
     </span>
   )}
-  <LivePricingBadge order={order} />
 </div>
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
                             </div>
@@ -2129,12 +2077,20 @@ const liveOutstandingValue = liveOrders
                               Remind
                             </button>
                             <button
-                              type="button"
-                              onClick={() => handleOpenBooking(order)}
-                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                            >
-                              Open
-                            </button>
+  type="button"
+  onClick={() => {
+    if (selectedOrder?.id === order.id) {
+      setSelectedOrder(null);
+      setHasUnsavedChanges(false);
+      setSaveMessage("");
+    } else {
+      handleOpenBooking(order);
+    }
+  }}
+  className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+>
+  {selectedOrder?.id === order.id ? "Close" : "Open"}
+</button>
                           </div>
                         </div>
                       ))
@@ -2180,7 +2136,6 @@ const liveOutstandingValue = liveOrders
       Live Sheep
     </span>
   )}
-  <LivePricingBadge order={order} />
                                 {order.manualEntry && (
                                   <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
                                     Manual
@@ -2248,13 +2203,21 @@ const liveOutstandingValue = liveOrders
                                 {order.delivered ? "Delivered" : "Mark Delivered"}
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleOpenBooking(order)}
-                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                              >
-                                Open
-                              </button>
+                             <button
+  type="button"
+  onClick={() => {
+    if (selectedOrder?.id === order.id) {
+      setSelectedOrder(null);
+      setHasUnsavedChanges(false);
+      setSaveMessage("");
+    } else {
+      handleOpenBooking(order);
+    }
+  }}
+  className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+>
+  {selectedOrder?.id === order.id ? "Close" : "Open"}
+</button>
                             </div>
                           </div>
                         </div>
