@@ -587,20 +587,12 @@ export default function Home() {
               Staff Dashboard
             </Link>
           ) : savedOrder ? (
-            <>
-              <Link
-                href={`/order/success/${savedOrder.id}`}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
-              >
-                View My Order
-              </Link>
-              <Link
-                href="/order"
-                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Place Another Order
-              </Link>
-            </>
+            <Link
+              href={`/order/success/${savedOrder.id}`}
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+            >
+              View My Order
+            </Link>
           ) : (
             <>
               <Link
@@ -615,12 +607,6 @@ export default function Home() {
               >
                 Place Order
               </Link>
-              <Link
-            href="/lookup"
-            className="h-[50px] px-8 rounded-full border border-white/10 bg-white/5 text-white flex items-center justify-center hover:bg-white/10"
-          >
-            Find My Booking
-          </Link>
             </>
           )}
         </div>
@@ -704,21 +690,13 @@ export default function Home() {
                     variant="primary"
                   />
                 ) : savedOrder ? (
-                  <>
-                    <MenuRow
-                      href={`/order/success/${savedOrder.id}`}
-                      label="View My Order"
-                      sub={`Reference: ${savedOrder.reference}`}
-                      onClick={closeMenu}
-                      variant="primary"
-                    />
-                    <MenuRow
-                      href="/order"
-                      label="Place Another Order"
-                      sub="Submit an additional qurbani booking"
-                      onClick={closeMenu}
-                    />
-                  </>
+                  <MenuRow
+                    href={`/order/success/${savedOrder.id}`}
+                    label="View My Order"
+                    sub={`Reference: ${savedOrder.reference}`}
+                    onClick={closeMenu}
+                    variant="primary"
+                  />
                 ) : (
                   <>
                     <MenuRow
@@ -792,6 +770,13 @@ export default function Home() {
                 >
                   Staff Dashboard
                 </Link>
+              ) : savedOrder ? (
+                <Link
+                  href={`/order/success/${savedOrder.id}`}
+                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+                >
+                  View My Order
+                </Link>
               ) : (
                 <>
                   <OrderAccessButtons
@@ -799,29 +784,12 @@ export default function Home() {
                     className="flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3"
                   />
 
-                  {!savedOrder ? (
-                    <Link
-                      href="/login"
-                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                    >
-                      Staff Sign In
-                    </Link>
-                  ) : (
-                    <>
-                      <Link
-                        href={`/order/success/${savedOrder.id}`}
-                        className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                      >
-                        View My Order
-                      </Link>
-                      <Link
-                        href="/order"
-                        className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                      >
-                        Place Another Order
-                      </Link>
-                    </>
-                  )}
+                  <Link
+                    href="/login"
+                    className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+                  >
+                    Staff Sign In
+                  </Link>
                 </>
               )}
             </div>
@@ -885,7 +853,7 @@ export default function Home() {
                 <div className="mt-6 grid gap-3">
                   <StatPill label="Customer ordering" value="Elegant and easy to complete" />
                   <StatPill label="Operations" value="More structured on Qurbani day" />
-                  <StatPill label="Collection" value="Clearer and more professional" />
+                  <StatPill label="Delivery / Collection" value="Clearer and more professional" />
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
@@ -954,7 +922,7 @@ export default function Home() {
                 {[
                   {
                     name: "Moulana Shaheed Bhabha",
-                    role: "Religious Oversight & Guidance",
+                    role: "Religious Oversight & Coordination",
                   },
                   {
                     name: "Yaqoob Sader",
@@ -1050,8 +1018,8 @@ export default function Home() {
               },
               {
                 step: "04",
-                title: "Collection",
-                text: "Collection becomes more structured and straightforward, making the final stage smoother for everyone.",
+                title: "Delivery / Collection",
+                text: "Delivery and collection become more structured and straightforward, making the final stage smoother for everyone.",
               },
             ].map((item) => (
               <div
@@ -1202,21 +1170,12 @@ export default function Home() {
                     Staff Dashboard
                   </Link>
                 ) : savedOrder ? (
-                  <>
-                    <Link
-                      href={`/order/success/${savedOrder.id}`}
-                      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
-                    >
-                      View My Order
-                    </Link>
-
-                    <Link
-                      href="/order"
-                      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                    >
-                      Place Another Order
-                    </Link>
-                  </>
+                  <Link
+                    href={`/order/success/${savedOrder.id}`}
+                    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                  >
+                    View My Order
+                  </Link>
                 ) : (
                   <>
                     <Link
@@ -1362,21 +1321,12 @@ export default function Home() {
                         Staff Dashboard
                       </a>
                     ) : savedOrder ? (
-                      <>
-                        <a
-                          href={`/order/success/${savedOrder.id}`}
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
-                        >
-                          View My Order
-                        </a>
-
-                        <a
-                          href="/order"
-                          className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:min-w-0 lg:w-auto lg:px-6"
-                        >
-                          Place Another Order
-                        </a>
-                      </>
+                      <a
+                        href={`/order/success/${savedOrder.id}`}
+                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
+                      >
+                        View My Order
+                      </a>
                     ) : (
                       <>
                         <a

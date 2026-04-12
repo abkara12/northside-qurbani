@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 type WeightBreakdownItem = {
@@ -37,6 +37,7 @@ type OrderData = {
   cancelled?: boolean;
   cancelReason?: string;
   queueNumber?: number | null;
+  queueCheckedInAt?: any;
 };
 
 type AppSettings = {
@@ -54,7 +55,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   accountNumber: "REPLACE WITH ACCOUNT NUMBER",
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Please use your name and surname as the payment reference.",
+  referenceHint:
+    "Please send your proof of payment / payment reference to Moulana Shaheed or Uncle Yaqoob on WhatsApp.",
 };
 
 function formatZAR(value: number) {
@@ -201,6 +203,9 @@ function getWorkflowStatus(order: OrderData | null) {
   if (order.slaughtered) {
     return { label: "Slaughtered", variant: "sky" as const };
   }
+  if ((order.queueNumber || 0) > 0) {
+    return { label: "In Queue", variant: "violet" as const };
+  }
   return { label: "Pending", variant: "violet" as const };
 }
 
@@ -249,39 +254,55 @@ export default function OrderSuccessPage() {
       return;
     }
 
-    async function loadData() {
-      try {
-        const [orderSnap, settingsSnap] = await Promise.all([
-          getDoc(doc(db, "orders", id)),
-          getDoc(doc(db, "settings", "qurbani")),
-        ]);
-
+    const unsubOrder = onSnapshot(
+      doc(db, "orders", id),
+      (orderSnap) => {
         if (!orderSnap.exists()) {
           setError("We could not find this booking.");
-        } else {
-          setOrder(orderSnap.data() as OrderData);
+          setOrder(null);
+          setLoading(false);
+          return;
         }
 
+        setOrder(orderSnap.data() as OrderData);
+        setError("");
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error loading order:", err);
+        setError("Something went wrong while loading the booking.");
+        setLoading(false);
+      }
+    );
+
+    const unsubSettings = onSnapshot(
+      doc(db, "settings", "qurbani"),
+      (settingsSnap) => {
         if (settingsSnap.exists()) {
           setSettings({
             ...DEFAULT_SETTINGS,
             ...(settingsSnap.data() as Partial<AppSettings>),
           });
+        } else {
+          setSettings(DEFAULT_SETTINGS);
         }
-      } catch (err) {
-        console.error("Error loading order:", err);
-        setError("Something went wrong while loading the booking.");
-      } finally {
-        setLoading(false);
+      },
+      (err) => {
+        console.error("Error loading settings:", err);
+        setSettings(DEFAULT_SETTINGS);
       }
-    }
+    );
 
-    loadData();
+    return () => {
+      unsubOrder();
+      unsubSettings();
+    };
   }, []);
 
   const orderReference = orderId ? `NQ-${orderId.slice(0, 8).toUpperCase()}` : "—";
   const workflowStatus = getWorkflowStatus(order);
   const paymentStatus = getPaymentStatus(order);
+  const queueAssigned = (order?.queueNumber || 0) > 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -348,10 +369,10 @@ export default function OrderSuccessPage() {
               </Link>
 
               <Link
-                href="/lookup"
+                href="/"
                 className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white"
               >
-                Find Booking
+                Back Home
               </Link>
             </div>
           </div>
@@ -369,8 +390,7 @@ export default function OrderSuccessPage() {
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/80 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-                  Thank you. Please keep your booking reference safe for future queries,
-                  booking lookup, and status checks.
+                  Thank you. Please keep your booking reference safe for payment and any future follow-up.
                 </p>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -385,6 +405,33 @@ export default function OrderSuccessPage() {
                   </p>
                 </div>
 
+                {queueAssigned ? (
+                  <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+                          Queue number assigned
+                        </p>
+                        <p className="mt-2 text-[2rem] font-semibold leading-none text-white sm:text-[2.4rem]">
+                          {order?.queueNumber}
+                        </p>
+                      </div>
+
+                      <div className="max-w-sm text-sm leading-6 text-white/72">
+                        Your booking has been added to the queue. Please keep this page open and use your queue number when called.
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
+                    <p className="text-sm font-medium text-white/82">Queue status</p>
+                    <div className="mt-3 space-y-2 text-sm leading-6 text-white/65">
+                      <p>Your booking has not yet been added to the queue.</p>
+                      <p>Once staff assign your queue number, it will appear here automatically.</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
                   <p className="text-sm font-medium text-white/82">What happens next?</p>
                   <div className="mt-3 space-y-3 text-sm leading-6 text-white/65">
@@ -393,33 +440,24 @@ export default function OrderSuccessPage() {
                       pricing, and preferences.
                     </p>
                     <p>
-                      Please make payment using the banking details below and keep your
-                      booking reference for any follow-up.
+                      Please make payment using the banking details below and send your proof of payment / payment reference as instructed.
                     </p>
                     <p>
-                      You can return later and use the lookup page to view this booking by
-                      reference number or phone number.
+                      This confirmation page will continue to reflect live updates such as payment status, workflow status, and queue number when assigned.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:items-start">
-                  <Link
-                    href="/order"
-                    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
-                  >
-                    Place Another Order
-                  </Link>
+  <Link
+    href={`/lookup?ref=${encodeURIComponent(orderReference)}`}
+    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
+  >
+    View My Order
+  </Link>
 
-                  <Link
-                    href="/lookup"
-                    className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white"
-                  >
-                    Find My Booking
-                  </Link>
-
-                  <CopyValueButton value={orderReference} />
-                </div>
+  <CopyValueButton value={orderReference} />
+</div>
               </div>
             </div>
 
@@ -456,6 +494,10 @@ export default function OrderSuccessPage() {
                       }
                     />
                     <SummaryRow label="Workflow status" value={workflowStatus.label} />
+                    <SummaryRow
+                      label="Queue number"
+                      value={queueAssigned ? String(order?.queueNumber) : "Not assigned yet"}
+                    />
                     <SummaryRow
                       label="Total due"
                       value={formatZAR(order?.totalPrice || 0)}
@@ -511,9 +553,9 @@ export default function OrderSuccessPage() {
 
                     <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
-                        Payment reference
+                        Payment instruction
                       </p>
-                      <p className="mt-2 text-sm font-medium text-white">
+                      <p className="mt-2 text-sm font-medium leading-6 text-white">
                         {settings.referenceHint}
                       </p>
                     </div>
@@ -526,10 +568,10 @@ export default function OrderSuccessPage() {
                   </p>
                   <div className="mt-4 grid gap-3">
                     <InfoCard>Your booking remains available on this confirmation page</InfoCard>
-                    <InfoCard>Your booking reference can be used for future lookup</InfoCard>
+                    <InfoCard>Your booking reference can be used for payment and follow-up</InfoCard>
                     <InfoCard>Your submitted pricing and preferences remain visible here</InfoCard>
                     <InfoCard>
-                      Live workflow and payment status will reflect here as the booking is updated
+                      Live workflow, payment status, and queue number will reflect here as the booking is updated
                     </InfoCard>
                   </div>
                 </div>

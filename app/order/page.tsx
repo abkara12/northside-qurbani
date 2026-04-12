@@ -4,10 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
-  addDoc,
   collection,
   doc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -17,6 +17,7 @@ type OrderType = "qurbani" | "live";
 type WeightOption = {
   label: string;
   price: number;
+  stock?: number | null;
 };
 
 type WeightSelectionRow = {
@@ -55,14 +56,13 @@ type FormData = {
   phone: string;
   email: string;
 
-  // Qurbani
   weightSelections: WeightSelectionRow[];
   addServices: boolean;
   delivery: boolean;
 
-  // Live sheep
   liveQuantity: string;
   liveDelivery: boolean;
+  liveDeliveryAddress: string;
 
   notes: string;
   agree: boolean;
@@ -75,8 +75,15 @@ type Errors = {
   email?: string;
   weightSelections?: string;
   liveQuantity?: string;
+  liveDeliveryAddress?: string;
   notes?: string;
   agree?: string;
+};
+
+type WeightOptionDisplay = {
+  rawValue: string;
+  displayLabel: string;
+  disabled: boolean;
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -87,15 +94,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   accountNumber: "REPLACE WITH ACCOUNT NUMBER",
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Please use your name and surname as the payment reference.",
+  referenceHint:
+    "Please send your proof of payment / payment reference to Moulana Shaheed or Uncle Yaqoob on WhatsApp.",
   reminderMessageIntro:
     "Assalaamu alaikum. This is a kind reminder regarding your Northside Qurbani booking.",
   weightOptions: [
-    { label: "35–39 kg", price: 2750 },
-    { label: "40–45 kg", price: 3150 },
-    { label: "46–50 kg", price: 3500 },
-    { label: "51–55 kg", price: 3850 },
-    { label: "56–60 kg", price: 4200 },
+    { label: "35–39 kg", price: 2750, stock: null },
+    { label: "40–45 kg", price: 3150, stock: null },
+    { label: "46–50 kg", price: 3500, stock: null },
+    { label: "51–55 kg", price: 3850, stock: null },
+    { label: "56–60 kg", price: 4200, stock: null },
   ],
   liveSheepPriceEnabled: false,
   liveSheepPrice: 0,
@@ -127,6 +135,7 @@ function createInitialForm(): FormData {
     delivery: false,
     liveQuantity: "1",
     liveDelivery: false,
+    liveDeliveryAddress: "",
     notes: "",
     agree: false,
   };
@@ -214,50 +223,6 @@ function Input({
   );
 }
 
-function Select({
-  id,
-  value,
-  onChange,
-  options,
-  placeholder,
-  error,
-  disabled = false,
-}: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: string[];
-  placeholder: string;
-  error?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <div>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
-          error
-            ? "border-red-400/70"
-            : "border-white/10 focus:border-[#c6a268]/60"
-        }`}
-      >
-        <option value="" disabled className="text-black">
-          {placeholder}
-        </option>
-        {options.map((option) => (
-          <option key={option} value={option} className="text-black">
-            {option}
-          </option>
-        ))}
-      </select>
-      {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
-    </div>
-  );
-}
-
 function TextArea({
   id,
   value,
@@ -265,6 +230,7 @@ function TextArea({
   placeholder,
   error,
   disabled = false,
+  rows = 5,
 }: {
   id: string;
   value: string;
@@ -272,6 +238,7 @@ function TextArea({
   placeholder: string;
   error?: string;
   disabled?: boolean;
+  rows?: number;
 }) {
   return (
     <div>
@@ -280,7 +247,7 @@ function TextArea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        rows={5}
+        rows={rows}
         disabled={disabled}
         className={`w-full rounded-2xl border bg-white/[0.05] px-4 py-3 text-sm text-white outline-none backdrop-blur-xl transition placeholder:text-white/30 focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
           error
@@ -326,6 +293,34 @@ function SmallInfoCard({ children }: { children: ReactNode }) {
   );
 }
 
+function StockPill({
+  stockLeft,
+  isSoldOut,
+}: {
+  stockLeft: number | null;
+  isSoldOut: boolean;
+}) {
+  if (stockLeft === null) {
+    return (
+      <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+        Stock open
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+        isSoldOut
+          ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
+          : "border-[#c6a268]/30 bg-[#c6a268]/10 text-[#f3dfb8]"
+      }`}
+    >
+      {isSoldOut ? "Sold out" : `${stockLeft} left`}
+    </span>
+  );
+}
+
 function BookingRowCard({
   index,
   row,
@@ -335,6 +330,7 @@ function BookingRowCard({
   canRemove,
   error,
   options,
+  stockLeft,
   disabled = false,
 }: {
   index: number;
@@ -344,9 +340,12 @@ function BookingRowCard({
   onRemove: () => void;
   canRemove: boolean;
   error?: string;
-  options: string[];
+  options: WeightOptionDisplay[];
+  stockLeft: number | null;
   disabled?: boolean;
 }) {
+  const selectedSoldOut = stockLeft !== null && stockLeft <= 0;
+
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -357,16 +356,22 @@ function BookingRowCard({
           </p>
         </div>
 
-        {canRemove ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            disabled={disabled}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Remove
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {row.weightLabel ? (
+            <StockPill stockLeft={stockLeft} isSoldOut={selectedSoldOut} />
+          ) : null}
+
+          {canRemove ? (
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={disabled}
+              className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -374,15 +379,34 @@ function BookingRowCard({
           <Label htmlFor={`weight-${row.id}`} required>
             Weight range
           </Label>
-          <Select
-            id={`weight-${row.id}`}
-            value={row.weightLabel}
-            onChange={onWeightChange}
-            options={options}
-            placeholder="Select weight range"
-            error={error}
-            disabled={disabled}
-          />
+          <div>
+            <select
+              id={`weight-${row.id}`}
+              value={row.weightLabel}
+              onChange={(e) => onWeightChange(e.target.value)}
+              disabled={disabled}
+              className={`h-12 w-full rounded-2xl border bg-white/[0.05] px-4 text-sm text-white outline-none backdrop-blur-xl transition focus:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 ${
+                error
+                  ? "border-red-400/70"
+                  : "border-white/10 focus:border-[#c6a268]/60"
+              }`}
+            >
+              <option value="" disabled className="text-black">
+                Select weight range
+              </option>
+              {options.map((option) => (
+                <option
+                  key={option.rawValue}
+                  value={option.rawValue}
+                  disabled={option.disabled}
+                  className="text-black"
+                >
+                  {option.displayLabel}
+                </option>
+              ))}
+            </select>
+            {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
+          </div>
         </div>
 
         <div>
@@ -401,6 +425,14 @@ function BookingRowCard({
           />
         </div>
       </div>
+
+      {row.weightLabel && stockLeft !== null && stockLeft >= 0 ? (
+        <p className="mt-3 text-xs text-white/45">
+          {selectedSoldOut
+            ? "This size is currently sold out."
+            : `${stockLeft} sheep still available in this weight range.`}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -481,17 +513,11 @@ export default function OrderPage() {
 
   const bookingClosed = isBookingsClosed(settings);
 
-  const weightSelectOptions = useMemo(() => {
-    return settings.weightOptions.map((w) => `${w.label} — ${formatZAR(w.price)}`);
-  }, [settings.weightOptions]);
-
   const parsedSelections = useMemo(() => {
     return form.weightSelections.map((row) => {
       const selectedOption =
-        settings.weightOptions.find(
-          (option) =>
-            `${option.label} — ${formatZAR(option.price)}` === row.weightLabel
-        ) || null;
+        settings.weightOptions.find((option) => option.label === row.weightLabel) ||
+        null;
 
       const quantity = Math.max(0, Number(row.quantity) || 0);
       const price = selectedOption?.price || 0;
@@ -505,6 +531,53 @@ export default function OrderPage() {
       };
     });
   }, [form.weightSelections, settings.weightOptions]);
+
+  function getCurrentFormQuantityForLabel(label: string, excludingRowId?: string) {
+    return parsedSelections.reduce((sum, row) => {
+      if (excludingRowId && row.id === excludingRowId) return sum;
+      if (row.selectedOption?.label !== label) return sum;
+      return sum + row.quantityNumber;
+    }, 0);
+  }
+
+  function getStockLeftForLabel(label: string, excludingRowId?: string) {
+    const option = settings.weightOptions.find((item) => item.label === label);
+
+    const configuredStock =
+      typeof option?.stock === "number" && Number.isFinite(option.stock)
+        ? Math.max(0, option.stock)
+        : null;
+
+    if (configuredStock === null) return null;
+
+    const inFormElsewhere = getCurrentFormQuantityForLabel(label, excludingRowId);
+    return Math.max(0, configuredStock - inFormElsewhere);
+  }
+
+  const weightSelectOptionsByRow = useMemo(() => {
+    const map: Record<string, WeightOptionDisplay[]> = {};
+
+    form.weightSelections.forEach((row) => {
+      map[row.id] = settings.weightOptions.map((option) => {
+        const stockLeft = getStockLeftForLabel(option.label, row.id);
+        const soldOut =
+          stockLeft !== null && stockLeft <= 0 && row.weightLabel !== option.label;
+
+        return {
+          rawValue: option.label,
+          displayLabel:
+            stockLeft === null
+              ? `${option.label} — ${formatZAR(option.price)}`
+              : soldOut
+              ? `${option.label} — ${formatZAR(option.price)} — Sold Out`
+              : `${option.label} — ${formatZAR(option.price)} — ${stockLeft} left`,
+          disabled: soldOut,
+        };
+      });
+    });
+
+    return map;
+  }, [form.weightSelections, settings.weightOptions, parsedSelections]);
 
   const qurbaniQuantity = parsedSelections.reduce(
     (sum, row) => sum + row.quantityNumber,
@@ -572,6 +645,11 @@ export default function OrderPage() {
         : liveQuantityNumber > 0
         ? 1
         : 0) +
+      (form.orderType === "live" && form.liveDelivery
+        ? form.liveDeliveryAddress.trim()
+          ? 1
+          : 0
+        : 1) +
       (form.agree ? 1 : 0);
 
     return base;
@@ -580,11 +658,13 @@ export default function OrderPage() {
     form.fullName,
     form.phone,
     form.agree,
+    form.liveDelivery,
+    form.liveDeliveryAddress,
     weightBreakdown.length,
     liveQuantityNumber,
   ]);
 
-  const progress = Math.round((filledCount / 5) * 100);
+  const progress = Math.round((filledCount / 6) * 100);
 
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -630,12 +710,14 @@ export default function OrderPage() {
       addServices: type === "qurbani" ? prev.addServices : false,
       delivery: type === "qurbani" ? prev.delivery : false,
       liveDelivery: type === "live" ? prev.liveDelivery : false,
+      liveDeliveryAddress: type === "live" ? prev.liveDeliveryAddress : "",
     }));
     setErrors((prev) => ({
       ...prev,
       orderType: undefined,
       weightSelections: undefined,
       liveQuantity: undefined,
+      liveDeliveryAddress: undefined,
     }));
   }
 
@@ -656,6 +738,17 @@ export default function OrderPage() {
       if (!hasValidWeightSelections) {
         nextErrors.weightSelections =
           "Please complete each sheep selection with a valid weight range and quantity.";
+      } else {
+        const invalidStockSelection = parsedSelections.some((row) => {
+          if (!row.selectedOption) return true;
+          const stockLeft = getStockLeftForLabel(row.selectedOption.label, row.id);
+          return stockLeft !== null && row.quantityNumber > stockLeft;
+        });
+
+        if (invalidStockSelection) {
+          nextErrors.weightSelections =
+            "One or more selected weight ranges do not have enough stock available.";
+        }
       }
     }
 
@@ -664,6 +757,11 @@ export default function OrderPage() {
       if (!Number.isInteger(qty) || qty < 1) {
         nextErrors.liveQuantity =
           "Please enter a valid number of live sheep required.";
+      }
+
+      if (form.liveDelivery && !form.liveDeliveryAddress.trim()) {
+        nextErrors.liveDeliveryAddress =
+          "Please enter the delivery address for this live sheep order.";
       }
     }
 
@@ -690,54 +788,117 @@ export default function OrderPage() {
       setSubmitting(true);
 
       const isQurbani = form.orderType === "qurbani";
-      const orderRef = await addDoc(collection(db, "orders"), {
-        orderType: form.orderType,
+      const settingsRef = doc(db, "settings", "qurbani");
+      const newOrderRef = doc(collection(db, "orders"));
 
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
+      let savedOrderId = "";
 
-        quantity: effectiveQuantity,
+      await runTransaction(db, async (transaction) => {
+        const settingsSnap = await transaction.get(settingsRef);
+        const liveSettings = settingsSnap.exists()
+          ? ({
+              ...DEFAULT_SETTINGS,
+              ...(settingsSnap.data() as Partial<AppSettings>),
+            } as AppSettings)
+          : DEFAULT_SETTINGS;
 
-        preferredWeight: isQurbani ? legacyPreferredWeight : "",
-        weightBreakdown: isQurbani ? weightBreakdown : [],
+        let updatedWeightOptions = liveSettings.weightOptions;
 
-        liveQuantity: isQurbani ? null : liveQuantityNumber,
-        livePriceEnabled: isQurbani ? false : settings.liveSheepPriceEnabled,
-        livePricePerSheep:
-          isQurbani || !settings.liveSheepPriceEnabled
-            ? null
-            : settings.liveSheepPrice,
-        liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
+        if (isQurbani) {
+          const requestedByLabel = new Map<string, number>();
 
-        addServices: isQurbani ? form.addServices : false,
-        delivery: isQurbani ? form.delivery : form.liveDelivery,
-        liveDelivery: isQurbani ? false : form.liveDelivery,
+          for (const row of weightBreakdown) {
+            requestedByLabel.set(
+              row.label,
+              (requestedByLabel.get(row.label) || 0) + row.quantity
+            );
+          }
 
-        basePriceTotal: isQurbani ? basePriceTotal : liveBaseTotal,
-        servicesPerSheep,
-        servicesTotal,
-        deliveryPerSheep,
-        deliveryTotal,
-        totalPrice,
-        pricingVisible,
+          updatedWeightOptions = liveSettings.weightOptions.map((option) => {
+            const requested = requestedByLabel.get(option.label) || 0;
 
-        notes: form.notes.trim(),
+            if (requested === 0) return option;
 
-        paymentStatus: "pending",
-        slaughtered: false,
-        delivered: false,
-        cancelled: false,
-        cancelReason: "",
-        queueNumber: null,
-        manualEntry: false,
-        bookingYear: new Date().getFullYear(),
+            const currentStock =
+              typeof option.stock === "number" && Number.isFinite(option.stock)
+                ? option.stock
+                : null;
 
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+            if (currentStock === null) {
+              throw new Error(
+                `Stock has not been set for ${option.label}. Please ask staff to set stock first.`
+              );
+            }
+
+            if (requested > currentStock) {
+              throw new Error(
+                `${option.label} only has ${currentStock} left. Please reduce your quantity.`
+              );
+            }
+
+            return {
+              ...option,
+              stock: currentStock - requested,
+            };
+          });
+
+          transaction.update(settingsRef, {
+            weightOptions: updatedWeightOptions,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        transaction.set(newOrderRef, {
+          orderType: form.orderType,
+
+          fullName: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+
+          quantity: effectiveQuantity,
+
+          preferredWeight: isQurbani ? legacyPreferredWeight : "",
+          weightBreakdown: isQurbani ? weightBreakdown : [],
+
+          liveQuantity: isQurbani ? null : liveQuantityNumber,
+          livePriceEnabled: isQurbani ? false : liveSettings.liveSheepPriceEnabled,
+          livePricePerSheep:
+            isQurbani || !liveSettings.liveSheepPriceEnabled
+              ? null
+              : liveSettings.liveSheepPrice,
+          liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
+
+          addServices: isQurbani ? form.addServices : false,
+          delivery: isQurbani ? form.delivery : form.liveDelivery,
+          liveDelivery: isQurbani ? false : form.liveDelivery,
+          address: isQurbani ? "" : form.liveDeliveryAddress.trim(),
+
+          basePriceTotal: isQurbani ? basePriceTotal : liveBaseTotal,
+          servicesPerSheep,
+          servicesTotal,
+          deliveryPerSheep,
+          deliveryTotal,
+          totalPrice,
+          pricingVisible,
+
+          notes: form.notes.trim(),
+
+          paymentStatus: "pending",
+          slaughtered: false,
+          delivered: false,
+          cancelled: false,
+          cancelReason: "",
+          queueNumber: null,
+          manualEntry: false,
+          bookingYear: new Date().getFullYear(),
+
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        savedOrderId = newOrderRef.id;
       });
 
-      const savedOrderId = orderRef.id;
       const prefix = form.orderType === "qurbani" ? "NQ" : "LS";
       const savedOrderReference = `${prefix}-${savedOrderId
         .slice(0, 8)
@@ -751,11 +912,17 @@ export default function OrderPage() {
       window.location.assign(`/order/success/${savedOrderId}`);
     } catch (error) {
       console.error("Error saving order:", error);
-      setSubmitError("Something went wrong while saving the order. Please try again.");
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while saving the order. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
   }
+
+  const readyToRender = settingsLoaded;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -798,7 +965,7 @@ export default function OrderPage() {
       </header>
 
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 sm:px-10 lg:pb-24 lg:pt-4">
-        {!settingsLoaded ? (
+        {!readyToRender ? (
           <div className="rounded-[34px] border border-white/10 bg-white/[0.045] p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
             <p className="text-sm uppercase tracking-[0.24em] text-[#d8b67e]">
               Loading
@@ -825,13 +992,6 @@ export default function OrderPage() {
                 className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
               >
                 Back Home
-              </Link>
-
-              <Link
-                href="/lookup"
-                className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white"
-              >
-                Find Existing Booking
               </Link>
             </div>
           </div>
@@ -975,24 +1135,37 @@ export default function OrderPage() {
                           </h2>
                         </div>
 
+                        <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                          <p className="text-sm text-white/75">
+                            Available stock is shown for each weight range. Sold out categories cannot be selected.
+                          </p>
+                        </div>
+
                         <div className="grid gap-4">
-                          {form.weightSelections.map((row, index) => (
-                            <BookingRowCard
-                              key={row.id}
-                              index={index}
-                              row={row}
-                              onWeightChange={(value) =>
-                                updateWeightRow(row.id, { weightLabel: value })
-                              }
-                              onQuantityChange={(value) =>
-                                updateWeightRow(row.id, { quantity: value })
-                              }
-                              onRemove={() => removeWeightRow(row.id)}
-                              canRemove={form.weightSelections.length > 1}
-                              error={errors.weightSelections}
-                              options={weightSelectOptions}
-                            />
-                          ))}
+                          {form.weightSelections.map((row, index) => {
+                            const currentStockLeft = row.weightLabel
+                              ? getStockLeftForLabel(row.weightLabel, row.id)
+                              : null;
+
+                            return (
+                              <BookingRowCard
+                                key={row.id}
+                                index={index}
+                                row={row}
+                                onWeightChange={(value) =>
+                                  updateWeightRow(row.id, { weightLabel: value })
+                                }
+                                onQuantityChange={(value) =>
+                                  updateWeightRow(row.id, { quantity: value })
+                                }
+                                onRemove={() => removeWeightRow(row.id)}
+                                canRemove={form.weightSelections.length > 1}
+                                error={errors.weightSelections}
+                                options={weightSelectOptionsByRow[row.id] || []}
+                                stockLeft={currentStockLeft}
+                              />
+                            );
+                          })}
                         </div>
 
                         {errors.weightSelections ? (
@@ -1156,6 +1329,24 @@ export default function OrderPage() {
                             </div>
                           </div>
 
+                          {form.liveDelivery ? (
+                            <div className="sm:col-span-2">
+                              <Label htmlFor="liveDeliveryAddress" required>
+                                Delivery address
+                              </Label>
+                              <TextArea
+                                id="liveDeliveryAddress"
+                                value={form.liveDeliveryAddress}
+                                onChange={(value) =>
+                                  updateField("liveDeliveryAddress", value)
+                                }
+                                placeholder="Enter the full delivery address for the live sheep order"
+                                error={errors.liveDeliveryAddress}
+                                rows={4}
+                              />
+                            </div>
+                          ) : null}
+
                           <div className="sm:col-span-2">
                             <div className="rounded-[24px] border border-white/10 bg-[#c6a268]/[0.06] p-4">
                               <p className="text-sm font-medium text-white">
@@ -1273,9 +1464,19 @@ export default function OrderPage() {
                                 key={row.id}
                                 className="flex items-start justify-between gap-4 text-sm"
                               >
-                                <span className="text-white">
-                                  {row.quantity} × {row.label}
-                                </span>
+                                <div>
+                                  <span className="text-white">
+                                    {row.quantity} × {row.label}
+                                  </span>
+                                  <div className="mt-1 text-xs text-white/45">
+                                    {(() => {
+                                      const stockLeft = getStockLeftForLabel(row.label, row.id);
+                                      return stockLeft === null
+                                        ? "Stock open"
+                                        : `${stockLeft} left after this row`;
+                                    })()}
+                                  </div>
+                                </div>
                                 <span className="font-medium text-white">
                                   {formatZAR(row.subtotal)}
                                 </span>
@@ -1287,10 +1488,22 @@ export default function OrderPage() {
                         )}
                       </div>
                     ) : (
-                      <SummaryRow
-                        label="Live sheep required"
-                        value={liveQuantityNumber ? String(liveQuantityNumber) : "—"}
-                      />
+                      <>
+                        <SummaryRow
+                          label="Live sheep required"
+                          value={liveQuantityNumber ? String(liveQuantityNumber) : "—"}
+                        />
+                        <SummaryRow
+                          label="Live delivery"
+                          value={form.liveDelivery ? "Included" : "Not added"}
+                        />
+                        {form.liveDelivery ? (
+                          <SummaryRow
+                            label="Delivery address"
+                            value={form.liveDeliveryAddress || "—"}
+                          />
+                        ) : null}
+                      </>
                     )}
 
                     <SummaryRow
@@ -1303,18 +1516,12 @@ export default function OrderPage() {
                           : "Not applicable"
                       }
                     />
-                    <SummaryRow
-                      label="Delivery"
-                      value={
-                        form.orderType === "qurbani"
-                          ? form.delivery
-                            ? "Included"
-                            : "Not added"
-                          : form.liveDelivery
-                          ? "Included"
-                          : "Not added"
-                      }
-                    />
+                    {form.orderType === "qurbani" ? (
+                      <SummaryRow
+                        label="Delivery"
+                        value={form.delivery ? "Included" : "Not added"}
+                      />
+                    ) : null}
                   </div>
 
                   <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
@@ -1365,11 +1572,7 @@ export default function OrderPage() {
 
                     <SummaryRow
                       label="Total due"
-                      value={
-                        pricingVisible
-                          ? formatZAR(totalPrice)
-                          : "To be confirmed"
-                      }
+                      value={pricingVisible ? formatZAR(totalPrice) : "To be confirmed"}
                       strong
                     />
                   </div>
@@ -1385,6 +1588,9 @@ export default function OrderPage() {
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Multiple weight categories can be booked in one qurbani order
+                    </SmallInfoCard>
+                    <SmallInfoCard>
+                      Weight ranges now reflect live stock availability where stock has been set
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Skinning, slicing, cleaning, storage and packaging at{" "}

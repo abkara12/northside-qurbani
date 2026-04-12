@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -44,8 +44,9 @@ type OrderItem = {
   deliveryTotal?: number;
   basePriceTotal?: number;
   totalPrice?: number;
-  paymentStatus?: "pending" | "paid";
+   paymentStatus?: "pending" | "paid";
   slaughtered?: boolean;
+  sliced?: boolean;
   delivered?: boolean;
   createdAt?: any;
   updatedAt?: any;
@@ -64,6 +65,7 @@ type OrderItem = {
 type SettingsWeightOption = {
   label: string;
   price: number;
+  stock?: number | null;
 };
 
 type AppSettings = {
@@ -87,8 +89,9 @@ type EditFormState = {
   notes: string;
   addServices: boolean;
   delivery: boolean;
-  paymentStatus: "pending" | "paid";
+    paymentStatus: "pending" | "paid";
   slaughtered: boolean;
+  sliced: boolean;
   delivered: boolean;
   cancelled: boolean;
   cancelReason: string;
@@ -118,6 +121,16 @@ type ManualFormState = {
   }>;
 };
 
+type ExpenseItem = {
+  id: string;
+  title?: string;
+  amount?: number;
+  category?: "skinners" | "workers" | "trailer" | "other";
+  notes?: string;
+  createdAt?: any;
+  createdByRole?: string;
+};
+
 const DEFAULT_SETTINGS: AppSettings = {
   bookingsOpen: true,
   bookingCutoffDate: "",
@@ -126,15 +139,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   accountNumber: "REPLACE WITH ACCOUNT NUMBER",
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
-  referenceHint: "Please use your name and surname as the payment reference.",
+  referenceHint:
+    "Please send your proof of payment / reference to Moulana Shaheed or Uncle Yaqoob on WhatsApp.",
   reminderMessageIntro:
     "Assalaamu alaikum. This is a kind reminder regarding your Northside Qurbani booking.",
   weightOptions: [
-    { label: "35–39 kg", price: 2750 },
-    { label: "40–45 kg", price: 3150 },
-    { label: "46–50 kg", price: 3500 },
-    { label: "51–55 kg", price: 3850 },
-    { label: "56–60 kg", price: 4200 },
+    { label: "35–39 kg", price: 2750, stock: null },
+    { label: "40–45 kg", price: 3150, stock: null },
+    { label: "46–50 kg", price: 3500, stock: null },
+    { label: "51–55 kg", price: 3850, stock: null },
+    { label: "56–60 kg", price: 4200, stock: null },
   ],
 };
 
@@ -277,6 +291,92 @@ function getLiveCalculatedTotal(editForm: EditFormState | null) {
   return Number(editForm.liveQuantity || 0) * Number(editForm.livePricePerSheep || 0);
 }
 
+function normaliseStock(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, value);
+}
+
+function mergeWeightQuantities(rows: WeightBreakdownItem[]) {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    map.set(row.label, (map.get(row.label) || 0) + row.quantity);
+  }
+  return map;
+}
+
+async function applyQurbaniStockTransaction({
+  existingOrder,
+  nextWeightBreakdown,
+  buildOrderPayload,
+}: {
+  existingOrder?: OrderItem | null;
+  nextWeightBreakdown: WeightBreakdownItem[];
+  buildOrderPayload: () => Record<string, any>;
+}) {
+  const settingsRef = doc(db, "settings", "qurbani");
+  const targetOrderRef = existingOrder
+    ? doc(db, "orders", existingOrder.id)
+    : doc(collection(db, "orders"));
+
+  await runTransaction(db, async (transaction) => {
+    const settingsSnap = await transaction.get(settingsRef);
+    const liveSettings = settingsSnap.exists()
+      ? ({ ...DEFAULT_SETTINGS, ...(settingsSnap.data() as Partial<AppSettings>) } as AppSettings)
+      : DEFAULT_SETTINGS;
+
+    const previousMap = mergeWeightQuantities(existingOrder?.weightBreakdown || []);
+    const nextMap = mergeWeightQuantities(nextWeightBreakdown);
+
+    const updatedWeightOptions = liveSettings.weightOptions.map((option) => {
+      const currentStock = normaliseStock(option.stock);
+
+      if (currentStock === null) {
+        throw new Error(`Stock has not been set for ${option.label}.`);
+      }
+
+      const previousQty = previousMap.get(option.label) || 0;
+      const nextQty = nextMap.get(option.label) || 0;
+      const delta = nextQty - previousQty;
+
+      if (delta === 0) return option;
+
+      if (delta < 0) {
+        return {
+          ...option,
+          stock: currentStock + Math.abs(delta),
+        };
+      }
+
+      if (delta > currentStock) {
+        throw new Error(`${option.label} only has ${currentStock} left.`);
+      }
+
+      return {
+        ...option,
+        stock: currentStock - delta,
+      };
+    });
+
+    transaction.update(settingsRef, {
+      weightOptions: updatedWeightOptions,
+      updatedAt: serverTimestamp(),
+    });
+
+    if (existingOrder) {
+      transaction.update(targetOrderRef, {
+        ...buildOrderPayload(),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      transaction.set(targetOrderRef, {
+        ...buildOrderPayload(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+}
+
 
 function buildPaymentReminderMessage(order: OrderItem, settings: AppSettings) {
   const ref = orderReference(order.id);
@@ -310,6 +410,22 @@ Your Northside Qurbani booking (${ref}) has been cancelled.
 Reason: ${reason || "No reason provided"}
 
 If this was done in error, please contact the team directly.`;
+}
+
+
+
+function buildQueueAssignedMessage(order: OrderItem, assignedQueueNumber: number) {
+  const ref = orderReference(order.id);
+
+  return `Assalaamu alaikum.
+
+Your Northside Qurbani booking has now been added to the queue.
+
+Booking Ref: ${ref}
+Queue Number: ${assignedQueueNumber}
+Booking: ${sheepSummary(order)}
+
+Please keep your queue number ready and show it when called.`;
 }
 
 function PaymentBadge({ value }: { value?: string }) {
@@ -479,8 +595,9 @@ function MiniBarChart({
 }
 
 export default function AdminPage() {
-  const [authReady, setAuthReady] = useState(false);
-  const [authorised, setAuthorised] = useState(false);
+ const [authReady, setAuthReady] = useState(false);
+const [authorised, setAuthorised] = useState(false);
+const [userRole, setUserRole] = useState<"admin" | "staff" | "">("");
 
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -508,6 +625,20 @@ export default function AdminPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
+const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+const [loadingExpenses, setLoadingExpenses] = useState(true);
+const [showExpensesPanel, setShowExpensesPanel] = useState(false);
+const [expenseSaving, setExpenseSaving] = useState(false);
+
+const [expenseForm, setExpenseForm] = useState({
+  title: "",
+  amount: "",
+  category: "other" as "skinners" | "workers" | "trailer" | "other",
+  notes: "",
+});
+
+const isOwner = userRole === "admin";
+
   const [manualForm, setManualForm] = useState<ManualFormState>({
     fullName: "",
     phone: "",
@@ -528,32 +659,39 @@ export default function AdminPage() {
   const selectedBookingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (!firebaseUser) {
-        setAuthorised(false);
-        setAuthReady(true);
-        window.location.assign("/login");
-        return;
-      }
-      try {
-        const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-        const role = snap.exists() ? (snap.data() as any).role : null;
-        const ok = role === "admin" || role === "staff";
-        setAuthorised(ok);
-        setAuthReady(true);
-        if (!ok) {
-          await signOut(auth);
-          window.location.assign("/login");
-        }
-      } catch {
-        setAuthorised(false);
-        setAuthReady(true);
+  const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+    if (!firebaseUser) {
+      setAuthorised(false);
+      setUserRole("");
+      setAuthReady(true);
+      window.location.assign("/login");
+      return;
+    }
+
+    try {
+      const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+      const role = snap.exists() ? (snap.data() as any).role : null;
+      const ok = role === "admin" || role === "staff";
+
+      setAuthorised(ok);
+      setUserRole(ok ? role : "");
+      setAuthReady(true);
+
+      if (!ok) {
         await signOut(auth);
         window.location.assign("/login");
       }
-    });
-    return () => unsub();
-  }, []);
+    } catch {
+      setAuthorised(false);
+      setUserRole("");
+      setAuthReady(true);
+      await signOut(auth);
+      window.location.assign("/login");
+    }
+  });
+
+  return () => unsub();
+}, []);
 
   useEffect(() => {
     if (!authorised) return;
@@ -610,46 +748,74 @@ export default function AdminPage() {
   }, [authorised]);
 
   useEffect(() => {
-    if (!selectedOrder) {
-      setEditForm(null);
-      setHasUnsavedChanges(false);
-      return;
+  if (!authorised || !isOwner) {
+    setExpenses([]);
+    setLoadingExpenses(false);
+    return;
+  }
+
+  const q = query(collection(db, "expenses"), orderBy("createdAt", "desc"));
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const nextExpenses: ExpenseItem[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...(docSnap.data() as Omit<ExpenseItem, "id">),
+      }));
+      setExpenses(nextExpenses);
+      setLoadingExpenses(false);
+    },
+    (error) => {
+      console.error("Expenses snapshot error:", error);
+      setLoadingExpenses(false);
     }
+  );
 
-    setEditForm({
-      fullName: selectedOrder.fullName || "",
-      phone: selectedOrder.phone || "",
-      email: selectedOrder.email || "",
-      cutPreferences: (selectedOrder.cutPreferences || []).join(", "),
-      notes: selectedOrder.notes || "",
-      addServices: !!selectedOrder.addServices,
-      delivery: !!selectedOrder.delivery,
-      paymentStatus:
-        (selectedOrder.paymentStatus || "pending").toLowerCase() === "paid"
-          ? "paid"
-          : "pending",
-      slaughtered: !!selectedOrder.slaughtered,
-      delivered: !!selectedOrder.delivered,
-      cancelled: !!selectedOrder.cancelled,
-      cancelReason: selectedOrder.cancelReason || "",
-      weightRows: rowsFromOrder(selectedOrder),
-      liveQuantity: String(selectedOrder.liveQuantity || selectedOrder.quantity || 1),
-      livePricePerSheep: String(selectedOrder.livePricePerSheep || 0),
-      pricingVisible: selectedOrder.pricingVisible !== false,
-    });
+  return () => unsub();
+}, [authorised, isOwner]);
 
+useEffect(() => {
+  if (!selectedOrder) {
+    setEditForm(null);
     setHasUnsavedChanges(false);
-    setSaveMessage("");
+    return;
+  }
 
-    const timer = setTimeout(() => {
-      selectedBookingRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 120);
+  setEditForm({
+    fullName: selectedOrder.fullName || "",
+    phone: selectedOrder.phone || "",
+    email: selectedOrder.email || "",
+    cutPreferences: (selectedOrder.cutPreferences || []).join(", "),
+    notes: selectedOrder.notes || "",
+    addServices: !!selectedOrder.addServices,
+    delivery: !!selectedOrder.delivery,
+        paymentStatus:
+      (selectedOrder.paymentStatus || "pending").toLowerCase() === "paid"
+        ? "paid"
+        : "pending",
+    slaughtered: !!selectedOrder.slaughtered,
+    sliced: !!selectedOrder.sliced,
+    delivered: !!selectedOrder.delivered,
+    cancelled: !!selectedOrder.cancelled,
+    cancelReason: selectedOrder.cancelReason || "",
+    weightRows: rowsFromOrder(selectedOrder),
+    liveQuantity: String(selectedOrder.liveQuantity || selectedOrder.quantity || 1),
+    livePricePerSheep: String(selectedOrder.livePricePerSheep || 0),
+    pricingVisible: selectedOrder.pricingVisible !== false,
+  });
 
-    return () => clearTimeout(timer);
-  }, [selectedOrder]);
+  setHasUnsavedChanges(false);
+  setSaveMessage("");
+
+  const timer = setTimeout(() => {
+    selectedBookingRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 120);
+
+  return () => clearTimeout(timer);
+}, [selectedOrder]);
 
   const activeOrders = useMemo(() => orders.filter((o) => !o.cancelled), [orders]);
 
@@ -690,18 +856,28 @@ export default function AdminPage() {
       (orderTypeFilter === "live" && order.orderType === "live");
 
     const matchesWorkflow =
-      workflowFilter === "all" ||
-      (workflowFilter === "pending" &&
-        !order.cancelled &&
-        !order.delivered &&
-        (order.orderType === "live" ? true : !order.slaughtered)) ||
-      (workflowFilter === "slaughtered" &&
-        order.orderType !== "live" &&
-        !order.cancelled &&
-        !!order.slaughtered &&
-        !order.delivered) ||
-      (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
-      (workflowFilter === "cancelled" && !!order.cancelled);
+  workflowFilter === "all" ||
+  (workflowFilter === "pending" &&
+    !order.cancelled &&
+    !order.delivered &&
+    (order.orderType === "live" ? true : !order.slaughtered)) ||
+  (workflowFilter === "slaughtered" &&
+    order.orderType !== "live" &&
+    !order.cancelled &&
+    !!order.slaughtered &&
+    !order.delivered) ||
+    (workflowFilter === "sliced" &&
+    order.orderType !== "live" &&
+    !order.cancelled &&
+    !!order.sliced) ||
+  (workflowFilter === "awaiting_delivery" &&
+    order.orderType !== "live" &&
+    !order.cancelled &&
+    !!order.slaughtered &&
+    !order.delivered) ||
+  (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+  (workflowFilter === "cancelled" && !!order.cancelled);
+  
 
 
     return (
@@ -768,6 +944,9 @@ const totalLiveSheepOrdered = liveOrders.reduce(
 
 const totalLiveValue = liveOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
+const totalExpenses = expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
+const netCollectedAfterExpenses = totalCollected - totalExpenses;
+
 const liveOutstandingValue = liveOrders
   .filter((o) => (o.paymentStatus || "pending").toLowerCase() !== "paid")
   .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
@@ -787,6 +966,7 @@ const liveOutstandingValue = liveOrders
 
   const currentBulkReminderOrder = bulkReminderTargets[bulkReminderIndex] || null;
 
+    
   function markDirty() {
     setHasUnsavedChanges(true);
     setSaveMessage("");
@@ -828,6 +1008,51 @@ const liveOutstandingValue = liveOrders
       setSettingsSaving(false);
     }
   }
+
+  async function saveExpense() {
+  if (!isOwner) return;
+
+  const title = expenseForm.title.trim();
+  const amount = Number(expenseForm.amount || 0);
+
+  if (!title) {
+    alert("Please enter an expense title.");
+    return;
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Please enter a valid expense amount.");
+    return;
+  }
+
+  try {
+    setExpenseSaving(true);
+
+    await setDoc(doc(collection(db, "expenses")), {
+      title,
+      amount,
+      category: expenseForm.category,
+      notes: expenseForm.notes.trim(),
+      createdAt: serverTimestamp(),
+      createdByRole: userRole || "",
+    });
+
+    setExpenseForm({
+      title: "",
+      amount: "",
+      category: "other",
+      notes: "",
+    });
+
+    setSaveMessage("Expense added successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+  } catch (error) {
+    console.error("Expense save failed:", error);
+    alert("Could not save expense.");
+  } finally {
+    setExpenseSaving(false);
+  }
+}
 
   function openWhatsAppForOrder(order: OrderItem, message: string) {
     const phone = cleanPhoneForWhatsApp(order.phone);
@@ -895,9 +1120,9 @@ const liveOutstandingValue = liveOrders
     setBulkReminderIndex(0);
   }
 
-  async function handleQuickToggle(
+    async function handleQuickToggle(
     order: OrderItem,
-    field: "paymentStatus" | "slaughtered" | "delivered"
+    field: "paymentStatus" | "slaughtered" | "sliced" | "delivered"
   ) {
     if (field === "paymentStatus") {
       const next =
@@ -917,6 +1142,15 @@ const liveOutstandingValue = liveOrders
       return;
     }
 
+        if (field === "sliced") {
+      if (order.orderType === "live") return;
+      if (order.cancelled) return;
+
+      const next = !order.sliced;
+      await updateField(order.id, { sliced: next });
+      return;
+    }
+
     if (field === "delivered") {
       const next = !order.delivered;
       if (next) {
@@ -928,15 +1162,45 @@ const liveOutstandingValue = liveOrders
   }
 
   async function handleCheckIn(order: OrderItem) {
-    if (order.orderType === "live") return;
-    if (order.cancelled || order.delivered || order.slaughtered) return;
-    if (order.queueNumber && order.queueNumber > 0) return;
-    await updateField(order.id, {
-      queueNumber: nextQueueNumber,
+  if (order.orderType === "live") return;
+  if (order.cancelled || order.delivered || order.slaughtered) return;
+  if (order.queueNumber && order.queueNumber > 0) return;
+
+  const assignedQueueNumber = nextQueueNumber;
+
+  try {
+    setUpdatingField(order.id);
+
+    await updateDoc(doc(db, "orders", order.id), {
+      queueNumber: assignedQueueNumber,
       queueCheckedInAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+
     setSimpleSearch("");
+    setSaveMessage(`Queue number #${assignedQueueNumber} assigned successfully.`);
+    setTimeout(() => setSaveMessage(""), 3000);
+
+    const hasValidPhone = !!cleanPhoneForWhatsApp(order.phone);
+    if (!hasValidPhone) return;
+
+    const shouldOpenWhatsApp = window.confirm(
+      `Queue #${assignedQueueNumber} assigned to ${order.fullName || "this customer"}.\n\nOpen WhatsApp notification now?`
+    );
+
+    if (shouldOpenWhatsApp) {
+      openWhatsAppForOrder(
+        order,
+        buildQueueAssignedMessage(order, assignedQueueNumber)
+      );
+    }
+  } catch (error) {
+    console.error("Queue assignment failed:", error);
+    alert("Unable to assign the queue number right now.");
+  } finally {
+    setUpdatingField("");
   }
+}
 
   function handleOpenBooking(order: OrderItem) {
     setMode("management");
@@ -953,129 +1217,70 @@ const liveOutstandingValue = liveOrders
     }, 150);
   }
 
-  async function saveEditForm() {
-    if (!selectedOrder || !editForm) return;
+ async function saveEditForm() {
+  if (!selectedOrder || !editForm) return;
 
-    if (!editForm.fullName.trim()) {
-      alert("Please enter the customer name.");
-      return;
-    }
-    if (!editForm.phone.trim()) {
-      alert("Please enter the customer phone number.");
-      return;
-    }
-    if (editForm.cancelled && !editForm.cancelReason.trim()) {
-      alert("Please enter a cancellation reason.");
-      return;
-    }
+  if (!editForm.fullName.trim()) {
+    alert("Please enter the customer name.");
+    return;
+  }
+  if (!editForm.phone.trim()) {
+    alert("Please enter the customer phone number.");
+    return;
+  }
+  if (editForm.cancelled && !editForm.cancelReason.trim()) {
+    alert("Please enter a cancellation reason.");
+    return;
+  }
 
-    try {
-      setSavingEdit(true);
+  try {
+    setSavingEdit(true);
 
-      if (selectedOrder.orderType === "live") {
-        const liveQuantity = Number(editForm.liveQuantity || 0);
-        const livePricePerSheep = Number(editForm.livePricePerSheep || 0);
-        const pricingVisible = !!editForm.pricingVisible;
+    if (selectedOrder.orderType === "live") {
+      const liveQuantity = Number(editForm.liveQuantity || 0);
+      const livePricePerSheep = Number(editForm.livePricePerSheep || 0);
+      const pricingVisible = !!editForm.pricingVisible;
 
-        if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
-          alert("Please enter a valid live sheep quantity.");
-          return;
-        }
-
-        if (pricingVisible && livePricePerSheep < 0) {
-          alert("Please enter a valid price per sheep.");
-          return;
-        }
-
-        const totalPrice = pricingVisible ? liveQuantity * livePricePerSheep : 0;
-
-        await updateDoc(doc(db, "orders", selectedOrder.id), {
-          fullName: editForm.fullName.trim(),
-          phone: editForm.phone.trim(),
-          email: editForm.email.trim(),
-          notes: editForm.notes.trim(),
-          quantity: liveQuantity,
-          liveQuantity,
-          livePricePerSheep,
-          pricingVisible,
-          totalPrice,
-          paymentStatus: editForm.paymentStatus,
-          delivered: editForm.cancelled ? false : editForm.delivered,
-          cancelled: editForm.cancelled,
-          cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
-          slaughtered: false,
-          queueNumber: null,
-          queueCheckedInAt: null,
-          addServices: false,
-          delivery: false,
-          servicesPerSheep: 0,
-          servicesTotal: 0,
-          deliveryPerSheep: 0,
-          deliveryTotal: 0,
-          basePriceTotal: pricingVisible ? totalPrice : 0,
-          preferredWeight: "",
-          weightBreakdown: [],
-          cutPreferences: [],
-          updatedAt: serverTimestamp(),
-        });
-
-        if (editForm.cancelled) {
-          if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
-            openWhatsAppForOrder(
-              selectedOrder,
-              buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
-            );
-          }
-        }
-
-        setHasUnsavedChanges(false);
-setSelectedOrder(null);
-setSaveMessage("Saved successfully.");
-setTimeout(() => setSaveMessage(""), 3000);
-return;
-      }
-
-      const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
-
-      if (!weightBreakdown.length) {
-        alert("Please add at least one valid sheep selection.");
+      if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
+        alert("Please enter a valid live sheep quantity.");
         return;
       }
 
-      const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
-      const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-      const servicesPerSheep = editForm.addServices ? 400 : 0;
-      const deliveryPerSheep = editForm.delivery ? 100 : 0;
-      const servicesTotal = quantity * servicesPerSheep;
-      const deliveryTotal = quantity * deliveryPerSheep;
-      const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-      const cutPreferences = editForm.cutPreferences
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+      if (pricingVisible && livePricePerSheep < 0) {
+        alert("Please enter a valid price per sheep.");
+        return;
+      }
+
+      const totalPrice = pricingVisible ? liveQuantity * livePricePerSheep : 0;
 
       await updateDoc(doc(db, "orders", selectedOrder.id), {
         fullName: editForm.fullName.trim(),
         phone: editForm.phone.trim(),
         email: editForm.email.trim(),
-        quantity,
-        preferredWeight: buildLegacyPreferredWeight(weightBreakdown),
-        weightBreakdown,
-        cutPreferences,
         notes: editForm.notes.trim(),
-        addServices: editForm.addServices,
-        delivery: editForm.delivery,
-        basePriceTotal,
-        servicesPerSheep,
-        servicesTotal,
-        deliveryPerSheep,
-        deliveryTotal,
+        quantity: liveQuantity,
+        liveQuantity,
+        livePricePerSheep,
+        pricingVisible,
         totalPrice,
         paymentStatus: editForm.paymentStatus,
-        slaughtered: editForm.cancelled ? false : editForm.slaughtered,
+        sliced: false,
         delivered: editForm.cancelled ? false : editForm.delivered,
         cancelled: editForm.cancelled,
         cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
+        slaughtered: false,
+        queueNumber: null,
+        queueCheckedInAt: null,
+        addServices: false,
+        delivery: false,
+        servicesPerSheep: 0,
+        servicesTotal: 0,
+        deliveryPerSheep: 0,
+        deliveryTotal: 0,
+        basePriceTotal: pricingVisible ? totalPrice : 0,
+        preferredWeight: "",
+        weightBreakdown: [],
+        cutPreferences: [],
         updatedAt: serverTimestamp(),
       });
 
@@ -1087,31 +1292,16 @@ return;
           );
         }
       }
-setHasUnsavedChanges(false);
-setSelectedOrder(null);
-setSaveMessage("Saved successfully.");
-setTimeout(() => setSaveMessage(""), 3000);
-    } catch (error) {
-      console.error("Failed saving edit form:", error);
-      alert("Could not save this booking.");
-    } finally {
-      setSavingEdit(false);
-    }
-  }
 
-  async function submitManualBooking(e: FormEvent) {
-    e.preventDefault();
-
-    if (!manualForm.fullName.trim()) {
-      alert("Please enter the customer name.");
-      return;
-    }
-    if (!manualForm.phone.trim()) {
-      alert("Please enter the customer phone number.");
+      setHasUnsavedChanges(false);
+      setSelectedOrder(null);
+      setSaveMessage("Saved successfully.");
+      setTimeout(() => setSaveMessage(""), 3000);
       return;
     }
 
-    const weightBreakdown = computeBreakdownFromRows(manualForm.weightRows, settings);
+    const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
+
     if (!weightBreakdown.length) {
       alert("Please add at least one valid sheep selection.");
       return;
@@ -1119,19 +1309,107 @@ setTimeout(() => setSaveMessage(""), 3000);
 
     const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
     const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-    const servicesPerSheep = manualForm.addServices ? 400 : 0;
-    const deliveryPerSheep = manualForm.delivery ? 100 : 0;
+    const servicesPerSheep = editForm.addServices ? 400 : 0;
+    const deliveryPerSheep = editForm.delivery ? 100 : 0;
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
     const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-    const cutPreferences = manualForm.cutPreferences
+    const cutPreferences = editForm.cutPreferences
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
 
-    try {
-      setManualSaving(true);
-      await addDoc(collection(db, "orders"), {
+    const nextWeightBreakdown = editForm.cancelled ? [] : weightBreakdown;
+
+    await applyQurbaniStockTransaction({
+      existingOrder: selectedOrder,
+      nextWeightBreakdown,
+      buildOrderPayload: () => ({
+        fullName: editForm.fullName.trim(),
+        phone: editForm.phone.trim(),
+        email: editForm.email.trim(),
+        quantity: editForm.cancelled ? 0 : quantity,
+        preferredWeight: editForm.cancelled
+          ? ""
+          : buildLegacyPreferredWeight(weightBreakdown),
+        weightBreakdown: nextWeightBreakdown,
+        cutPreferences: editForm.cancelled ? [] : cutPreferences,
+        notes: editForm.notes.trim(),
+        addServices: editForm.cancelled ? false : editForm.addServices,
+        delivery: editForm.cancelled ? false : editForm.delivery,
+        basePriceTotal: editForm.cancelled ? 0 : basePriceTotal,
+        servicesPerSheep: editForm.cancelled ? 0 : servicesPerSheep,
+        servicesTotal: editForm.cancelled ? 0 : servicesTotal,
+        deliveryPerSheep: editForm.cancelled ? 0 : deliveryPerSheep,
+        deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
+        totalPrice: editForm.cancelled ? 0 : totalPrice,
+        paymentStatus: editForm.paymentStatus,
+        slaughtered: editForm.cancelled ? false : editForm.slaughtered,
+        sliced: editForm.cancelled ? false : editForm.sliced,
+        delivered: editForm.cancelled ? false : editForm.delivered,
+        cancelled: editForm.cancelled,
+        cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
+      }),
+    });
+
+    if (editForm.cancelled) {
+      if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
+        openWhatsAppForOrder(
+          selectedOrder,
+          buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
+        );
+      }
+    }
+
+    setHasUnsavedChanges(false);
+    setSelectedOrder(null);
+    setSaveMessage("Saved successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+  } catch (error) {
+    console.error("Failed saving edit form:", error);
+    alert(error instanceof Error ? error.message : "Could not save this booking.");
+  } finally {
+    setSavingEdit(false);
+  }
+}
+
+  async function submitManualBooking(e: FormEvent) {
+  e.preventDefault();
+
+  if (!manualForm.fullName.trim()) {
+    alert("Please enter the customer name.");
+    return;
+  }
+  if (!manualForm.phone.trim()) {
+    alert("Please enter the customer phone number.");
+    return;
+  }
+
+  const weightBreakdown = computeBreakdownFromRows(manualForm.weightRows, settings);
+  if (!weightBreakdown.length) {
+    alert("Please add at least one valid sheep selection.");
+    return;
+  }
+
+  const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
+  const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
+  const servicesPerSheep = manualForm.addServices ? 400 : 0;
+  const deliveryPerSheep = manualForm.delivery ? 100 : 0;
+  const servicesTotal = quantity * servicesPerSheep;
+  const deliveryTotal = quantity * deliveryPerSheep;
+  const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+  const cutPreferences = manualForm.cutPreferences
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  try {
+    setManualSaving(true);
+
+    await applyQurbaniStockTransaction({
+      existingOrder: null,
+      nextWeightBreakdown: weightBreakdown,
+      buildOrderPayload: () => ({
         fullName: manualForm.fullName.trim(),
         phone: manualForm.phone.trim(),
         email: manualForm.email.trim(),
@@ -1150,6 +1428,7 @@ setTimeout(() => setSaveMessage(""), 3000);
         totalPrice,
         paymentStatus: manualForm.paymentStatus,
         slaughtered: false,
+        sliced: false,
         delivered: false,
         cancelled: false,
         cancelReason: "",
@@ -1157,31 +1436,30 @@ setTimeout(() => setSaveMessage(""), 3000);
         manualEntry: true,
         bookingYear: new Date().getFullYear(),
         orderType: "qurbani",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      }),
+    });
 
-      setManualForm({
-        fullName: "",
-        phone: "",
-        email: "",
-        cutPreferences: "",
-        notes: "",
-        addServices: false,
-        delivery: false,
-        paymentStatus: "pending",
-        weightRows: [{ id: slugId(), label: "", quantity: "1" }],
-      });
-      setShowManualForm(false);
-      setSaveMessage("Manual booking added successfully.");
-      setTimeout(() => setSaveMessage(""), 3000);
-    } catch (error) {
-      console.error("Manual booking failed:", error);
-      alert("Could not add manual booking.");
-    } finally {
-      setManualSaving(false);
-    }
+    setManualForm({
+      fullName: "",
+      phone: "",
+      email: "",
+      cutPreferences: "",
+      notes: "",
+      addServices: false,
+      delivery: false,
+      paymentStatus: "pending",
+      weightRows: [{ id: slugId(), label: "", quantity: "1" }],
+    });
+    setShowManualForm(false);
+    setSaveMessage("Manual booking added successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+  } catch (error) {
+    console.error("Manual booking failed:", error);
+    alert(error instanceof Error ? error.message : "Could not add manual booking.");
+  } finally {
+    setManualSaving(false);
   }
+}
 
   if (!authReady || !authorised) {
     return (
@@ -1365,8 +1643,8 @@ setTimeout(() => setSaveMessage(""), 3000);
                                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {updatingField === order.id
-                                  ? "Adding To Queue..."
-                                  : `Put Customer Next In Queue (#${nextQueueNumber})`}
+                                ? "Assigning Queue Number..."
+                                : `Put Customer Next In Queue (#${nextQueueNumber})`}
                               </button>
                             )}
                           </div>
@@ -1421,9 +1699,11 @@ setTimeout(() => setSaveMessage(""), 3000);
                           </span>
                           <PaymentBadge value={order.paymentStatus} />
                         </div>
-                        <span className="text-sm font-semibold text-[#d8b67e]">
-                          {bookingAmountLabel(order)}
-                        </span>
+                        {isOwner ? (
+  <span className="text-sm font-semibold text-[#d8b67e]">
+    {bookingAmountLabel(order)}
+  </span>
+) : null}
                       </div>
 
                       {index === 0 && (
@@ -1470,6 +1750,21 @@ setTimeout(() => setSaveMessage(""), 3000);
                         >
                           {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
                         </button>
+
+                        {order.orderType !== "live" && (
+  <button
+    type="button"
+    disabled={updatingField === order.id || !!order.cancelled}
+    onClick={() => handleQuickToggle(order, "sliced")}
+    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+      order.sliced
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {order.sliced ? "Sliced" : "Mark Sliced"}
+  </button>
+)}
                       </div>
                     </div>
                   ))
@@ -1479,37 +1774,77 @@ setTimeout(() => setSaveMessage(""), 3000);
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
+            <div className={`grid gap-4 sm:grid-cols-2 ${isOwner ? "xl:grid-cols-10" : "xl:grid-cols-3"}`}>
   <SummaryCard
     label="Total Bookings"
     value={String(activeOrders.length)}
     helper={`${cancelledOrders.length} cancelled`}
   />
+
+  {isOwner && (
+    <SummaryCard
+      label="Collected"
+      value={formatZAR(totalCollected)}
+      helper={`${paidOrders.length} paid`}
+    />
+  )}
+
+  {isOwner && (
+    <SummaryCard
+      label="Live Sheep Value"
+      value={formatZAR(totalLiveValue)}
+      helper="All live sheep totals"
+    />
+  )}
+
+  {isOwner && (
+    <SummaryCard
+      label="Live Unpaid"
+      value={formatZAR(liveOutstandingValue)}
+      helper="Outstanding live sheep"
+    />
+  )}
+
+  {isOwner && (
+    <SummaryCard
+      label="Outstanding"
+      value={formatZAR(totalOutstanding)}
+      helper={`${unpaidOrders.length} unpaid`}
+    />
+  )}
+
+  {isOwner && (
   <SummaryCard
-    label="Collected"
-    value={formatZAR(totalCollected)}
-    helper={`${paidOrders.length} paid`}
+    label="Expenses"
+    value={formatZAR(totalExpenses)}
+    helper={`${expenses.length} logged`}
   />
+)}
+
+{isOwner && (
   <SummaryCard
-    label="Live Sheep Value"
-    value={formatZAR(totalLiveValue)}
-    helper="All live sheep totals"
+    label="Net After Expenses"
+    value={formatZAR(netCollectedAfterExpenses)}
+    helper="Collected minus expenses"
   />
-  <SummaryCard
-    label="Live Unpaid"
-    value={formatZAR(liveOutstandingValue)}
-    helper="Outstanding live sheep"
-  />
-  <SummaryCard
-    label="Outstanding"
-    value={formatZAR(totalOutstanding)}
-    helper={`${unpaidOrders.length} unpaid`}
-  />
+)}
+
   <SummaryCard
     label="Slaughtered"
     value={String(slaughteredOrders.length)}
     helper={`${deliveredOrders.length} delivered`}
   />
+
+  <SummaryCard
+  label="Awaiting Delivery"
+  value={String(
+    activeQurbaniOrders.filter(
+      (o) => !o.cancelled && !!o.slaughtered && !o.delivered
+    ).length
+  )}
+  helper="Slaughtered, not delivered"
+/>
+
   <SummaryCard
     label="Live Sheep Ordered"
     value={String(totalLiveSheepOrdered)}
@@ -1517,61 +1852,79 @@ setTimeout(() => setSaveMessage(""), 3000);
   />
 </div>
             <div className="grid gap-4 md:grid-cols-1">
-              <MiniBarChart title="Most Popular Sheep Sizes" data={sizeBreakdown} />
+              <MiniBarChart title="Booked Sheep By Size" data={sizeBreakdown} />
             </div>
 
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowManualForm((prev) => !prev);
-                    if (showSettings) setShowSettings(false);
-                  }}
-                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-                    showManualForm
-                      ? "bg-[#c6a268] text-[#161015]"
-                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  }`}
-                >
-                  {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
-                </button>
+  <button
+    type="button"
+    onClick={() => {
+      setShowManualForm((prev) => !prev);
+      if (showSettings) setShowSettings(false);
+    }}
+    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+      showManualForm
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
+  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setShowOutstandingPanel((prev) => !prev)}
-                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-                    showOutstandingPanel
-                      ? "bg-[#c6a268] text-[#161015]"
-                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  }`}
-                >
-                  {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
-                </button>
+  {isOwner && (
+    <button
+      type="button"
+      onClick={() => setShowOutstandingPanel((prev) => !prev)}
+      className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+        showOutstandingPanel
+          ? "bg-[#c6a268] text-[#161015]"
+          : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+      }`}
+    >
+      {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
+    </button>
+  )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSettings((prev) => !prev);
-                    if (showManualForm) setShowManualForm(false);
-                  }}
-                  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-                    showSettings
-                      ? "bg-[#c6a268] text-[#161015]"
-                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  }`}
-                >
-                  {showSettings ? "Hide Settings" : "Settings"}
-                </button>
+  {isOwner && (
+  <button
+    type="button"
+    onClick={() => setShowExpensesPanel((prev) => !prev)}
+    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+      showExpensesPanel
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {showExpensesPanel ? "Hide Expenses" : "Expenses"}
+  </button>
+)}
 
-                <button
-                  type="button"
-                  onClick={handleBulkPaymentReminders}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  Start Bulk Reminder Queue
-                </button>
-              </div>
+  <button
+    type="button"
+    onClick={() => {
+      setShowSettings((prev) => !prev);
+      if (showManualForm) setShowManualForm(false);
+    }}
+    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+      showSettings
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {showSettings ? "Hide Settings" : "Settings"}
+  </button>
+
+  {isOwner && (
+    <button
+      type="button"
+      onClick={handleBulkPaymentReminders}
+      className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+    >
+      Start Bulk Reminder Queue
+    </button>
+  )}
+</div>
 
               {saveMessage ? (
                 <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-200">
@@ -1579,7 +1932,7 @@ setTimeout(() => setSaveMessage(""), 3000);
                 </div>
               ) : null}
 
-              {bulkReminderActive && currentBulkReminderOrder ? (
+              {isOwner && bulkReminderActive && currentBulkReminderOrder ? (
                 <div className="mt-6 rounded-[28px] border border-[#c6a268]/25 bg-[#c6a268]/[0.06] p-5">
                   <h3 className="text-lg font-semibold text-white">Bulk Reminder Queue</h3>
                   <p className="mt-1 text-sm text-white/55">
@@ -1714,15 +2067,25 @@ setTimeout(() => setSaveMessage(""), 3000);
                       onClick={() => setWorkflowFilter("pending")}
                     />
                     <FilterButton
-                      active={workflowFilter === "slaughtered"}
-                      label="Slaughtered"
-                      onClick={() => setWorkflowFilter("slaughtered")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "delivered"}
-                      label="Delivered"
-                      onClick={() => setWorkflowFilter("delivered")}
-                    />
+  active={workflowFilter === "slaughtered"}
+  label="Slaughtered"
+  onClick={() => setWorkflowFilter("slaughtered")}
+/>
+<FilterButton
+  active={workflowFilter === "sliced"}
+  label="Sliced"
+  onClick={() => setWorkflowFilter("sliced")}
+/>
+<FilterButton
+  active={workflowFilter === "awaiting_delivery"}
+  label="Awaiting Delivery"
+  onClick={() => setWorkflowFilter("awaiting_delivery")}
+/>
+<FilterButton
+  active={workflowFilter === "delivered"}
+  label="Delivered"
+  onClick={() => setWorkflowFilter("delivered")}
+/>
                     <FilterButton
                       active={workflowFilter === "cancelled"}
                       label="Cancelled"
@@ -1798,6 +2161,7 @@ setTimeout(() => setSaveMessage(""), 3000);
                               {settings.weightOptions.map((option) => (
                                 <option key={option.label} value={option.label} className="text-black">
                                   {option.label} — {formatZAR(option.price)}
+{typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                 </option>
                               ))}
                             </select>
@@ -1918,108 +2282,78 @@ setTimeout(() => setSaveMessage(""), 3000);
                     Banking details, booking dates, and yearly sheep prices.
                   </p>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                      <label className="mb-2 block text-sm font-medium text-white/82">Bookings open</label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSettings((prev) => ({ ...prev, bookingsOpen: !prev.bookingsOpen }))
-                        }
-                        className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
-                          settings.bookingsOpen
-                            ? "bg-[#c6a268] text-[#161015]"
-                            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {settings.bookingsOpen ? "Bookings Open" : "Bookings Closed"}
-                      </button>
-                    </div>
-
-                    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                      <label className="mb-2 block text-sm font-medium text-white/82">Booking cutoff date</label>
-                      <input
-                        type="date"
-                        value={settings.bookingCutoffDate}
-                        onChange={(e) =>
-                          setSettings((prev) => ({ ...prev, bookingCutoffDate: e.target.value }))
-                        }
-                        className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    {[
-                      ["Account name", "accountName"],
-                      ["Bank name", "bankName"],
-                      ["Account number", "accountNumber"],
-                      ["Account type", "accountType"],
-                      ["Branch code", "branchCode"],
-                      ["Reference hint", "referenceHint"],
-                    ].map(([label, key]) => (
-                      <div key={key}>
-                        <label className="mb-2 block text-sm font-medium text-white/82">{label}</label>
-                        <input
-                          value={(settings as any)[key]}
-                          onChange={(e) => setSettings((prev) => ({ ...prev, [key]: e.target.value }))}
-                          className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-2 block text-sm font-medium text-white/82">Payment reminder intro</label>
-                    <textarea
-                      rows={4}
-                      value={settings.reminderMessageIntro}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, reminderMessageIntro: e.target.value }))
-                      }
-                      className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
-
                   <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                    <div className="mb-4">
-                      <p className="font-medium text-white">Yearly sheep prices</p>
-                      <p className="text-sm text-white/55">Change these here each year.</p>
-                    </div>
+  <div className="mb-4">
+    <p className="font-medium text-white">Sheep Prices & Stock</p>
+    <p className="text-sm text-white/55">
+      Set prices AND stock. Leave stock empty = unlimited.
+    </p>
+  </div>
 
-                    <div className="space-y-3">
-                      {settings.weightOptions.map((option, index) => (
-                        <div key={option.label} className="grid gap-3 md:grid-cols-[1fr_180px]">
-                          <input
-                            value={option.label}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                weightOptions: prev.weightOptions.map((item, i) =>
-                                  i === index ? { ...item, label: e.target.value } : item
-                                ),
-                              }))
-                            }
-                            className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            value={option.price}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                weightOptions: prev.weightOptions.map((item, i) =>
-                                  i === index ? { ...item, price: Number(e.target.value || 0) } : item
-                                ),
-                              }))
-                            }
-                            className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+  <div className="space-y-3">
+    {settings.weightOptions.map((option, index) => (
+      <div key={`${option.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_150px_150px]">
+
+        {/* LABEL */}
+        <input
+          value={option.label}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              weightOptions: prev.weightOptions.map((item, i) =>
+                i === index ? { ...item, label: e.target.value } : item
+              ),
+            }))
+          }
+          className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          placeholder="Weight label"
+        />
+
+        {/* PRICE */}
+        <input
+          type="number"
+          min={0}
+          value={option.price}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              weightOptions: prev.weightOptions.map((item, i) =>
+                i === index ? { ...item, price: Number(e.target.value || 0) } : item
+              ),
+            }))
+          }
+          className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          placeholder="Price"
+        />
+
+        {/* STOCK */}
+        <input
+          type="number"
+          min={0}
+          value={option.stock ?? ""}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              weightOptions: prev.weightOptions.map((item, i) =>
+                i === index
+                  ? {
+                      ...item,
+                      stock:
+                        e.target.value.trim() === ""
+                          ? null
+                          : Number(e.target.value),
+                    }
+                  : item
+              ),
+            }))
+          }
+          className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          placeholder="Stock"
+        />
+      </div>
+    ))}
+  </div>
+</div>
 
                   <div className="mt-5 flex gap-3">
                     <button
@@ -2034,7 +2368,7 @@ setTimeout(() => setSaveMessage(""), 3000);
                 </div>
               ) : null}
 
-              {showOutstandingPanel ? (
+              {isOwner && showOutstandingPanel ? (
                 <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
                   <h3 className="text-lg font-semibold text-white">Outstanding Payments</h3>
                   <p className="mt-1 text-sm text-white/55">
@@ -2063,8 +2397,8 @@ setTimeout(() => setSaveMessage(""), 3000);
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
                             </div>
                             <div className="text-sm font-semibold text-[#d8b67e]">
-                              {bookingAmountLabel(order)}
-                            </div>
+  {isOwner ? bookingAmountLabel(order) : ""}
+</div>
                           </div>
                           <div className="mt-3 flex gap-2">
                             <button
@@ -2098,7 +2432,134 @@ setTimeout(() => setSaveMessage(""), 3000);
                   </div>
                 </div>
               ) : null}
+              {isOwner && showExpensesPanel ? (
+  <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+    <h3 className="text-lg font-semibold text-white">Expenses</h3>
+    <p className="mt-1 text-sm text-white/55">
+      Track farm costs like skinners, workers, trailer hire, and any other operational expenses.
+    </p>
+
+    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard label="Total Expenses" value={formatZAR(totalExpenses)} />
+      <SummaryCard label="Collected" value={formatZAR(totalCollected)} />
+      <SummaryCard label="Outstanding" value={formatZAR(totalOutstanding)} />
+      <SummaryCard label="Net After Expenses" value={formatZAR(netCollectedAfterExpenses)} />
+    </div>
+
+    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+      <h4 className="text-base font-semibold text-white">Add Expense</h4>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-white/82">Title</label>
+          <input
+            value={expenseForm.title}
+            onChange={(e) =>
+              setExpenseForm((prev) => ({ ...prev, title: e.target.value }))
+            }
+            placeholder="e.g. Skinners"
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-white/82">Amount</label>
+          <input
+            type="number"
+            min={0}
+            value={expenseForm.amount}
+            onChange={(e) =>
+              setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))
+            }
+            placeholder="Enter amount"
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-white/82">Category</label>
+          <select
+            value={expenseForm.category}
+            onChange={(e) =>
+              setExpenseForm((prev) => ({
+                ...prev,
+                category: e.target.value as "skinners" | "workers" | "trailer" | "other",
+              }))
+            }
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+          >
+            <option value="skinners" className="text-black">Skinners</option>
+            <option value="workers" className="text-black">Workers</option>
+            <option value="trailer" className="text-black">Trailer</option>
+            <option value="other" className="text-black">Other</option>
+          </select>
+        </div>
+
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={saveExpense}
+            disabled={expenseSaving}
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+          >
+            {expenseSaving ? "Saving..." : "Save Expense"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
+        <textarea
+          rows={3}
+          value={expenseForm.notes}
+          onChange={(e) =>
+            setExpenseForm((prev) => ({ ...prev, notes: e.target.value }))
+          }
+          placeholder="Optional notes"
+          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+        />
+      </div>
+    </div>
+
+    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+      <h4 className="text-base font-semibold text-white">Recent Expenses</h4>
+
+      <div className="mt-4 space-y-3">
+        {loadingExpenses ? (
+          <div className="text-sm text-white/55">Loading expenses...</div>
+        ) : expenses.length === 0 ? (
+          <div className="text-sm text-white/55">No expenses logged yet.</div>
+        ) : (
+          expenses.slice(0, 12).map((item) => (
+            <div
+              key={item.id}
+              className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium text-white">{item.title || "Untitled expense"}</div>
+                  <div className="mt-1 text-sm text-white/55">
+                    {(item.category || "other").toUpperCase()} • {formatDate(item.createdAt)}
+                  </div>
+                  {item.notes ? (
+                    <div className="mt-2 text-sm text-white/60">{item.notes}</div>
+                  ) : null}
+                </div>
+
+                <div className="text-sm font-semibold text-[#d8b67e]">
+                  {formatZAR(item.amount || 0)}
+                </div>
+              </div>
             </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+) : null}
+            </div>
+
+
 
             <div className="grid gap-8 xl:grid-cols-12 xl:gap-8">
               <div className="xl:col-span-7">
@@ -2131,6 +2592,11 @@ setTimeout(() => setSaveMessage(""), 3000);
   </div>
   <PaymentBadge value={order.paymentStatus} />
   <WorkflowBadge order={order} />
+  {order.orderType !== "live" && order.sliced ? (
+    <span className="inline-flex rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
+      Sliced
+    </span>
+  ) : null}
   {order.orderType === "live" && (
     <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
       Live Sheep
@@ -2154,9 +2620,11 @@ setTimeout(() => setSaveMessage(""), 3000);
     : ""}
 </div>
 
-                              <div className="mt-2 text-sm font-medium text-white">
-                                {bookingAmountLabel(order)}
-                              </div>
+                              {isOwner ? (
+  <div className="mt-2 text-sm font-medium text-white">
+    {bookingAmountLabel(order)}
+  </div>
+) : null}
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -2188,7 +2656,27 @@ setTimeout(() => setSaveMessage(""), 3000);
                                 >
                                   {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
                                 </button>
+
+                                
                               )}
+
+                              {order.orderType !== "live" && (
+  <button
+    type="button"
+    disabled={updatingField === order.id || !!order.cancelled}
+    onClick={() => handleQuickToggle(order, "sliced")}
+    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+      order.sliced
+        ? "bg-[#c6a268] text-[#161015]"
+        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+    }`}
+  >
+    {order.sliced ? "Sliced" : "Mark Sliced"}
+  </button>
+)}
+
+            
+                              
 
                               <button
                                 type="button"
@@ -2253,14 +2741,16 @@ setTimeout(() => setSaveMessage(""), 3000);
                             label="Live Sheep Quantity"
                             value={`${selectedOrder.liveQuantity || selectedOrder.quantity || 0} sheep`}
                           />
-                          <DetailRow
-  label="Total"
-  value={
-    editForm.pricingVisible
-      ? formatZAR(getLiveCalculatedTotal(editForm))
-      : "To be confirmed"
-  }
-/>
+                          {isOwner ? (
+  <DetailRow
+    label="Total"
+    value={
+      editForm.pricingVisible
+        ? formatZAR(getLiveCalculatedTotal(editForm))
+        : "To be confirmed"
+    }
+  />
+) : null}
 {(!editForm.pricingVisible || Number(editForm.livePricePerSheep || 0) <= 0) && (
     <div className="rounded-[20px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
       This live sheep booking is still awaiting admin pricing.
@@ -2333,11 +2823,13 @@ setTimeout(() => setSaveMessage(""), 3000);
                                 className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                               />
                             </div>
-                            <div className="mt-2 text-2xl font-semibold text-white">
+                            {isOwner ? (
+  <div className="mt-2 text-2xl font-semibold text-white">
     {editForm.pricingVisible
       ? formatZAR(getLiveCalculatedTotal(editForm))
       : "To be confirmed"}
   </div>
+) : null}
                           </div>
 
                           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
@@ -2503,14 +2995,12 @@ setTimeout(() => setSaveMessage(""), 3000);
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
                           <DetailRow label="Booking" value={sheepSummary(selectedOrder)} />
-                          <DetailRow
-  label="Total"
-  value={
-    editForm.pricingVisible
-      ? formatZAR(getLiveCalculatedTotal(editForm))
-      : "To be confirmed"
-  }
-/>
+                          {isOwner ? (
+  <DetailRow
+    label="Total"
+    value={formatZAR(selectedOrder.totalPrice || 0)}
+  />
+) : null}
                           <DetailRow
   label="Current Status"
   value={
@@ -2618,6 +3108,7 @@ setTimeout(() => setSaveMessage(""), 3000);
                                         className="text-black"
                                       >
                                         {option.label} — {formatZAR(option.price)}
+{typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                       </option>
                                     ))}
                                   </select>
