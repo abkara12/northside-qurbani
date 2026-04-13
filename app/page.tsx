@@ -506,15 +506,35 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+  async function loadSavedOrder() {
     if (typeof window === "undefined") return;
 
     const id = localStorage.getItem("northside_last_order_id");
     const reference = localStorage.getItem("northside_last_order_reference");
 
-    if (id && reference) {
-      setSavedOrder({ id, reference });
+    if (!id || !reference) {
+      setSavedOrder(null);
+      return;
     }
-  }, []);
+
+    try {
+      const snap = await getDoc(doc(db, "orders", id));
+
+      if (snap.exists()) {
+        setSavedOrder({ id, reference });
+      } else {
+        localStorage.removeItem("northside_last_order_id");
+        localStorage.removeItem("northside_last_order_reference");
+        setSavedOrder(null);
+      }
+    } catch (error) {
+      console.error("Failed to check saved order:", error);
+      setSavedOrder(null);
+    }
+  }
+
+  loadSavedOrder();
+}, []);
 
   function closeMenu() {
     setMenuState("closed");
