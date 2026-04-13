@@ -37,50 +37,51 @@ function InstallAppPrompt() {
   const DISMISS_COOLDOWN_HOURS = 6;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-    const ios = isIosDevice();
-    setIsIOS(ios);
+  const ios = isIosDevice();
+  setIsIOS(ios);
 
-    const standaloneNow = isStandaloneMode();
-    setStandalone(standaloneNow);
+  const standaloneNow = isStandaloneMode();
+  setStandalone(standaloneNow);
 
-    if (standaloneNow) {
-      setOpen(false);
-      return;
-    }
+  if (standaloneNow) {
+    setOpen(false);
+    return;
+  }
 
-    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || "0");
-    const hoursSince = dismissedAt ? (Date.now() - dismissedAt) / (1000 * 60 * 60) : 999;
+  const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || "0");
+  const hoursSince = dismissedAt ? (Date.now() - dismissedAt) / (1000 * 60 * 60) : 999;
 
-    if (ios) {
-      if (hoursSince >= DISMISS_COOLDOWN_HOURS) setOpen(true);
-      return;
-    }
-
-    const onBIP = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
-      if (hoursSince >= DISMISS_COOLDOWN_HOURS) setOpen(true);
-    };
-
-    const onInstalled = () => {
-      setOpen(false);
-      setDeferred(null);
-      localStorage.removeItem(DISMISS_KEY);
-      setStandalone(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBIP);
-    window.addEventListener("appinstalled", onInstalled);
-
+  if (ios) {
     if (hoursSince >= DISMISS_COOLDOWN_HOURS) setOpen(true);
+    return;
+  }
 
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBIP);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
+  const onBIP = (e: Event) => {
+    e.preventDefault();
+    setDeferred(e as BeforeInstallPromptEvent);
+
+    if (hoursSince >= DISMISS_COOLDOWN_HOURS) {
+      setOpen(true);
+    }
+  };
+
+  const onInstalled = () => {
+    setOpen(false);
+    setDeferred(null);
+    localStorage.removeItem(DISMISS_KEY);
+    setStandalone(true);
+  };
+
+  window.addEventListener("beforeinstallprompt", onBIP);
+  window.addEventListener("appinstalled", onInstalled);
+
+  return () => {
+    window.removeEventListener("beforeinstallprompt", onBIP);
+    window.removeEventListener("appinstalled", onInstalled);
+  };
+}, []);
 
   async function handleInstall() {
     if (!deferred) return;
