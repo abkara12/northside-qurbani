@@ -449,13 +449,6 @@ export default function OrderSuccessPage() {
                 </div>
 
                 <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:items-start">
-  <Link
-    href={`/lookup?ref=${encodeURIComponent(orderReference)}`}
-    className="inline-flex h-[44px] min-w-[190px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#161015]"
-  >
-    View My Order
-  </Link>
-
   <CopyValueButton value={orderReference} />
 </div>
               </div>

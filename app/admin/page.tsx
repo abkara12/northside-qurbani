@@ -633,7 +633,6 @@ const [expenseSaving, setExpenseSaving] = useState(false);
 const [expenseForm, setExpenseForm] = useState({
   title: "",
   amount: "",
-  category: "other" as "skinners" | "workers" | "trailer" | "other",
   notes: "",
 });
 
@@ -1031,7 +1030,6 @@ const liveOutstandingValue = liveOrders
     await setDoc(doc(collection(db, "expenses")), {
       title,
       amount,
-      category: expenseForm.category,
       notes: expenseForm.notes.trim(),
       createdAt: serverTimestamp(),
       createdByRole: userRole || "",
@@ -1040,7 +1038,6 @@ const liveOutstandingValue = liveOrders
     setExpenseForm({
       title: "",
       amount: "",
-      category: "other",
       notes: "",
     });
 
@@ -1151,17 +1148,13 @@ const liveOutstandingValue = liveOrders
       return;
     }
 
-    if (field === "delivered") {
-      const next = !order.delivered;
-      if (next) {
-        const confirmed = window.confirm("Mark this booking as delivered?");
-        if (!confirmed) return;
-      }
-      await updateField(order.id, { delivered: next });
-    }
-  }
+   if (field === "delivered") {
+  const next = !order.delivered;
+  await updateField(order.id, { delivered: next });
+}
+}
 
-  async function handleCheckIn(order: OrderItem) {
+ async function handleCheckIn(order: OrderItem) {
   if (order.orderType === "live") return;
   if (order.cancelled || order.delivered || order.slaughtered) return;
   if (order.queueNumber && order.queueNumber > 0) return;
@@ -1180,20 +1173,6 @@ const liveOutstandingValue = liveOrders
     setSimpleSearch("");
     setSaveMessage(`Queue number #${assignedQueueNumber} assigned successfully.`);
     setTimeout(() => setSaveMessage(""), 3000);
-
-    const hasValidPhone = !!cleanPhoneForWhatsApp(order.phone);
-    if (!hasValidPhone) return;
-
-    const shouldOpenWhatsApp = window.confirm(
-      `Queue #${assignedQueueNumber} assigned to ${order.fullName || "this customer"}.\n\nOpen WhatsApp notification now?`
-    );
-
-    if (shouldOpenWhatsApp) {
-      openWhatsAppForOrder(
-        order,
-        buildQueueAssignedMessage(order, assignedQueueNumber)
-      );
-    }
   } catch (error) {
     console.error("Queue assignment failed:", error);
     alert("Unable to assign the queue number right now.");
@@ -1201,7 +1180,6 @@ const liveOutstandingValue = liveOrders
     setUpdatingField("");
   }
 }
-
   function handleOpenBooking(order: OrderItem) {
     setMode("management");
     setShowOutstandingPanel(false);
@@ -1723,20 +1701,7 @@ const liveOutstandingValue = liveOrders
                       )}
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={updatingField === order.id}
-                          onClick={() => handleQuickToggle(order, "paymentStatus")}
-                          className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-                            (order.paymentStatus || "pending").toLowerCase() === "paid"
-                              ? "bg-[#c6a268] text-[#161015]"
-                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                          }`}
-                        >
-                          {(order.paymentStatus || "pending").toLowerCase() === "paid"
-                            ? "Paid"
-                            : "Mark Paid"}
-                        </button>
+                     
 
                         <button
                           type="button"
@@ -1751,20 +1716,6 @@ const liveOutstandingValue = liveOrders
                           {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
                         </button>
 
-                        {order.orderType !== "live" && (
-  <button
-    type="button"
-    disabled={updatingField === order.id || !!order.cancelled}
-    onClick={() => handleQuickToggle(order, "sliced")}
-    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-      order.sliced
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {order.sliced ? "Sliced" : "Mark Sliced"}
-  </button>
-)}
                       </div>
                     </div>
                   ))
@@ -2477,16 +2428,9 @@ const liveOutstandingValue = liveOrders
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-white/82">Category</label>
           <select
-            value={expenseForm.category}
-            onChange={(e) =>
-              setExpenseForm((prev) => ({
-                ...prev,
-                category: e.target.value as "skinners" | "workers" | "trailer" | "other",
-              }))
-            }
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+         
+             
           >
             <option value="skinners" className="text-black">Skinners</option>
             <option value="workers" className="text-black">Workers</option>
