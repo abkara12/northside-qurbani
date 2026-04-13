@@ -380,9 +380,9 @@ export default function OrderSuccessPage() {
           <div className="grid gap-6 xl:grid-cols-12 xl:gap-8">
             <div className="xl:col-span-7">
               <div className="rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
-                <div className="flex justify-center lg:justify-start">
-                  <StatusBadge label="Booking Received Successfully" variant="emerald" />
-                </div>
+                <div className="flex w-full justify-center lg:justify-start">
+  <StatusBadge label="Booking Confirmed" variant="emerald" />
+</div>
 
                 <h1 className="mt-5 text-center text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.5rem] lg:text-left lg:text-[2.7rem]">
                   Your qurbani booking
