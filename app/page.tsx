@@ -562,16 +562,16 @@ export default function Home() {
       {/* NAVBAR */}
       <header className="relative z-40 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10 sm:py-5">
         <div className="flex items-center gap-3">
-          <div className="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:h-[78px] sm:w-[78px]">
-            <Image
-              src="/logo4.png"
-              alt="Northside Qurbani"
-              width={65}
-              height={65}
-              className="object-contain sm:h-[62px] sm:w-[62px]"
-              priority
-            />
-          </div>
+          <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                      <Image
+                        src="/logo4.png"
+                        alt="Northside Qurbani"
+                        width={65}
+                        height={65}
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
         </div>
 
         <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:flex">
@@ -664,16 +664,16 @@ export default function Home() {
             <div className="relative flex h-full flex-col p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-[76px] w-[76px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-sm">
-                    <Image
-                      src="/logo4.png"
-                      alt="Northside Qurbani"
-                      width={65}
-                      height={65}
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
+                  <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                              <Image
+                                src="/logo4.png"
+                                alt="Northside Qurbani"
+                                width={65}
+                                height={65}
+                                className="object-contain"
+                                priority
+                              />
+                            </div>
                   <div>
                     <div className="text-sm font-semibold leading-tight text-white">
                       Northside Qurbani
@@ -1226,16 +1226,16 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-12 lg:items-start">
             <div className="text-center lg:col-span-4 lg:text-left">
               <div className="flex items-center justify-center gap-4 lg:justify-start">
-                <div className="grid h-[82px] w-[82px] place-items-center rounded-[24px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                  <Image
-                    src="/logo4.png"
-                    alt="Northside Qurbani"
-                    width={65}
-                    height={65}
-                    className="object-contain"
-                    priority
-                  />
-                </div>
+                <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                            <Image
+                              src="/logo4.png"
+                              alt="Northside Qurbani"
+                              width={65}
+                              height={65}
+                              className="object-contain"
+                              priority
+                            />
+                          </div>
 
                 <div>
                   <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">

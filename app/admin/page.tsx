@@ -1469,8 +1469,8 @@ const liveOutstandingValue = liveOrders
               <Image
                 src="/logo4.png"
                 alt="Northside Qurbani"
-                width={48}
-                height={48}
+                width={65}
+                height={65}
                 className="object-contain sm:w-[60px]"
                 priority
               />
