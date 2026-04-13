@@ -1465,16 +1465,16 @@ const liveOutstandingValue = liveOrders
       <header className="mx-auto max-w-7xl px-4 pb-0 pt-5 sm:px-10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="grid h-[56px] w-[56px] flex-shrink-0 place-items-center rounded-[18px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:h-[72px] sm:w-[72px] sm:rounded-[22px]">
-              <Image
-                src="/logo4.png"
-                alt="Northside Qurbani"
-                width={65}
-                height={65}
-                className="object-contain sm:w-[60px]"
-                priority
-              />
-            </div>
+            <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                        <Image
+                          src="/logo4.png"
+                          alt="Northside Qurbani"
+                          width={65}
+                          height={65}
+                          className="object-contain"
+                          priority
+                        />
+                      </div>
             <div className="hidden sm:block">
               <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
                 Northside Qurbani

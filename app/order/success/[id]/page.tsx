@@ -316,16 +316,16 @@ export default function OrderSuccessPage() {
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
         <Link href="/" className="flex items-center gap-4">
-          <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            <Image
-              src="/logo4.png"
-              alt="Northside Qurbani"
-              width={65}
-              height={65}
-              className="object-contain"
-              priority
-            />
-          </div>
+         <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                     <Image
+                       src="/logo4.png"
+                       alt="Northside Qurbani"
+                       width={65}
+                       height={65}
+                       className="object-contain"
+                       priority
+                     />
+                   </div>
           <div className="hidden sm:block">
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
