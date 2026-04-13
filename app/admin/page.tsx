@@ -1510,7 +1510,7 @@ const liveOutstandingValue = liveOrders
                 : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
             }`}
           >
-            Simple Operations
+            Processing Queue
           </button>
           <button
             type="button"
@@ -2428,15 +2428,7 @@ const liveOutstandingValue = liveOrders
         </div>
 
         <div>
-          <select
-         
-             
-          >
-            <option value="skinners" className="text-black">Skinners</option>
-            <option value="workers" className="text-black">Workers</option>
-            <option value="trailer" className="text-black">Trailer</option>
-            <option value="other" className="text-black">Other</option>
-          </select>
+
         </div>
 
         <div className="flex items-end">
