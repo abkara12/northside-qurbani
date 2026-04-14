@@ -720,7 +720,7 @@ export default function OrderSuccessPage() {
                 {order?.cancelled && order?.cancelReason?.trim() ? (
                   <div className="rounded-[30px] border border-rose-400/20 bg-rose-400/10 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                     <p className="text-[11px] uppercase tracking-[0.26em] text-rose-200 text-center lg:text-left">
-                      Cancellation note
+                      Cancellation 
                     </p>
                     <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-rose-100/85">
                       {order.cancelReason}
