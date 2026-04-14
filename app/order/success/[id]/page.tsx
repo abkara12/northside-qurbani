@@ -15,22 +15,30 @@ type WeightBreakdownItem = {
 };
 
 type OrderData = {
+  orderType?: "qurbani" | "live";
   fullName?: string;
   phone?: string;
   email?: string;
   quantity?: number;
+  liveQuantity?: number;
   preferredWeight?: string;
   weightBreakdown?: WeightBreakdownItem[];
   cutPreferences?: string[];
   notes?: string;
   addServices?: boolean;
   delivery?: boolean;
+  deliveryArea?: string;
+  deliveryAddress?: string;
+  fullDistributionCut?: boolean;
+  selectedSheepTagNumbers?: string[];
   basePriceTotal?: number;
   servicesPerSheep?: number;
   servicesTotal?: number;
   deliveryPerSheep?: number;
   deliveryTotal?: number;
   totalPrice?: number;
+  livePricePerSheep?: number;
+  pricingVisible?: boolean;
   paymentStatus?: string;
   slaughtered?: boolean;
   delivered?: boolean;
@@ -190,6 +198,10 @@ function CopyField({
   );
 }
 
+function isLiveOrder(order: OrderData | null) {
+  return order?.orderType === "live";
+}
+
 function getWorkflowStatus(order: OrderData | null) {
   if (!order) {
     return { label: "Unavailable", variant: "rose" as const };
@@ -198,7 +210,13 @@ function getWorkflowStatus(order: OrderData | null) {
     return { label: "Booking Cancelled", variant: "rose" as const };
   }
   if (order.delivered) {
-    return { label: "Delivered", variant: "emerald" as const };
+    return {
+      label: order.orderType === "live" ? "Collected" : "Delivered",
+      variant: "emerald" as const,
+    };
+  }
+  if (order.orderType === "live") {
+    return { label: "Pending", variant: "violet" as const };
   }
   if (order.slaughtered) {
     return { label: "Slaughtered", variant: "sky" as const };
@@ -218,6 +236,9 @@ function getPaymentStatus(order: OrderData | null) {
 
 function totalSheep(order: OrderData | null) {
   if (!order) return 0;
+  if (order.orderType === "live") {
+    return order.liveQuantity || order.quantity || 0;
+  }
   if (order.weightBreakdown?.length) {
     return order.weightBreakdown.reduce((sum, row) => sum + (row.quantity || 0), 0);
   }
@@ -227,6 +248,10 @@ function totalSheep(order: OrderData | null) {
 function sheepSummary(order: OrderData | null) {
   if (!order) return "—";
 
+  if (order.orderType === "live") {
+    return `${order.liveQuantity || order.quantity || 0} live sheep`;
+  }
+
   if (order.weightBreakdown?.length) {
     return order.weightBreakdown
       .map((row) => `${row.quantity} × ${row.label}`)
@@ -234,6 +259,11 @@ function sheepSummary(order: OrderData | null) {
   }
 
   return order.preferredWeight || "—";
+}
+
+function orderReferenceValue(id: string, order: OrderData | null) {
+  const prefix = order?.orderType === "live" ? "LS" : "NQ";
+  return `${prefix}-${id.slice(0, 8).toUpperCase()}`;
 }
 
 export default function OrderSuccessPage() {
@@ -299,10 +329,11 @@ export default function OrderSuccessPage() {
     };
   }, []);
 
-  const orderReference = orderId ? `NQ-${orderId.slice(0, 8).toUpperCase()}` : "—";
+  const liveOrder = isLiveOrder(order);
+  const orderReference = orderId ? orderReferenceValue(orderId, order) : "—";
   const workflowStatus = getWorkflowStatus(order);
   const paymentStatus = getPaymentStatus(order);
-  const queueAssigned = (order?.queueNumber || 0) > 0;
+  const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -316,16 +347,16 @@ export default function OrderSuccessPage() {
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 sm:px-10">
         <Link href="/" className="flex items-center gap-4">
-         <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                     <Image
-                       src="/logo4.png"
-                       alt="Northside Qurbani"
-                       width={65}
-                       height={65}
-                       className="object-contain"
-                       priority
-                     />
-                   </div>
+          <div className="grid h-[78px] w-[78px] place-items-center rounded-[22px] border border-white/10 bg-white/5 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <Image
+              src="/logo4.png"
+              alt="Northside Qurbani"
+              width={65}
+              height={65}
+              className="object-contain"
+              priority
+            />
+          </div>
           <div className="hidden sm:block">
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
@@ -381,16 +412,30 @@ export default function OrderSuccessPage() {
             <div className="xl:col-span-7">
               <div className="rounded-[34px] border border-emerald-400/20 bg-emerald-400/10 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
                 <div className="flex w-full justify-center lg:justify-start">
-  <StatusBadge label="Booking Confirmed" variant="emerald" />
-</div>
+                  <StatusBadge
+                    label={liveOrder ? "Order Confirmed" : "Booking Confirmed"}
+                    variant="emerald"
+                  />
+                </div>
 
                 <h1 className="mt-5 text-center text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-[2.5rem] lg:text-left lg:text-[2.7rem]">
-                  Your qurbani booking
-                  <span className="mt-1 block">was received successfully.</span>
+                  {liveOrder ? (
+                    <>
+                      Your live sheep order
+                      <span className="mt-1 block">was received successfully.</span>
+                    </>
+                  ) : (
+                    <>
+                      Your qurbani booking
+                      <span className="mt-1 block">was received successfully.</span>
+                    </>
+                  )}
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/80 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-                  Thank you. Please keep your booking reference safe for payment and any future follow-up.
+                  {liveOrder
+                    ? "Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up."
+                    : "Thank you. Please keep your booking reference safe for payment and any future follow-up."}
                 </p>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -399,35 +444,47 @@ export default function OrderSuccessPage() {
                 </div>
 
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
-                  <p className="text-sm text-white/50">Booking reference</p>
+                  <p className="text-sm text-white/50">
+                    {liveOrder ? "Order reference" : "Booking reference"}
+                  </p>
                   <p className="mt-2 break-all text-[1.2rem] font-semibold tracking-[0.08em] text-[#d8b67e] sm:text-[1.4rem]">
                     {orderReference}
                   </p>
                 </div>
 
-                {queueAssigned ? (
-                  <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
-                          Queue number assigned
-                        </p>
-                        <p className="mt-2 text-[2rem] font-semibold leading-none text-white sm:text-[2.4rem]">
-                          {order?.queueNumber}
-                        </p>
-                      </div>
+                {!liveOrder ? (
+                  queueAssigned ? (
+                    <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+                            Queue number assigned
+                          </p>
+                          <p className="mt-2 text-[2rem] font-semibold leading-none text-white sm:text-[2.4rem]">
+                            {order?.queueNumber}
+                          </p>
+                        </div>
 
-                      <div className="max-w-sm text-sm leading-6 text-white/72">
-                        Your booking has been added to the queue. Please keep this page open and use your queue number when called.
+                        <div className="max-w-sm text-sm leading-6 text-white/72">
+                          Your booking has been added to the queue. Please keep this page open and use your queue number when called.
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
+                      <p className="text-sm font-medium text-white/82">Queue status</p>
+                      <div className="mt-3 space-y-2 text-sm leading-6 text-white/65">
+                        <p>Your booking has not yet been added to the queue.</p>
+                        <p>Once staff assign your queue number, it will appear here automatically.</p>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
-                    <p className="text-sm font-medium text-white/82">Queue status</p>
+                    <p className="text-sm font-medium text-white/82">Next step</p>
                     <div className="mt-3 space-y-2 text-sm leading-6 text-white/65">
-                      <p>Your booking has not yet been added to the queue.</p>
-                      <p>Once staff assign your queue number, it will appear here automatically.</p>
+                      <p>Your live sheep order has been recorded successfully.</p>
+                      <p>Staff will coordinate payment, delivery, or collection details from this order.</p>
                     </div>
                   </div>
                 )}
@@ -435,22 +492,39 @@ export default function OrderSuccessPage() {
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
                   <p className="text-sm font-medium text-white/82">What happens next?</p>
                   <div className="mt-3 space-y-3 text-sm leading-6 text-white/65">
-                    <p>
-                      Your booking has been recorded with your selected sizes, quantities,
-                      pricing, and preferences.
-                    </p>
-                    <p>
-                      Please make payment using the banking details below and send your proof of payment / payment reference as instructed.
-                    </p>
-                    <p>
-                      This confirmation page will continue to reflect live updates such as payment status, workflow status, and queue number when assigned.
-                    </p>
+                    {liveOrder ? (
+                      <>
+                        <p>
+                          Your live sheep order has been recorded with your quantity,
+                          delivery preference, and customer details.
+                        </p>
+                        <p>
+                          If pricing has been confirmed, payment can be made using the banking details below. If not, the final amount will be confirmed by the team first.
+                        </p>
+                        <p>
+                          This page will continue to reflect live updates such as payment status and collection or delivery status.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>
+                          Your booking has been recorded with your selected sizes, quantities,
+                          pricing, and preferences.
+                        </p>
+                        <p>
+                          Please make payment using the banking details below and send your proof of payment / payment reference as instructed.
+                        </p>
+                        <p>
+                          This confirmation page will continue to reflect live updates such as payment status, workflow status, and queue number when assigned.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:items-start">
-  <CopyValueButton value={orderReference} />
-</div>
+                  <CopyValueButton value={orderReference} />
+                </div>
               </div>
             </div>
 
@@ -458,48 +532,103 @@ export default function OrderSuccessPage() {
               <div className="space-y-5 xl:sticky xl:top-6">
                 <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                   <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                    Booking summary
+                    {liveOrder ? "Order summary" : "Booking summary"}
                   </p>
                   <h2 className="mt-3 text-center text-[1.6rem] font-semibold text-white lg:text-left">
                     Review your details
                   </h2>
 
                   <div className="mt-6">
+                    <SummaryRow
+                      label="Order type"
+                      value={liveOrder ? "Live Sheep Purchase" : "Qurbani Service"}
+                    />
                     <SummaryRow label="Full name" value={order?.fullName || "—"} />
                     <SummaryRow label="Phone" value={order?.phone || "—"} />
                     <SummaryRow label="Email" value={order?.email || "—"} />
                     <SummaryRow label="Total sheep" value={String(totalSheep(order))} />
-                    <SummaryRow label="Sheep selected" value={sheepSummary(order)} />
-                    <SummaryRow
-                      label="Service package"
-                      value={order?.addServices ? "Included" : "Not added"}
-                    />
-                    <SummaryRow
-                      label="Delivery"
-                      value={order?.delivery ? "Included" : "Not added"}
-                    />
-                    <SummaryRow
-                      label="Payment status"
-                      value={
-                        (order?.paymentStatus || "pending").toLowerCase() === "paid"
-                          ? "Paid"
-                          : "Unpaid"
-                      }
-                    />
-                    <SummaryRow label="Workflow status" value={workflowStatus.label} />
-                    <SummaryRow
-                      label="Queue number"
-                      value={queueAssigned ? String(order?.queueNumber) : "Not assigned yet"}
-                    />
-                    <SummaryRow
-                      label="Total due"
-                      value={formatZAR(order?.totalPrice || 0)}
-                      strong
-                    />
+
+                    {liveOrder ? (
+                      <>
+                        <SummaryRow label="Live sheep requested" value={sheepSummary(order)} />
+                        <SummaryRow
+                          label="Delivery"
+                          value={order?.delivery ? "Included" : "Not added"}
+                        />
+                        <SummaryRow
+                          label="Delivery area"
+                          value={order?.deliveryArea || "No delivery"}
+                        />
+                        <SummaryRow
+                          label="Delivery address"
+                          value={order?.deliveryAddress || "No delivery"}
+                        />
+                        <SummaryRow
+                          label="Payment status"
+                          value={
+                            (order?.paymentStatus || "pending").toLowerCase() === "paid"
+                              ? "Paid"
+                              : "Unpaid"
+                          }
+                        />
+                        <SummaryRow label="Workflow status" value={workflowStatus.label} />
+                        <SummaryRow
+                          label="Price status"
+                          value={
+                            order?.pricingVisible === false
+                              ? "To be confirmed"
+                              : formatZAR(order?.totalPrice || 0)
+                          }
+                          strong
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <SummaryRow label="Sheep selected" value={sheepSummary(order)} />
+                        <SummaryRow
+                          label="Slicing preference"
+                          value={
+                            order?.fullDistributionCut
+                              ? "Full sheep sliced for distribution"
+                              : "Standard"
+                          }
+                        />
+                        <SummaryRow
+                          label="Delivery"
+                          value={order?.delivery ? "Included" : "Not added"}
+                        />
+                        <SummaryRow
+                          label="Delivery area"
+                          value={order?.deliveryArea || "No delivery"}
+                        />
+                        <SummaryRow
+                          label="Delivery address"
+                          value={order?.deliveryAddress || "No delivery"}
+                        />
+                        <SummaryRow
+                          label="Payment status"
+                          value={
+                            (order?.paymentStatus || "pending").toLowerCase() === "paid"
+                              ? "Paid"
+                              : "Unpaid"
+                          }
+                        />
+                        <SummaryRow label="Workflow status" value={workflowStatus.label} />
+                        <SummaryRow
+                          label="Queue number"
+                          value={queueAssigned ? String(order?.queueNumber) : "Not assigned yet"}
+                        />
+                        <SummaryRow
+                          label="Total due"
+                          value={formatZAR(order?.totalPrice || 0)}
+                          strong
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {order?.weightBreakdown?.length ? (
+                {!liveOrder && order?.weightBreakdown?.length ? (
                   <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                     <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
                       Weight breakdown
@@ -560,11 +689,19 @@ export default function OrderSuccessPage() {
                     Confirmation kept safe
                   </p>
                   <div className="mt-4 grid gap-3">
-                    <InfoCard>Your booking remains available on this confirmation page</InfoCard>
-                    <InfoCard>Your booking reference can be used for payment and follow-up</InfoCard>
+                    <InfoCard>
+                      {liveOrder
+                        ? "Your live sheep order remains available on this confirmation page"
+                        : "Your booking remains available on this confirmation page"}
+                    </InfoCard>
+                    <InfoCard>
+                      {liveOrder
+                        ? "Your order reference can be used for payment and follow-up"
+                        : "Your booking reference can be used for payment and follow-up"}
+                    </InfoCard>
                     <InfoCard>Your submitted pricing and preferences remain visible here</InfoCard>
                     <InfoCard>
-                      Live workflow, payment status, and queue number will reflect here as the booking is updated
+                      Live workflow, payment status, and queue or collection status will reflect here as the order is updated
                     </InfoCard>
                   </div>
                 </div>

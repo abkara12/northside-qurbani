@@ -38,13 +38,17 @@ type OrderItem = {
   notes?: string;
   addServices?: boolean;
   delivery?: boolean;
+  deliveryArea?: string;
+  deliveryAddress?: string;
+  fullDistributionCut?: boolean;
+  selectedSheepTagNumbers?: string[];
   servicesPerSheep?: number;
   servicesTotal?: number;
   deliveryPerSheep?: number;
   deliveryTotal?: number;
   basePriceTotal?: number;
   totalPrice?: number;
-   paymentStatus?: "pending" | "paid";
+  paymentStatus?: "pending" | "paid";
   slaughtered?: boolean;
   sliced?: boolean;
   delivered?: boolean;
@@ -89,7 +93,11 @@ type EditFormState = {
   notes: string;
   addServices: boolean;
   delivery: boolean;
-    paymentStatus: "pending" | "paid";
+  deliveryArea: string;
+  deliveryAddress: string;
+  fullDistributionCut: boolean;
+  selectedSheepTagNumbers: string;
+  paymentStatus: "pending" | "paid";
   slaughtered: boolean;
   sliced: boolean;
   delivered: boolean;
@@ -113,6 +121,9 @@ type ManualFormState = {
   notes: string;
   addServices: boolean;
   delivery: boolean;
+  deliveryArea: string;
+  deliveryAddress: string;
+  fullDistributionCut: boolean;
   paymentStatus: "pending" | "paid";
   weightRows: Array<{
     id: string;
@@ -609,6 +620,7 @@ const [userRole, setUserRole] = useState<"admin" | "staff" | "">("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState("all");
+  const [deliveryAreaFilter, setDeliveryAreaFilter] = useState("all");
 
   const [mode, setMode] = useState<"simple" | "management">("simple");
 
@@ -639,16 +651,19 @@ const [expenseForm, setExpenseForm] = useState({
 const isOwner = userRole === "admin";
 
   const [manualForm, setManualForm] = useState<ManualFormState>({
-    fullName: "",
-    phone: "",
-    email: "",
-    cutPreferences: "",
-    notes: "",
-    addServices: false,
-    delivery: false,
-    paymentStatus: "pending",
-    weightRows: [{ id: slugId(), label: "", quantity: "1" }],
-  });
+  fullName: "",
+  phone: "",
+  email: "",
+  cutPreferences: "",
+  notes: "",
+  addServices: false,
+  delivery: false,
+  deliveryArea: "",
+  deliveryAddress: "",
+  fullDistributionCut: false,
+  paymentStatus: "pending",
+  weightRows: [{ id: slugId(), label: "", quantity: "1" }],
+});
   const [manualSaving, setManualSaving] = useState(false);
 
   const [bulkReminderActive, setBulkReminderActive] = useState(false);
@@ -658,39 +673,50 @@ const isOwner = userRole === "admin";
   const selectedBookingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-  const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-    if (!firebaseUser) {
-      setAuthorised(false);
-      setUserRole("");
-      setAuthReady(true);
-      window.location.assign("/login");
-      return;
-    }
+    let unsubUserDoc: (() => void) | null = null;
 
-    try {
-      const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-      const role = snap.exists() ? (snap.data() as any).role : null;
-      const ok = role === "admin" || role === "staff";
-
-      setAuthorised(ok);
-      setUserRole(ok ? role : "");
-      setAuthReady(true);
-
-      if (!ok) {
-        await signOut(auth);
-        window.location.assign("/login");
+    const unsubAuth = onAuthStateChanged(auth, (firebaseUser: User | null) => {
+      if (unsubUserDoc) {
+        unsubUserDoc();
+        unsubUserDoc = null;
       }
-    } catch {
-      setAuthorised(false);
-      setUserRole("");
-      setAuthReady(true);
-      await signOut(auth);
-      window.location.assign("/login");
-    }
-  });
 
-  return () => unsub();
-}, []);
+      if (!firebaseUser) {
+        setAuthorised(false);
+        setUserRole("");
+        setAuthReady(true);
+        window.location.assign("/login");
+        return;
+      }
+
+      const userRef = doc(db, "users", firebaseUser.uid);
+
+      unsubUserDoc = onSnapshot(
+        userRef,
+        (snap) => {
+          const role = snap.exists() ? (snap.data() as any).role : null;
+          const ok = role === "admin" || role === "staff";
+
+          setAuthorised(ok);
+          setUserRole(ok ? role : "");
+          setAuthReady(true);
+
+          if (!ok) {
+            window.location.assign("/login");
+          }
+        },
+        (error) => {
+          console.error("User role snapshot error:", error);
+          setAuthReady(true);
+        }
+      );
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubUserDoc) unsubUserDoc();
+    };
+  }, []);
 
   useEffect(() => {
     if (!authorised) return;
@@ -788,7 +814,11 @@ useEffect(() => {
     notes: selectedOrder.notes || "",
     addServices: !!selectedOrder.addServices,
     delivery: !!selectedOrder.delivery,
-        paymentStatus:
+    deliveryArea: selectedOrder.deliveryArea || "",
+    deliveryAddress: selectedOrder.deliveryAddress || "",
+    fullDistributionCut: !!selectedOrder.fullDistributionCut,
+    selectedSheepTagNumbers: (selectedOrder.selectedSheepTagNumbers || []).join(", "),
+    paymentStatus:
       (selectedOrder.paymentStatus || "pending").toLowerCase() === "paid"
         ? "paid"
         : "pending",
@@ -831,71 +861,99 @@ useEffect(() => {
     return maxQueue + 1;
   }, [activeQurbaniOrders]);
 
+  const deliveryAreas = useMemo(() => {
+    return Array.from(
+      new Set(
+        orders
+          .map((o) => (o.deliveryArea || "").trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )
+    );
+  }, [orders]);
+
   const filteredOrders = useMemo(() => {
-  const term = search.trim().toLowerCase();
+    const term = search.trim().toLowerCase();
 
-  const next = orders.filter((order) => {
-    const matchesSearch =
-      !term ||
-      order.fullName?.toLowerCase().includes(term) ||
-      order.phone?.toLowerCase().includes(term) ||
-      order.email?.toLowerCase().includes(term) ||
-      orderReference(order.id).toLowerCase().includes(term) ||
-      sheepSummary(order).toLowerCase().includes(term);
+    const next = orders.filter((order) => {
+      const matchesSearch =
+        !term ||
+        order.fullName?.toLowerCase().includes(term) ||
+        order.phone?.toLowerCase().includes(term) ||
+        order.email?.toLowerCase().includes(term) ||
+        orderReference(order.id).toLowerCase().includes(term) ||
+        sheepSummary(order).toLowerCase().includes(term) ||
+        (order.deliveryArea || "").toLowerCase().includes(term) ||
+        (order.deliveryAddress || "").toLowerCase().includes(term) ||
+        (order.selectedSheepTagNumbers || []).join(" ").toLowerCase().includes(term);
 
-    const payment = (order.paymentStatus || "pending").toLowerCase();
-    const matchesPayment =
-      paymentFilter === "all" ||
-      (paymentFilter === "paid" && payment === "paid") ||
-      (paymentFilter === "unpaid" && payment !== "paid");
+      const payment = (order.paymentStatus || "pending").toLowerCase();
+      const matchesPayment =
+        paymentFilter === "all" ||
+        (paymentFilter === "paid" && payment === "paid") ||
+        (paymentFilter === "unpaid" && payment !== "paid");
 
-    const matchesOrderType =
-      orderTypeFilter === "all" ||
-      (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
-      (orderTypeFilter === "live" && order.orderType === "live");
+      const matchesOrderType =
+        orderTypeFilter === "all" ||
+        (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
+        (orderTypeFilter === "live" && order.orderType === "live");
 
-    const matchesWorkflow =
-  workflowFilter === "all" ||
-  (workflowFilter === "pending" &&
-    !order.cancelled &&
-    !order.delivered &&
-    (order.orderType === "live" ? true : !order.slaughtered)) ||
-  (workflowFilter === "slaughtered" &&
-    order.orderType !== "live" &&
-    !order.cancelled &&
-    !!order.slaughtered &&
-    !order.delivered) ||
-    (workflowFilter === "sliced" &&
-    order.orderType !== "live" &&
-    !order.cancelled &&
-    !!order.sliced) ||
-  (workflowFilter === "awaiting_delivery" &&
-    order.orderType !== "live" &&
-    !order.cancelled &&
-    !!order.slaughtered &&
-    !order.delivered) ||
-  (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
-  (workflowFilter === "cancelled" && !!order.cancelled);
-  
+      const matchesWorkflow =
+        workflowFilter === "all" ||
+        (workflowFilter === "pending" &&
+          !order.cancelled &&
+          !order.delivered &&
+          (order.orderType === "live" ? true : !order.slaughtered)) ||
+        (workflowFilter === "slaughtered" &&
+          order.orderType !== "live" &&
+          !order.cancelled &&
+          !!order.slaughtered &&
+          !order.delivered) ||
+        (workflowFilter === "sliced" &&
+          order.orderType !== "live" &&
+          !order.cancelled &&
+          !!order.sliced) ||
+        (workflowFilter === "awaiting_delivery" &&
+          order.orderType !== "live" &&
+          !order.cancelled &&
+          !!order.slaughtered &&
+          !order.delivered) ||
+        (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+        (workflowFilter === "cancelled" && !!order.cancelled);
 
+      const matchesDeliveryArea =
+        deliveryAreaFilter === "all"
+          ? true
+          : (order.deliveryArea || "").trim().toLowerCase() ===
+            deliveryAreaFilter.toLowerCase();
 
-    return (
-      matchesSearch &&
-      matchesPayment &&
-      matchesOrderType &&
-      matchesWorkflow 
-        );
-  });
+      return (
+        matchesSearch &&
+        matchesPayment &&
+        matchesOrderType &&
+        matchesWorkflow &&
+        matchesDeliveryArea
+      );
+    });
 
-  return [...next].sort((a, b) => {
-    const nameA = (a.fullName || "").trim();
-    const nameB = (b.fullName || "").trim();
-    if (!nameA && !nameB) return 0;
-    if (!nameA) return 1;
-    if (!nameB) return -1;
-    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
-  });
-}, [orders, search, paymentFilter, workflowFilter, orderTypeFilter]);
+    return [...next].sort((a, b) => {
+      const nameA = (a.fullName || "").trim();
+      const nameB = (b.fullName || "").trim();
+      if (!nameA && !nameB) return 0;
+      if (!nameA) return 1;
+      if (!nameB) return -1;
+      return nameA.localeCompare(b.fullName || "", undefined, {
+        sensitivity: "base",
+      });
+    });
+  }, [
+    orders,
+    search,
+    paymentFilter,
+    workflowFilter,
+    orderTypeFilter,
+    deliveryAreaFilter,
+  ]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -906,7 +964,9 @@ useEffect(() => {
           order.fullName?.toLowerCase().includes(term) ||
           order.phone?.toLowerCase().includes(term) ||
           order.email?.toLowerCase().includes(term) ||
-          orderReference(order.id).toLowerCase().includes(term)
+          orderReference(order.id).toLowerCase().includes(term) ||
+          (order.deliveryArea || "").toLowerCase().includes(term) ||
+          (order.selectedSheepTagNumbers || []).join(" ").toLowerCase().includes(term)
       )
       .sort((a, b) =>
         (a.fullName || "").localeCompare(b.fullName || "", undefined, {
@@ -1229,7 +1289,20 @@ const liveOutstandingValue = liveOrders
         return;
       }
 
-      const totalPrice = pricingVisible ? liveQuantity * livePricePerSheep : 0;
+      if (editForm.delivery && !editForm.deliveryArea.trim()) {
+        alert("Please enter the delivery area.");
+        return;
+      }
+
+      if (editForm.delivery && !editForm.deliveryAddress.trim()) {
+        alert("Please enter the delivery address.");
+        return;
+      }
+
+      const baseLiveTotal = pricingVisible ? liveQuantity * livePricePerSheep : 0;
+      const deliveryPerSheep = editForm.delivery ? 100 : 0;
+      const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
+      const totalPrice = baseLiveTotal + deliveryTotal;
 
       await updateDoc(doc(db, "orders", selectedOrder.id), {
         fullName: editForm.fullName.trim(),
@@ -1250,12 +1323,21 @@ const liveOutstandingValue = liveOrders
         queueNumber: null,
         queueCheckedInAt: null,
         addServices: false,
-        delivery: false,
+        delivery: editForm.cancelled ? false : editForm.delivery,
+        deliveryArea:
+          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryArea.trim(),
+        deliveryAddress:
+          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryAddress.trim(),
+        fullDistributionCut: false,
+        selectedSheepTagNumbers: editForm.selectedSheepTagNumbers
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean),
         servicesPerSheep: 0,
         servicesTotal: 0,
-        deliveryPerSheep: 0,
-        deliveryTotal: 0,
-        basePriceTotal: pricingVisible ? totalPrice : 0,
+        deliveryPerSheep: editForm.cancelled ? 0 : deliveryPerSheep,
+        deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
+        basePriceTotal: editForm.cancelled ? 0 : baseLiveTotal,
         preferredWeight: "",
         weightBreakdown: [],
         cutPreferences: [],
@@ -1315,6 +1397,17 @@ const liveOutstandingValue = liveOrders
         notes: editForm.notes.trim(),
         addServices: editForm.cancelled ? false : editForm.addServices,
         delivery: editForm.cancelled ? false : editForm.delivery,
+        deliveryArea:
+          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryArea.trim(),
+        deliveryAddress:
+          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryAddress.trim(),
+        fullDistributionCut: editForm.cancelled ? false : editForm.fullDistributionCut,
+        selectedSheepTagNumbers: editForm.cancelled
+          ? []
+          : editForm.selectedSheepTagNumbers
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean),
         basePriceTotal: editForm.cancelled ? 0 : basePriceTotal,
         servicesPerSheep: editForm.cancelled ? 0 : servicesPerSheep,
         servicesTotal: editForm.cancelled ? 0 : servicesTotal,
@@ -1363,6 +1456,16 @@ const liveOutstandingValue = liveOrders
     return;
   }
 
+  if (manualForm.delivery && !manualForm.deliveryArea.trim()) {
+    alert("Please enter the delivery area.");
+    return;
+  }
+
+  if (manualForm.delivery && !manualForm.deliveryAddress.trim()) {
+    alert("Please enter the delivery address.");
+    return;
+  }
+
   const weightBreakdown = computeBreakdownFromRows(manualForm.weightRows, settings);
   if (!weightBreakdown.length) {
     alert("Please add at least one valid sheep selection.");
@@ -1398,6 +1501,10 @@ const liveOutstandingValue = liveOrders
         notes: manualForm.notes.trim(),
         addServices: manualForm.addServices,
         delivery: manualForm.delivery,
+        deliveryArea: manualForm.delivery ? manualForm.deliveryArea.trim() : "",
+        deliveryAddress: manualForm.delivery ? manualForm.deliveryAddress.trim() : "",
+        fullDistributionCut: manualForm.fullDistributionCut,
+        selectedSheepTagNumbers: [],
         basePriceTotal,
         servicesPerSheep,
         servicesTotal,
@@ -1425,6 +1532,9 @@ const liveOutstandingValue = liveOrders
       notes: "",
       addServices: false,
       delivery: false,
+      deliveryArea: "",
+      deliveryAddress: "",
+      fullDistributionCut: false,
       paymentStatus: "pending",
       weightRows: [{ id: slugId(), label: "", quantity: "1" }],
     });
@@ -2277,6 +2387,7 @@ const liveOutstandingValue = liveOrders
           placeholder="Price"
         />
 
+
         {/* STOCK */}
         <input
           type="number"
@@ -2338,18 +2449,23 @@ const liveOutstandingValue = liveOrders
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-  <div className="font-medium text-white">{order.fullName}</div>
-  {order.orderType === "live" && (
-    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-      Live Sheep
-    </span>
-  )}
-</div>
+                                <div className="font-medium text-white">{order.fullName}</div>
+                                {order.orderType === "live" && (
+                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+                                    Live Sheep
+                                  </span>
+                                )}
+                              </div>
                               <div className="mt-1 text-sm text-white/55">{order.phone}</div>
+                              {order.deliveryArea ? (
+                                <div className="mt-1 text-xs text-white/45">
+                                  Area: {order.deliveryArea}
+                                </div>
+                              ) : null}
                             </div>
                             <div className="text-sm font-semibold text-[#d8b67e]">
-  {isOwner ? bookingAmountLabel(order) : ""}
-</div>
+                              {isOwner ? bookingAmountLabel(order) : ""}
+                            </div>
                           </div>
                           <div className="mt-3 flex gap-2">
                             <button
@@ -2362,20 +2478,20 @@ const liveOutstandingValue = liveOrders
                               Remind
                             </button>
                             <button
-  type="button"
-  onClick={() => {
-    if (selectedOrder?.id === order.id) {
-      setSelectedOrder(null);
-      setHasUnsavedChanges(false);
-      setSaveMessage("");
-    } else {
-      handleOpenBooking(order);
-    }
-  }}
-  className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
->
-  {selectedOrder?.id === order.id ? "Close" : "Open"}
-</button>
+                              type="button"
+                              onClick={() => {
+                                if (selectedOrder?.id === order.id) {
+                                  setSelectedOrder(null);
+                                  setHasUnsavedChanges(false);
+                                  setSaveMessage("");
+                                } else {
+                                  handleOpenBooking(order);
+                                }
+                              }}
+                              className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                            >
+                              {selectedOrder?.id === order.id ? "Close" : "Open"}
+                            </button>
                           </div>
                         </div>
                       ))
@@ -2383,119 +2499,118 @@ const liveOutstandingValue = liveOrders
                   </div>
                 </div>
               ) : null}
+
               {isOwner && showExpensesPanel ? (
-  <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
-    <h3 className="text-lg font-semibold text-white">Expenses</h3>
-    <p className="mt-1 text-sm text-white/55">
-      Track farm costs like skinners, workers, trailer hire, and any other operational expenses.
-    </p>
+                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                  <h3 className="text-lg font-semibold text-white">Expenses</h3>
+                  <p className="mt-1 text-sm text-white/55">
+                    Track farm costs like skinners, workers, trailer hire, and any other operational expenses.
+                  </p>
 
-    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard label="Total Expenses" value={formatZAR(totalExpenses)} />
-      <SummaryCard label="Collected" value={formatZAR(totalCollected)} />
-      <SummaryCard label="Outstanding" value={formatZAR(totalOutstanding)} />
-      <SummaryCard label="Net After Expenses" value={formatZAR(netCollectedAfterExpenses)} />
-    </div>
-
-    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-      <h4 className="text-base font-semibold text-white">Add Expense</h4>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-white/82">Title</label>
-          <input
-            value={expenseForm.title}
-            onChange={(e) =>
-              setExpenseForm((prev) => ({ ...prev, title: e.target.value }))
-            }
-            placeholder="e.g. Skinners"
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-white/82">Amount</label>
-          <input
-            type="number"
-            min={0}
-            value={expenseForm.amount}
-            onChange={(e) =>
-              setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))
-            }
-            placeholder="Enter amount"
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-          />
-        </div>
-
-        <div>
-
-        </div>
-
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={saveExpense}
-            disabled={expenseSaving}
-            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
-          >
-            {expenseSaving ? "Saving..." : "Save Expense"}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
-        <textarea
-          rows={3}
-          value={expenseForm.notes}
-          onChange={(e) =>
-            setExpenseForm((prev) => ({ ...prev, notes: e.target.value }))
-          }
-          placeholder="Optional notes"
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-        />
-      </div>
-    </div>
-
-    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-      <h4 className="text-base font-semibold text-white">Recent Expenses</h4>
-
-      <div className="mt-4 space-y-3">
-        {loadingExpenses ? (
-          <div className="text-sm text-white/55">Loading expenses...</div>
-        ) : expenses.length === 0 ? (
-          <div className="text-sm text-white/55">No expenses logged yet.</div>
-        ) : (
-          expenses.slice(0, 12).map((item) => (
-            <div
-              key={item.id}
-              className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-medium text-white">{item.title || "Untitled expense"}</div>
-                  <div className="mt-1 text-sm text-white/55">
-                    {(item.category || "other").toUpperCase()} • {formatDate(item.createdAt)}
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <SummaryCard label="Total Expenses" value={formatZAR(totalExpenses)} />
+                    <SummaryCard label="Collected" value={formatZAR(totalCollected)} />
+                    <SummaryCard label="Outstanding" value={formatZAR(totalOutstanding)} />
+                    <SummaryCard label="Net After Expenses" value={formatZAR(netCollectedAfterExpenses)} />
                   </div>
-                  {item.notes ? (
-                    <div className="mt-2 text-sm text-white/60">{item.notes}</div>
-                  ) : null}
+
+                  <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="text-base font-semibold text-white">Add Expense</h4>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-white/82">Title</label>
+                        <input
+                          value={expenseForm.title}
+                          onChange={(e) =>
+                            setExpenseForm((prev) => ({ ...prev, title: e.target.value }))
+                          }
+                          placeholder="e.g. Skinners"
+                          className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-white/82">Amount</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={expenseForm.amount}
+                          onChange={(e) =>
+                            setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))
+                          }
+                          placeholder="Enter amount"
+                          className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                        />
+                      </div>
+
+                      <div />
+
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={saveExpense}
+                          disabled={expenseSaving}
+                          className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-semibold text-[#161015] transition hover:brightness-105 disabled:opacity-60"
+                        >
+                          {expenseSaving ? "Saving..." : "Save Expense"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="mb-2 block text-sm font-medium text-white/82">Notes</label>
+                      <textarea
+                        rows={3}
+                        value={expenseForm.notes}
+                        onChange={(e) =>
+                          setExpenseForm((prev) => ({ ...prev, notes: e.target.value }))
+                        }
+                        placeholder="Optional notes"
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="text-base font-semibold text-white">Recent Expenses</h4>
+
+                    <div className="mt-4 space-y-3">
+                      {loadingExpenses ? (
+                        <div className="text-sm text-white/55">Loading expenses...</div>
+                      ) : expenses.length === 0 ? (
+                        <div className="text-sm text-white/55">No expenses logged yet.</div>
+                      ) : (
+                        expenses.slice(0, 12).map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-medium text-white">
+                                  {item.title || "Untitled expense"}
+                                </div>
+                                <div className="mt-1 text-sm text-white/55">
+                                  {(item.category || "other").toUpperCase()} • {formatDate(item.createdAt)}
+                                </div>
+                                {item.notes ? (
+                                  <div className="mt-2 text-sm text-white/60">{item.notes}</div>
+                                ) : null}
+                              </div>
+
+                              <div className="text-sm font-semibold text-[#d8b67e]">
+                                {formatZAR(item.amount || 0)}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
-
-                <div className="text-sm font-semibold text-[#d8b67e]">
-                  {formatZAR(item.amount || 0)}
-                </div>
-              </div>
+              ) : null}
             </div>
-          ))
-        )}
-      </div>
-    </div>
-  </div>
-) : null}
-            </div>
-
-
 
             <div className="grid gap-8 xl:grid-cols-12 xl:gap-8">
               <div className="xl:col-span-7">
@@ -2523,21 +2638,21 @@ const liveOutstandingValue = liveOrders
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-  <div className="text-base font-semibold text-white">
-    {order.fullName || "Unnamed booking"}
-  </div>
-  <PaymentBadge value={order.paymentStatus} />
-  <WorkflowBadge order={order} />
-  {order.orderType !== "live" && order.sliced ? (
-    <span className="inline-flex rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
-      Sliced
-    </span>
-  ) : null}
-  {order.orderType === "live" && (
-    <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
-      Live Sheep
-    </span>
-  )}
+                                <div className="text-base font-semibold text-white">
+                                  {order.fullName || "Unnamed booking"}
+                                </div>
+                                <PaymentBadge value={order.paymentStatus} />
+                                <WorkflowBadge order={order} />
+                                {order.orderType !== "live" && order.sliced ? (
+                                  <span className="inline-flex rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
+                                    Sliced
+                                  </span>
+                                ) : null}
+                                {order.orderType === "live" && (
+                                  <span className="inline-flex rounded-full border border-[#c6a268]/30 bg-[#c6a268]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f3dfb8]">
+                                    Live Sheep
+                                  </span>
+                                )}
                                 {order.manualEntry && (
                                   <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
                                     Manual
@@ -2550,17 +2665,31 @@ const liveOutstandingValue = liveOrders
                               </div>
 
                               <div className="mt-1 text-sm text-[#d8b67e]">
-  {sheepSummary(order)}
-  {order.orderType === "live" && order.pricingVisible !== false && (order.livePricePerSheep || 0) > 0
-    ? ` • ${formatZAR(order.livePricePerSheep)} each`
-    : ""}
-</div>
+                                {sheepSummary(order)}
+                                {order.orderType === "live" &&
+                                order.pricingVisible !== false &&
+                                (order.livePricePerSheep || 0) > 0
+                                  ? ` • ${formatZAR(order.livePricePerSheep)} each`
+                                  : ""}
+                              </div>
+
+                              {order.deliveryArea ? (
+                                <div className="mt-1 text-xs text-white/45">
+                                  Delivery area: {order.deliveryArea}
+                                </div>
+                              ) : null}
+
+                              {(order.selectedSheepTagNumbers || []).length ? (
+                                <div className="mt-1 text-xs text-white/45">
+                                  Sheep tags: {(order.selectedSheepTagNumbers || []).join(", ")}
+                                </div>
+                              ) : null}
 
                               {isOwner ? (
-  <div className="mt-2 text-sm font-medium text-white">
-    {bookingAmountLabel(order)}
-  </div>
-) : null}
+                                <div className="mt-2 text-sm font-medium text-white">
+                                  {bookingAmountLabel(order)}
+                                </div>
+                              ) : null}
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -2592,27 +2721,22 @@ const liveOutstandingValue = liveOrders
                                 >
                                   {order.slaughtered ? "Slaughtered" : "Mark Slaughtered"}
                                 </button>
-
-                                
                               )}
 
                               {order.orderType !== "live" && (
-  <button
-    type="button"
-    disabled={updatingField === order.id || !!order.cancelled}
-    onClick={() => handleQuickToggle(order, "sliced")}
-    className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
-      order.sliced
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {order.sliced ? "Sliced" : "Mark Sliced"}
-  </button>
-)}
-
-            
-                              
+                                <button
+                                  type="button"
+                                  disabled={updatingField === order.id || !!order.cancelled}
+                                  onClick={() => handleQuickToggle(order, "sliced")}
+                                  className={`inline-flex rounded-full px-4 py-2 text-sm font-medium transition ${
+                                    order.sliced
+                                      ? "bg-[#c6a268] text-[#161015]"
+                                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                  }`}
+                                >
+                                  {order.sliced ? "Sliced" : "Mark Sliced"}
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -2624,24 +2748,30 @@ const liveOutstandingValue = liveOrders
                                     : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                                 }`}
                               >
-                                {order.delivered ? "Delivered" : "Mark Delivered"}
+                                {order.delivered
+                                  ? order.orderType === "live"
+                                    ? "Collected"
+                                    : "Delivered"
+                                  : order.orderType === "live"
+                                  ? "Mark Collected"
+                                  : "Mark Delivered"}
                               </button>
 
-                             <button
-  type="button"
-  onClick={() => {
-    if (selectedOrder?.id === order.id) {
-      setSelectedOrder(null);
-      setHasUnsavedChanges(false);
-      setSaveMessage("");
-    } else {
-      handleOpenBooking(order);
-    }
-  }}
-  className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
->
-  {selectedOrder?.id === order.id ? "Close" : "Open"}
-</button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedOrder?.id === order.id) {
+                                    setSelectedOrder(null);
+                                    setHasUnsavedChanges(false);
+                                    setSaveMessage("");
+                                  } else {
+                                    handleOpenBooking(order);
+                                  }
+                                }}
+                                className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                              >
+                                {selectedOrder?.id === order.id ? "Close" : "Open"}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -2669,30 +2799,36 @@ const liveOutstandingValue = liveOrders
                         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
-                          <DetailRow
-                            label="Booking Type"
-                            value="Live Sheep Booking"
-                          />
+                          <DetailRow label="Booking Type" value="Live Sheep Booking" />
                           <DetailRow
                             label="Live Sheep Quantity"
                             value={`${selectedOrder.liveQuantity || selectedOrder.quantity || 0} sheep`}
                           />
+                          <DetailRow label="Delivery area" value={selectedOrder.deliveryArea || "—"} />
+                          <DetailRow label="Delivery address" value={selectedOrder.deliveryAddress || "—"} />
+                          <DetailRow
+                            label="Sheep tag number(s)"
+                            value={(selectedOrder.selectedSheepTagNumbers || []).join(", ") || "—"}
+                          />
                           {isOwner ? (
-  <DetailRow
-    label="Total"
-    value={
-      editForm.pricingVisible
-        ? formatZAR(getLiveCalculatedTotal(editForm))
-        : "To be confirmed"
-    }
-  />
-) : null}
-{(!editForm.pricingVisible || Number(editForm.livePricePerSheep || 0) <= 0) && (
-    <div className="rounded-[20px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-      This live sheep booking is still awaiting admin pricing.
-    </div>
-  )}
-                          <DetailRow label="Current Status" value={statusLabel(selectedOrder)} />
+                            <DetailRow
+                              label="Total"
+                              value={
+                                editForm.pricingVisible
+                                  ? formatZAR(getLiveCalculatedTotal(editForm) + ((editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)))
+                                  : "To be confirmed"
+                              }
+                            />
+                          ) : null}
+                          {(!editForm.pricingVisible || Number(editForm.livePricePerSheep || 0) <= 0) && (
+                            <div className="rounded-[20px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                              This live sheep booking is still awaiting admin pricing.
+                            </div>
+                          )}
+                          <DetailRow
+                            label="Current Status"
+                            value={statusLabel(selectedOrder) === "Delivered" ? "Collected" : statusLabel(selectedOrder)}
+                          />
                           <DetailRow label="Queue" value="Not used for live sheep" />
                         </div>
 
@@ -2759,14 +2895,18 @@ const liveOutstandingValue = liveOrders
                                 className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                               />
                             </div>
-                            {isOwner ? (
-  <div className="mt-2 text-2xl font-semibold text-white">
-    {editForm.pricingVisible
-      ? formatZAR(getLiveCalculatedTotal(editForm))
-      : "To be confirmed"}
-  </div>
-) : null}
                           </div>
+
+                          {isOwner ? (
+                            <div className="mt-2 text-2xl font-semibold text-white">
+                              {editForm.pricingVisible
+                                ? formatZAR(
+                                    getLiveCalculatedTotal(editForm) +
+                                      (editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)
+                                  )
+                                : "To be confirmed"}
+                            </div>
+                          ) : null}
 
                           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2798,9 +2938,101 @@ const liveOutstandingValue = liveOrders
                             <div className="mt-4 rounded-[20px] border border-white/10 bg-black/10 p-4">
                               <div className="text-sm text-white/55">Calculated total</div>
                               <div className="mt-2 text-2xl font-semibold text-white">
-  {editForm.pricingVisible ? formatZAR(getLiveCalculatedTotal(editForm)) : "To be confirmed"}
-</div>
+                                {editForm.pricingVisible
+                                  ? formatZAR(
+                                      getLiveCalculatedTotal(editForm) +
+                                        (editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)
+                                    )
+                                  : "To be confirmed"}
+                              </div>
                             </div>
+                          </div>
+
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-white">Delivery</p>
+                                <p className="text-sm text-white/55">
+                                  Delivery is charged at {formatZAR(100)} per sheep.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, delivery: !prev.delivery } : prev
+                                  );
+                                }}
+                                className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                  editForm.delivery
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {editForm.delivery ? "Delivery Added" : "Delivery Off"}
+                              </button>
+                            </div>
+
+                            {editForm.delivery ? (
+                              <div className="mt-4 grid gap-4">
+                                <div>
+                                  <label className="mb-2 block text-sm font-medium text-white/82">
+                                    Delivery area
+                                  </label>
+                                  <input
+                                    value={editForm.deliveryArea}
+                                    onChange={(e) => {
+                                      markDirty();
+                                      setEditForm((prev) =>
+                                        prev ? { ...prev, deliveryArea: e.target.value } : prev
+                                      );
+                                    }}
+                                    placeholder="Example: Lenasia"
+                                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-medium text-white/82">
+                                    Delivery address
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={editForm.deliveryAddress}
+                                    onChange={(e) => {
+                                      markDirty();
+                                      setEditForm((prev) =>
+                                        prev ? { ...prev, deliveryAddress: e.target.value } : prev
+                                      );
+                                    }}
+                                    placeholder="Enter the full delivery address"
+                                    className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">
+                              Sheep tag number(s)
+                            </label>
+                            <input
+                              value={editForm.selectedSheepTagNumbers}
+                              onChange={(e) => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, selectedSheepTagNumbers: e.target.value } : prev
+                                );
+                              }}
+                              placeholder="Example: 14, 18, 22"
+                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
+                            <p className="mt-2 text-xs text-white/45">
+                              Separate multiple tag numbers with commas.
+                            </p>
                           </div>
 
                           <div>
@@ -2858,7 +3090,7 @@ const liveOutstandingValue = liveOrders
                                   : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                               }`}
                             >
-                              {editForm.delivered ? "Delivered" : "Awaiting Collection"}
+                              {editForm.delivered ? "Collected" : "Awaiting Collection"}
                             </button>
                           </div>
 
@@ -2931,20 +3163,31 @@ const liveOutstandingValue = liveOrders
                           <DetailRow label="Reference" value={orderReference(selectedOrder.id)} strong />
                           <DetailRow label="Created" value={formatDate(selectedOrder.createdAt)} />
                           <DetailRow label="Booking" value={sheepSummary(selectedOrder)} />
-                          {isOwner ? (
-  <DetailRow
-    label="Total"
-    value={formatZAR(selectedOrder.totalPrice || 0)}
-  />
-) : null}
+                          <DetailRow label="Delivery area" value={selectedOrder.deliveryArea || "—"} />
+                          <DetailRow label="Delivery address" value={selectedOrder.deliveryAddress || "—"} />
                           <DetailRow
-  label="Current Status"
-  value={
-    statusLabel(selectedOrder) === "Delivered"
-      ? "Collected"
-      : statusLabel(selectedOrder)
-  }
-/>
+                            label="Slicing preference"
+                            value={
+                              selectedOrder.fullDistributionCut
+                                ? "Full sheep sliced for distribution"
+                                : "Standard"
+                            }
+                          />
+                          <DetailRow
+                            label="Sheep tag number(s)"
+                            value={(selectedOrder.selectedSheepTagNumbers || []).join(", ") || "—"}
+                          />
+                          {isOwner ? (
+                            <DetailRow label="Total" value={formatZAR(selectedOrder.totalPrice || 0)} />
+                          ) : null}
+                          <DetailRow
+                            label="Current Status"
+                            value={
+                              statusLabel(selectedOrder) === "Delivered"
+                                ? "Collected"
+                                : statusLabel(selectedOrder)
+                            }
+                          />
                           <DetailRow
                             label="Queue"
                             value={
@@ -3044,7 +3287,7 @@ const liveOutstandingValue = liveOrders
                                         className="text-black"
                                       >
                                         {option.label} — {formatZAR(option.price)}
-{typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
+                                        {typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                       </option>
                                     ))}
                                   </select>
@@ -3096,6 +3339,117 @@ const liveOutstandingValue = liveOrders
                                 </div>
                               ))}
                             </div>
+                          </div>
+
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-white">Delivery</p>
+                                <p className="text-sm text-white/55">
+                                  Delivery is charged at {formatZAR(100)} per sheep.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, delivery: !prev.delivery } : prev
+                                  );
+                                }}
+                                className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                  editForm.delivery
+                                    ? "bg-[#c6a268] text-[#161015]"
+                                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                }`}
+                              >
+                                {editForm.delivery ? "Delivery Added" : "Delivery Off"}
+                              </button>
+                            </div>
+
+                            {editForm.delivery ? (
+                              <div className="mt-4 grid gap-4">
+                                <div>
+                                  <label className="mb-2 block text-sm font-medium text-white/82">
+                                    Delivery area
+                                  </label>
+                                  <input
+                                    value={editForm.deliveryArea}
+                                    onChange={(e) => {
+                                      markDirty();
+                                      setEditForm((prev) =>
+                                        prev ? { ...prev, deliveryArea: e.target.value } : prev
+                                      );
+                                    }}
+                                    placeholder="Example: Lenasia"
+                                    className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-medium text-white/82">
+                                    Delivery address
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={editForm.deliveryAddress}
+                                    onChange={(e) => {
+                                      markDirty();
+                                      setEditForm((prev) =>
+                                        prev ? { ...prev, deliveryAddress: e.target.value } : prev
+                                      );
+                                    }}
+                                    placeholder="Enter the full delivery address"
+                                    className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-white/82">
+                              Sheep tag number(s)
+                            </label>
+                            <input
+                              value={editForm.selectedSheepTagNumbers}
+                              onChange={(e) => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, selectedSheepTagNumbers: e.target.value } : prev
+                                );
+                              }}
+                              placeholder="Example: 14, 18, 22"
+                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
+                            <p className="mt-2 text-xs text-white/45">
+                              Separate multiple tag numbers with commas.
+                            </p>
+                          </div>
+
+                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                            <label className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={editForm.fullDistributionCut}
+                                onChange={(e) => {
+                                  markDirty();
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, fullDistributionCut: e.target.checked } : prev
+                                  );
+                                }}
+                                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                              />
+                              <div>
+                                <p className="font-medium text-white">
+                                  Slice the full sheep for distribution
+                                </p>
+                                <p className="text-sm text-white/55">
+                                  Keep the slicing preference simple for the team.
+                                </p>
+                              </div>
+                            </label>
                           </div>
 
                           <div>
@@ -3177,6 +3531,23 @@ const liveOutstandingValue = liveOrders
                               }`}
                             >
                               {editForm.slaughtered ? "Slaughtered" : "Pending"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markDirty();
+                                setEditForm((prev) =>
+                                  prev ? { ...prev, sliced: !prev.sliced } : prev
+                                );
+                              }}
+                              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+                                editForm.sliced
+                                  ? "bg-[#c6a268] text-[#161015]"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {editForm.sliced ? "Sliced" : "Not Sliced"}
                             </button>
 
                             <button

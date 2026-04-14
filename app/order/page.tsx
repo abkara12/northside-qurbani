@@ -59,9 +59,13 @@ type FormData = {
   weightSelections: WeightSelectionRow[];
   addServices: boolean;
   delivery: boolean;
+  deliveryArea: string;
+  deliveryAddress: string;
+  fullDistributionCut: boolean;
 
   liveQuantity: string;
   liveDelivery: boolean;
+  liveDeliveryArea: string;
   liveDeliveryAddress: string;
 
   notes: string;
@@ -74,7 +78,11 @@ type Errors = {
   phone?: string;
   email?: string;
   weightSelections?: string;
+  deliveryArea?: string;
+  deliveryAddress?: string;
+  fullDistributionCut?: string;
   liveQuantity?: string;
+  liveDeliveryArea?: string;
   liveDeliveryAddress?: string;
   notes?: string;
   agree?: string;
@@ -133,8 +141,12 @@ function createInitialForm(): FormData {
     ],
     addServices: false,
     delivery: false,
+    deliveryArea: "",
+    deliveryAddress: "",
+    fullDistributionCut: false,
     liveQuantity: "1",
     liveDelivery: false,
+    liveDeliveryArea: "",
     liveDeliveryAddress: "",
     notes: "",
     agree: false,
@@ -634,32 +646,41 @@ export default function OrderPage() {
     .join(", ");
 
   const filledCount = useMemo(() => {
-    const base =
-      (form.orderType ? 1 : 0) +
-      (form.fullName.trim() ? 1 : 0) +
-      (form.phone.trim() ? 1 : 0) +
-      (form.orderType === "qurbani"
-        ? weightBreakdown.length > 0
-          ? 1
-          : 0
-        : liveQuantityNumber > 0
-        ? 1
-        : 0) +
-      (form.orderType === "live" && form.liveDelivery
-        ? form.liveDeliveryAddress.trim()
-          ? 1
-          : 0
-        : 1) +
-      (form.agree ? 1 : 0);
+    let count = 0;
 
-    return base;
+    if (form.orderType) count += 1;
+    if (form.fullName.trim()) count += 1;
+    if (form.phone.trim()) count += 1;
+
+    if (form.orderType === "qurbani") {
+      if (weightBreakdown.length > 0) count += 1;
+      if (!form.delivery || (form.deliveryArea.trim() && form.deliveryAddress.trim())) {
+        count += 1;
+      }
+    } else {
+      if (liveQuantityNumber > 0) count += 1;
+      if (
+        !form.liveDelivery ||
+        (form.liveDeliveryArea.trim() && form.liveDeliveryAddress.trim())
+      ) {
+        count += 1;
+      }
+    }
+
+    if (form.agree) count += 1;
+
+    return count;
   }, [
     form.orderType,
     form.fullName,
     form.phone,
-    form.agree,
+    form.delivery,
+    form.deliveryArea,
+    form.deliveryAddress,
     form.liveDelivery,
+    form.liveDeliveryArea,
     form.liveDeliveryAddress,
+    form.agree,
     weightBreakdown.length,
     liveQuantityNumber,
   ]);
@@ -709,14 +730,22 @@ export default function OrderPage() {
       orderType: type,
       addServices: type === "qurbani" ? prev.addServices : false,
       delivery: type === "qurbani" ? prev.delivery : false,
+      deliveryArea: type === "qurbani" ? prev.deliveryArea : "",
+      deliveryAddress: type === "qurbani" ? prev.deliveryAddress : "",
+      fullDistributionCut: type === "qurbani" ? prev.fullDistributionCut : false,
       liveDelivery: type === "live" ? prev.liveDelivery : false,
+      liveDeliveryArea: type === "live" ? prev.liveDeliveryArea : "",
       liveDeliveryAddress: type === "live" ? prev.liveDeliveryAddress : "",
     }));
+
     setErrors((prev) => ({
       ...prev,
       orderType: undefined,
       weightSelections: undefined,
       liveQuantity: undefined,
+      deliveryArea: undefined,
+      deliveryAddress: undefined,
+      liveDeliveryArea: undefined,
       liveDeliveryAddress: undefined,
     }));
   }
@@ -724,8 +753,31 @@ export default function OrderPage() {
   function validate() {
     const nextErrors: Errors = {};
 
-    if (!form.fullName.trim()) nextErrors.fullName = "Please enter your full name.";
-    if (!form.phone.trim()) nextErrors.phone = "Please enter your phone number.";
+    if (!form.fullName.trim()) {
+      nextErrors.fullName = "Please enter your full name.";
+    }
+
+    if (!form.phone.trim()) {
+      nextErrors.phone = "Please enter your phone number.";
+    }
+
+    if (form.orderType === "qurbani" && form.delivery) {
+      if (!form.deliveryArea.trim()) {
+        nextErrors.deliveryArea = "Please enter the delivery area.";
+      }
+      if (!form.deliveryAddress.trim()) {
+        nextErrors.deliveryAddress = "Please enter the full delivery address.";
+      }
+    }
+
+    if (form.orderType === "live" && form.liveDelivery) {
+      if (!form.liveDeliveryArea.trim()) {
+        nextErrors.liveDeliveryArea = "Please enter the delivery area.";
+      }
+      if (!form.liveDeliveryAddress.trim()) {
+        nextErrors.liveDeliveryAddress = "Please enter the full delivery address.";
+      }
+    }
 
     if (form.orderType === "qurbani") {
       const hasValidWeightSelections =
@@ -757,11 +809,6 @@ export default function OrderPage() {
       if (!Number.isInteger(qty) || qty < 1) {
         nextErrors.liveQuantity =
           "Please enter a valid number of live sheep required.";
-      }
-
-      if (form.liveDelivery && !form.liveDeliveryAddress.trim()) {
-        nextErrors.liveDeliveryAddress =
-          "Please enter the delivery address for this live sheep order.";
       }
     }
 
@@ -871,7 +918,25 @@ export default function OrderPage() {
           addServices: isQurbani ? form.addServices : false,
           delivery: isQurbani ? form.delivery : form.liveDelivery,
           liveDelivery: isQurbani ? false : form.liveDelivery,
-          address: isQurbani ? "" : form.liveDeliveryAddress.trim(),
+
+          deliveryArea: isQurbani
+            ? form.delivery
+              ? form.deliveryArea.trim()
+              : ""
+            : form.liveDelivery
+            ? form.liveDeliveryArea.trim()
+            : "",
+
+          deliveryAddress: isQurbani
+            ? form.delivery
+              ? form.deliveryAddress.trim()
+              : ""
+            : form.liveDelivery
+            ? form.liveDeliveryAddress.trim()
+            : "",
+
+          fullDistributionCut: isQurbani ? form.fullDistributionCut : false,
+          selectedSheepTagNumbers: [],
 
           basePriceTotal: isQurbani ? basePriceTotal : liveBaseTotal,
           servicesPerSheep,
@@ -885,6 +950,7 @@ export default function OrderPage() {
 
           paymentStatus: "pending",
           slaughtered: false,
+          sliced: false,
           delivered: false,
           cancelled: false,
           cancelReason: "",
@@ -1137,7 +1203,8 @@ export default function OrderPage() {
 
                         <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
                           <p className="text-sm text-white/75">
-                            Available stock is shown for each weight range. Sold out categories cannot be selected.
+                            Available stock is shown for each weight range. Sold out
+                            categories cannot be selected.
                           </p>
                         </div>
 
@@ -1183,6 +1250,29 @@ export default function OrderPage() {
                             Add another weight category
                           </button>
                         </div>
+                      </div>
+
+                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
+                        <p className="text-sm font-medium text-white/80">
+                          Slicing preference
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-white/55">
+                          Keep this simple for smooth operations.
+                        </p>
+
+                        <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
+                          <input
+                            type="checkbox"
+                            checked={form.fullDistributionCut}
+                            onChange={(e) =>
+                              updateField("fullDistributionCut", e.target.checked)
+                            }
+                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                          />
+                          <span className="text-sm text-white/75">
+                            Slice the full sheep for distribution
+                          </span>
+                        </label>
                       </div>
 
                       <div className="h-px bg-white/10" />
@@ -1255,6 +1345,41 @@ export default function OrderPage() {
                               </label>
                             </div>
                           </div>
+
+                          {form.delivery ? (
+                            <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <Label htmlFor="deliveryArea" required>
+                                  Delivery area
+                                </Label>
+                                <Input
+                                  id="deliveryArea"
+                                  value={form.deliveryArea}
+                                  onChange={(value) =>
+                                    updateField("deliveryArea", value)
+                                  }
+                                  placeholder="Example: Lenasia"
+                                  error={errors.deliveryArea}
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <Label htmlFor="deliveryAddress" required>
+                                  Full delivery address
+                                </Label>
+                                <TextArea
+                                  id="deliveryAddress"
+                                  value={form.deliveryAddress}
+                                  onChange={(value) =>
+                                    updateField("deliveryAddress", value)
+                                  }
+                                  placeholder="Enter the full address for delivery"
+                                  error={errors.deliveryAddress}
+                                  rows={4}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
 
                           <div className="sm:col-span-2">
                             <Label htmlFor="notes">
@@ -1330,20 +1455,37 @@ export default function OrderPage() {
                           </div>
 
                           {form.liveDelivery ? (
-                            <div className="sm:col-span-2">
-                              <Label htmlFor="liveDeliveryAddress" required>
-                                Delivery address
-                              </Label>
-                              <TextArea
-                                id="liveDeliveryAddress"
-                                value={form.liveDeliveryAddress}
-                                onChange={(value) =>
-                                  updateField("liveDeliveryAddress", value)
-                                }
-                                placeholder="Enter the full delivery address for the live sheep order"
-                                error={errors.liveDeliveryAddress}
-                                rows={4}
-                              />
+                            <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <Label htmlFor="liveDeliveryArea" required>
+                                  Delivery area
+                                </Label>
+                                <Input
+                                  id="liveDeliveryArea"
+                                  value={form.liveDeliveryArea}
+                                  onChange={(value) =>
+                                    updateField("liveDeliveryArea", value)
+                                  }
+                                  placeholder="Example: Laudium"
+                                  error={errors.liveDeliveryArea}
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <Label htmlFor="liveDeliveryAddress" required>
+                                  Full delivery address
+                                </Label>
+                                <TextArea
+                                  id="liveDeliveryAddress"
+                                  value={form.liveDeliveryAddress}
+                                  onChange={(value) =>
+                                    updateField("liveDeliveryAddress", value)
+                                  }
+                                  placeholder="Enter the full delivery address for the live sheep order"
+                                  error={errors.liveDeliveryAddress}
+                                  rows={4}
+                                />
+                              </div>
                             </div>
                           ) : null}
 
@@ -1455,38 +1597,64 @@ export default function OrderPage() {
                     <SummaryRow label="Phone" value={form.phone} />
 
                     {form.orderType === "qurbani" ? (
-                      <div className="border-b border-white/10 py-3">
-                        <div className="mb-2 text-sm text-white/45">Sheep selected</div>
-                        {weightBreakdown.length ? (
-                          <div className="space-y-2">
-                            {weightBreakdown.map((row) => (
-                              <div
-                                key={row.id}
-                                className="flex items-start justify-between gap-4 text-sm"
-                              >
-                                <div>
-                                  <span className="text-white">
-                                    {row.quantity} × {row.label}
-                                  </span>
-                                  <div className="mt-1 text-xs text-white/45">
-                                    {(() => {
-                                      const stockLeft = getStockLeftForLabel(row.label, row.id);
-                                      return stockLeft === null
-                                        ? "Stock open"
-                                        : `${stockLeft} left after this row`;
-                                    })()}
+                      <>
+                        <div className="border-b border-white/10 py-3">
+                          <div className="mb-2 text-sm text-white/45">Sheep selected</div>
+                          {weightBreakdown.length ? (
+                            <div className="space-y-2">
+                              {weightBreakdown.map((row) => (
+                                <div
+                                  key={row.id}
+                                  className="flex items-start justify-between gap-4 text-sm"
+                                >
+                                  <div>
+                                    <span className="text-white">
+                                      {row.quantity} × {row.label}
+                                    </span>
+                                    <div className="mt-1 text-xs text-white/45">
+                                      {(() => {
+                                        const stockLeft = getStockLeftForLabel(
+                                          row.label,
+                                          row.id
+                                        );
+                                        return stockLeft === null
+                                          ? "Stock open"
+                                          : `${stockLeft} left after this row`;
+                                      })()}
+                                    </div>
                                   </div>
+                                  <span className="font-medium text-white">
+                                    {formatZAR(row.subtotal)}
+                                  </span>
                                 </div>
-                                <span className="font-medium text-white">
-                                  {formatZAR(row.subtotal)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-sm font-medium text-white">—</div>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm font-medium text-white">—</div>
+                          )}
+                        </div>
+
+                        <SummaryRow
+                          label="Slicing"
+                          value={
+                            form.fullDistributionCut
+                              ? "Full sheep sliced for distribution"
+                              : "Standard"
+                          }
+                        />
+                        <SummaryRow
+                          label="Delivery"
+                          value={form.delivery ? "Included" : "Not added"}
+                        />
+                        <SummaryRow
+                          label="Delivery area"
+                          value={form.delivery ? form.deliveryArea : "No delivery"}
+                        />
+                        <SummaryRow
+                          label="Delivery address"
+                          value={form.delivery ? form.deliveryAddress : "No delivery"}
+                        />
+                      </>
                     ) : (
                       <>
                         <SummaryRow
@@ -1497,12 +1665,20 @@ export default function OrderPage() {
                           label="Live delivery"
                           value={form.liveDelivery ? "Included" : "Not added"}
                         />
-                        {form.liveDelivery ? (
-                          <SummaryRow
-                            label="Delivery address"
-                            value={form.liveDeliveryAddress || "—"}
-                          />
-                        ) : null}
+                        <SummaryRow
+                          label="Delivery area"
+                          value={
+                            form.liveDelivery ? form.liveDeliveryArea : "No delivery"
+                          }
+                        />
+                        <SummaryRow
+                          label="Delivery address"
+                          value={
+                            form.liveDelivery
+                              ? form.liveDeliveryAddress
+                              : "No delivery"
+                          }
+                        />
                       </>
                     )}
 
@@ -1516,12 +1692,6 @@ export default function OrderPage() {
                           : "Not applicable"
                       }
                     />
-                    {form.orderType === "qurbani" ? (
-                      <SummaryRow
-                        label="Delivery"
-                        value={form.delivery ? "Included" : "Not added"}
-                      />
-                    ) : null}
                   </div>
 
                   <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
@@ -1584,13 +1754,15 @@ export default function OrderPage() {
                   </p>
                   <div className="mt-4 grid gap-3">
                     <SmallInfoCard>
-                      Switch between qurbani service and live sheep purchase on one page
+                      Switch between qurbani service and live sheep purchase on one
+                      page
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Multiple weight categories can be booked in one qurbani order
                     </SmallInfoCard>
                     <SmallInfoCard>
-                      Weight ranges now reflect live stock availability where stock has been set
+                      Weight ranges now reflect live stock availability where stock has
+                      been set
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Skinning, slicing, cleaning, storage and packaging at{" "}
