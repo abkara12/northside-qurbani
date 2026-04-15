@@ -2028,7 +2028,14 @@ const deliveryAreaSummary = useMemo(() => {
         No delivery areas with outstanding deliveries yet.
       </div>
     ) : (
-      deliveryAreaSummary.map((item) => (
+      [...deliveryAreaSummary]
+  .sort((a, b) => {
+    if (b.totalOrders !== a.totalOrders) {
+      return b.totalOrders - a.totalOrders;
+    }
+    return a.area.localeCompare(b.area);
+  })
+  .map((item) => (
         <button
           key={item.area}
           type="button"
@@ -2264,22 +2271,34 @@ const deliveryAreaSummary = useMemo(() => {
                   </div>
                 </div>
 
-                <div>
-  <div className="mb-2 text-sm font-medium text-white/82">Delivery Area</div>
-  <div className="flex flex-wrap gap-2">
-    <FilterButton
-      active={deliveryAreaFilter === "all"}
-      label="All"
-      onClick={() => setDeliveryAreaFilter("all")}
-    />
-    {deliveryAreas.map((area) => (
-      <FilterButton
-        key={area}
-        active={deliveryAreaFilter === area}
-        label={area}
-        onClick={() => setDeliveryAreaFilter(area)}
-      />
-    ))}
+               <div>
+  <label className="mb-2 block text-sm font-medium text-white/82">
+    Delivery Area
+  </label>
+  <div className="relative">
+    <select
+      value={deliveryAreaFilter}
+      onChange={(e) => setDeliveryAreaFilter(e.target.value)}
+      className="h-12 w-full min-w-[240px] rounded-2xl border border-white/10 bg-white/[0.05] px-4 pr-10 text-sm text-white outline-none backdrop-blur-xl transition focus:border-[#c6a268]/60 focus:bg-white/[0.07]"
+    >
+      <option value="all" className="text-black">
+        All Areas ({undeliveredDeliveryOrders.length} orders)
+      </option>
+
+      {deliveryAreaSummary
+        .sort((a, b) => {
+          if (b.totalOrders !== a.totalOrders) {
+            return b.totalOrders - a.totalOrders;
+          }
+          return a.area.localeCompare(b.area);
+        })
+        .map((item) => (
+          <option key={item.area} value={item.area} className="text-black">
+            {item.area} — {item.totalOrders} order
+            {item.totalOrders === 1 ? "" : "s"} • {item.totalSheep} sheep
+          </option>
+        ))}
+    </select>
   </div>
 </div>
 
