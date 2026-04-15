@@ -872,88 +872,100 @@ useEffect(() => {
     );
   }, [orders]);
 
-  const filteredOrders = useMemo(() => {
-    const term = search.trim().toLowerCase();
+ const filteredOrders = useMemo(() => {
+  const term = search.trim().toLowerCase();
 
-    const next = orders.filter((order) => {
-      const matchesSearch =
-        !term ||
-        order.fullName?.toLowerCase().includes(term) ||
-        order.phone?.toLowerCase().includes(term) ||
-        order.email?.toLowerCase().includes(term) ||
-        orderReference(order.id).toLowerCase().includes(term) ||
-        sheepSummary(order).toLowerCase().includes(term) ||
-        (order.deliveryArea || "").toLowerCase().includes(term) ||
-        (order.deliveryAddress || "").toLowerCase().includes(term) ||
-        (order.selectedSheepTagNumbers || []).join(" ").toLowerCase().includes(term);
+  const next = orders.filter((order) => {
+    const matchesSearch =
+      !term ||
+      order.fullName?.toLowerCase().includes(term) ||
+      order.phone?.toLowerCase().includes(term) ||
+      order.email?.toLowerCase().includes(term) ||
+      orderReference(order.id).toLowerCase().includes(term) ||
+      sheepSummary(order).toLowerCase().includes(term) ||
+      (order.deliveryArea || "").toLowerCase().includes(term) ||
+      (order.deliveryAddress || "").toLowerCase().includes(term) ||
+      (order.selectedSheepTagNumbers || []).join(" ").toLowerCase().includes(term);
 
-      const payment = (order.paymentStatus || "pending").toLowerCase();
-      const matchesPayment =
-        paymentFilter === "all" ||
-        (paymentFilter === "paid" && payment === "paid") ||
-        (paymentFilter === "unpaid" && payment !== "paid");
+    const payment = (order.paymentStatus || "pending").toLowerCase();
+    const matchesPayment =
+      paymentFilter === "all" ||
+      (paymentFilter === "paid" && payment === "paid") ||
+      (paymentFilter === "unpaid" && payment !== "paid");
 
-      const matchesOrderType =
-        orderTypeFilter === "all" ||
-        (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
-        (orderTypeFilter === "live" && order.orderType === "live");
+    const matchesOrderType =
+      orderTypeFilter === "all" ||
+      (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
+      (orderTypeFilter === "live" && order.orderType === "live");
 
-      const matchesWorkflow =
-        workflowFilter === "all" ||
-        (workflowFilter === "pending" &&
-          !order.cancelled &&
-          !order.delivered &&
-          (order.orderType === "live" ? true : !order.slaughtered)) ||
-        (workflowFilter === "slaughtered" &&
-          order.orderType !== "live" &&
-          !order.cancelled &&
-          !!order.slaughtered &&
-          !order.delivered) ||
-        (workflowFilter === "sliced" &&
-          order.orderType !== "live" &&
-          !order.cancelled &&
-          !!order.sliced) ||
-        (workflowFilter === "awaiting_delivery" &&
-          order.orderType !== "live" &&
-          !order.cancelled &&
-          !!order.slaughtered &&
-          !order.delivered) ||
-        (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
-        (workflowFilter === "cancelled" && !!order.cancelled);
+    const matchesWorkflow =
+      workflowFilter === "all" ||
+      (workflowFilter === "pending" &&
+        !order.cancelled &&
+        !order.delivered &&
+        (order.orderType === "live" ? true : !order.slaughtered)) ||
+      (workflowFilter === "slaughtered" &&
+        order.orderType !== "live" &&
+        !order.cancelled &&
+        !!order.slaughtered &&
+        !order.delivered) ||
+      (workflowFilter === "sliced" &&
+        order.orderType !== "live" &&
+        !order.cancelled &&
+        !!order.sliced) ||
+      (workflowFilter === "awaiting_delivery" &&
+        !order.cancelled &&
+        !!order.delivery &&
+        !order.delivered) ||
+      (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+      (workflowFilter === "cancelled" && !!order.cancelled);
 
-      const matchesDeliveryArea =
-        deliveryAreaFilter === "all"
-          ? true
-          : (order.deliveryArea || "").trim().toLowerCase() ===
-            deliveryAreaFilter.toLowerCase();
+    const matchesDeliveryArea =
+      deliveryAreaFilter === "all"
+        ? true
+        : (order.deliveryArea || "").trim().toLowerCase() ===
+          deliveryAreaFilter.toLowerCase();
 
-      return (
-        matchesSearch &&
-        matchesPayment &&
-        matchesOrderType &&
-        matchesWorkflow &&
-        matchesDeliveryArea
-      );
+    return (
+      matchesSearch &&
+      matchesPayment &&
+      matchesOrderType &&
+      matchesWorkflow &&
+      matchesDeliveryArea
+    );
+  });
+
+  return [...next].sort((a, b) => {
+    const areaFilterActive = deliveryAreaFilter !== "all";
+
+    if (areaFilterActive) {
+      const aDelivered = !!a.delivered;
+      const bDelivered = !!b.delivered;
+
+      if (aDelivered !== bDelivered) {
+        return aDelivered ? 1 : -1;
+      }
+    }
+
+    const nameA = (a.fullName || "").trim();
+    const nameB = (b.fullName || "").trim();
+
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
+
+    return nameA.localeCompare(nameB, undefined, {
+      sensitivity: "base",
     });
-
-    return [...next].sort((a, b) => {
-      const nameA = (a.fullName || "").trim();
-      const nameB = (b.fullName || "").trim();
-      if (!nameA && !nameB) return 0;
-      if (!nameA) return 1;
-      if (!nameB) return -1;
-      return nameA.localeCompare(b.fullName || "", undefined, {
-        sensitivity: "base",
-      });
-    });
-  }, [
-    orders,
-    search,
-    paymentFilter,
-    workflowFilter,
-    orderTypeFilter,
-    deliveryAreaFilter,
-  ]);
+  });
+}, [
+  orders,
+  search,
+  paymentFilter,
+  workflowFilter,
+  orderTypeFilter,
+  deliveryAreaFilter,
+]);
 
   const simpleSearchResults = useMemo(() => {
     const term = simpleSearch.trim().toLowerCase();
@@ -1024,6 +1036,52 @@ const liveOutstandingValue = liveOrders
   }, [activeQurbaniOrders, settings.weightOptions]);
 
   const currentBulkReminderOrder = bulkReminderTargets[bulkReminderIndex] || null;
+
+  const deliveryOrders = useMemo(() => {
+  return orders.filter(
+    (order) =>
+      !order.cancelled &&
+      !!order.delivery &&
+      !!(order.deliveryArea || "").trim()
+  );
+}, [orders]);
+
+const undeliveredDeliveryOrders = useMemo(() => {
+  return deliveryOrders.filter((order) => !order.delivered);
+}, [deliveryOrders]);
+
+const deliveryAreaSummary = useMemo(() => {
+  return deliveryAreas
+    .map((area) => {
+      const areaOrders = undeliveredDeliveryOrders.filter(
+        (order) => (order.deliveryArea || "").trim().toLowerCase() === area.toLowerCase()
+      );
+
+      const totalOrders = areaOrders.length;
+      const totalSheep = areaOrders.reduce((sum, order) => {
+        if (order.orderType === "live") {
+          return sum + (order.liveQuantity || order.quantity || 0);
+        }
+
+        if (order.weightBreakdown?.length) {
+          return (
+            sum +
+            order.weightBreakdown.reduce((inner, row) => inner + (row.quantity || 0), 0)
+          );
+        }
+
+        return sum + (order.quantity || 0);
+      }, 0);
+
+      return {
+        area,
+        totalOrders,
+        totalSheep,
+      };
+    })
+    .filter((item) => item.totalOrders > 0)
+    .sort((a, b) => a.area.localeCompare(b.area));
+}, [deliveryAreas, undeliveredDeliveryOrders]);
 
     
   function markDirty() {
@@ -1709,6 +1767,18 @@ const liveOutstandingValue = liveOrders
                             {orderReference(order.id)} • {order.phone || "No phone"}
                           </div>
 
+                          {order.deliveryArea ? (
+                      <div className="mt-1 text-xs text-white/45">
+                        Delivery area: {order.deliveryArea}
+                      </div>
+                    ) : null}
+
+                    {order.deliveryAddress ? (
+                      <div className="mt-1 text-xs text-white/45">
+                        Address: {order.deliveryAddress}
+                      </div>
+                      ) : null}
+
                           <div className="mt-1 text-sm text-[#d8b67e]">
   {sheepSummary(order)}
   {order.orderType === "live" &&
@@ -1884,7 +1954,7 @@ const liveOutstandingValue = liveOrders
 
 {isOwner && (
   <SummaryCard
-    label="Net After Expenses"
+    label="Net Profit After Expenses"
     value={formatZAR(netCollectedAfterExpenses)}
     helper="Collected minus expenses"
   />
@@ -1915,6 +1985,75 @@ const liveOutstandingValue = liveOrders
             <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Booked Sheep By Size" data={sizeBreakdown} />
             </div>
+            <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
+  <div className="mb-5">
+    <h3 className="text-lg font-semibold text-white">Delivery Areas</h3>
+    <p className="mt-1 text-sm text-white/55">
+      Click a delivery area to see all undelivered orders for that place.
+    </p>
+  </div>
+
+  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <button
+      type="button"
+      onClick={() => setDeliveryAreaFilter("all")}
+      className={`rounded-[24px] border p-4 text-left transition ${
+        deliveryAreaFilter === "all"
+          ? "border-[#c6a268]/35 bg-[#c6a268]/[0.08]"
+          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"
+      }`}
+    >
+      <div className="text-sm uppercase tracking-[0.18em] text-[#d8b67e]">All Areas</div>
+      <div className="mt-2 text-lg font-semibold text-white">
+        {undeliveredDeliveryOrders.length} undelivered orders
+      </div>
+      <div className="mt-1 text-sm text-white/55">
+        {undeliveredDeliveryOrders.reduce((sum, order) => {
+          if (order.orderType === "live") {
+            return sum + (order.liveQuantity || order.quantity || 0);
+          }
+          if (order.weightBreakdown?.length) {
+            return (
+              sum +
+              order.weightBreakdown.reduce((inner, row) => inner + (row.quantity || 0), 0)
+            );
+          }
+          return sum + (order.quantity || 0);
+        }, 0)} sheep to deliver
+      </div>
+    </button>
+
+    {deliveryAreaSummary.length === 0 ? (
+      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55 sm:col-span-2 xl:col-span-3">
+        No delivery areas with outstanding deliveries yet.
+      </div>
+    ) : (
+      deliveryAreaSummary.map((item) => (
+        <button
+          key={item.area}
+          type="button"
+          onClick={() => {
+            setDeliveryAreaFilter(item.area);
+            setMode("management");
+          }}
+          className={`rounded-[24px] border p-4 text-left transition ${
+            deliveryAreaFilter === item.area
+              ? "border-[#c6a268]/35 bg-[#c6a268]/[0.08]"
+              : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"
+          }`}
+        >
+          <div className="text-sm uppercase tracking-[0.18em] text-[#d8b67e]">
+            Delivery Area
+          </div>
+          <div className="mt-2 text-lg font-semibold text-white">{item.area}</div>
+          <div className="mt-2 text-sm text-white/60">
+            {item.totalOrders} order{item.totalOrders === 1 ? "" : "s"} • {item.totalSheep} sheep
+          </div>
+        </button>
+      ))
+    )}
+  </div>
+</div>
 
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
               <div className="flex flex-wrap gap-3">
@@ -1932,6 +2071,18 @@ const liveOutstandingValue = liveOrders
   >
     {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
   </button>
+
+  <button
+  type="button"
+  onClick={() => {
+    setDeliveryAreaFilter("all");
+    setWorkflowFilter("awaiting_delivery");
+    setMode("management");
+  }}
+  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+>
+  Delivery Orders
+</button>
 
   {isOwner && (
     <button
@@ -2112,6 +2263,25 @@ const liveOutstandingValue = liveOrders
                     />
                   </div>
                 </div>
+
+                <div>
+  <div className="mb-2 text-sm font-medium text-white/82">Delivery Area</div>
+  <div className="flex flex-wrap gap-2">
+    <FilterButton
+      active={deliveryAreaFilter === "all"}
+      label="All"
+      onClick={() => setDeliveryAreaFilter("all")}
+    />
+    {deliveryAreas.map((area) => (
+      <FilterButton
+        key={area}
+        active={deliveryAreaFilter === area}
+        label={area}
+        onClick={() => setDeliveryAreaFilter(area)}
+      />
+    ))}
+  </div>
+</div>
 
                 
                 <div>
@@ -2616,7 +2786,11 @@ const liveOutstandingValue = liveOrders
               <div className="xl:col-span-7">
                 <SectionCard
                   title="Bookings"
-                  sub="Find the booking, open it, and manage it from one clear editor."
+                  sub={
+                  deliveryAreaFilter === "all"
+                    ? "Find the booking, open it, and manage it from one clear editor."
+                    : `Showing bookings for delivery area: ${deliveryAreaFilter}`
+                }
                 >
                   <div className="space-y-4">
                     {loadingOrders ? (
