@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
@@ -1089,6 +1090,8 @@ const deliveryAreaSummary = useMemo(() => {
     setSaveMessage("");
   }
 
+
+  
   async function updateField(orderId: string, payload: Partial<OrderItem>) {
     try {
       setUpdatingField(orderId);
