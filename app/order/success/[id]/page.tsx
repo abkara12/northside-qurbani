@@ -329,11 +329,13 @@ export default function OrderSuccessPage() {
     };
   }, []);
 
-  const liveOrder = isLiveOrder(order);
-  const orderReference = orderId ? orderReferenceValue(orderId, order) : "—";
-  const workflowStatus = getWorkflowStatus(order);
-  const paymentStatus = getPaymentStatus(order);
-  const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
+const liveOrder = isLiveOrder(order);
+const orderReference = orderId ? orderReferenceValue(orderId, order) : "—";
+const workflowStatus = getWorkflowStatus(order);
+const paymentStatus = getPaymentStatus(order);
+const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
+const selectedTagNumbers = order?.selectedSheepTagNumbers?.filter(Boolean) || [];
+const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -451,6 +453,29 @@ export default function OrderSuccessPage() {
                     {orderReference}
                   </p>
                 </div>
+
+                {hasSelectedTagNumbers ? (
+  <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+    <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+      Selected Sheep Tag Numbers
+    </p>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      {selectedTagNumbers.map((tag) => (
+        <div
+          key={tag}
+          className="inline-flex min-h-[46px] items-center justify-center rounded-full border border-white/10 bg-black/20 px-5 text-sm font-semibold tracking-[0.08em] text-white"
+        >
+          {tag}
+        </div>
+      ))}
+    </div>
+
+    <p className="mt-4 text-sm leading-6 text-white/70">
+      Please show these tag numbers to the team on qurbani day.
+    </p>
+  </div>
+) : null}
 
                 {!liveOrder ? (
                   queueAssigned ? (
