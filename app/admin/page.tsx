@@ -1983,13 +1983,6 @@ const deliveryAreaSummary = useMemo(() => {
   />
 )}
 
-  {isOwner && (
-    <SummaryCard
-      label="Outstanding"
-      value={formatZAR(totalOutstanding)}
-      helper={`${unpaidOrders.length} unpaid`}
-    />
-  )}
 
   {isOwner && (
   <SummaryCard
