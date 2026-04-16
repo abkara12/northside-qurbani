@@ -672,6 +672,10 @@ const isOwner = userRole === "admin";
   const [bulkReminderTargets, setBulkReminderTargets] = useState<OrderItem[]>([]);
 
   const selectedBookingRef = useRef<HTMLDivElement | null>(null);
+  const manualBookingRef = useRef<HTMLDivElement | null>(null);
+  const outstandingPanelRef = useRef<HTMLDivElement | null>(null);
+  const expensesPanelRef = useRef<HTMLDivElement | null>(null);
+  const settingsPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let unsubUserDoc: (() => void) | null = null;
@@ -1090,6 +1094,14 @@ const deliveryAreaSummary = useMemo(() => {
     setSaveMessage("");
   }
 
+    function scrollToRef(ref: React.RefObject<HTMLDivElement | null>) {
+  setTimeout(() => {
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 120);
+}
 
   
   async function updateField(orderId: string, payload: Partial<OrderItem>) {
@@ -1302,11 +1314,12 @@ const deliveryAreaSummary = useMemo(() => {
   }
 }
   function handleOpenBooking(order: OrderItem) {
-    setMode("management");
-    setShowOutstandingPanel(false);
-    setShowManualForm(false);
-    setShowSettings(false);
-    setSelectedOrder(order);
+  setMode("management");
+  setShowOutstandingPanel(false);
+  setShowManualForm(false);
+  setShowExpensesPanel(false);
+  setShowSettings(false);
+  setSelectedOrder(order);
 
     setTimeout(() => {
       selectedBookingRef.current?.scrollIntoView({
@@ -1365,6 +1378,23 @@ const deliveryAreaSummary = useMemo(() => {
       const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
       const totalPrice = baseLiveTotal + deliveryTotal;
 
+            if (editForm.cancelled) {
+        if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
+          openWhatsAppForOrder(
+            selectedOrder,
+            buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
+          );
+        }
+
+        await deleteDoc(doc(db, "orders", selectedOrder.id));
+
+        setHasUnsavedChanges(false);
+        setSelectedOrder(null);
+        setSaveMessage("Booking removed successfully.");
+        setTimeout(() => setSaveMessage(""), 3000);
+        return;
+      }
+
       await updateDoc(doc(db, "orders", selectedOrder.id), {
         fullName: editForm.fullName.trim(),
         phone: editForm.phone.trim(),
@@ -1377,18 +1407,16 @@ const deliveryAreaSummary = useMemo(() => {
         totalPrice,
         paymentStatus: editForm.paymentStatus,
         sliced: false,
-        delivered: editForm.cancelled ? false : editForm.delivered,
-        cancelled: editForm.cancelled,
-        cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
+        delivered: editForm.delivered,
+        cancelled: false,
+        cancelReason: "",
         slaughtered: false,
         queueNumber: null,
         queueCheckedInAt: null,
         addServices: false,
-        delivery: editForm.cancelled ? false : editForm.delivery,
-        deliveryArea:
-          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryArea.trim(),
-        deliveryAddress:
-          editForm.cancelled || !editForm.delivery ? "" : editForm.deliveryAddress.trim(),
+        delivery: editForm.delivery,
+        deliveryArea: editForm.delivery ? editForm.deliveryArea.trim() : "",
+        deliveryAddress: editForm.delivery ? editForm.deliveryAddress.trim() : "",
         fullDistributionCut: false,
         selectedSheepTagNumbers: editForm.selectedSheepTagNumbers
           .split(",")
@@ -1396,9 +1424,9 @@ const deliveryAreaSummary = useMemo(() => {
           .filter(Boolean),
         servicesPerSheep: 0,
         servicesTotal: 0,
-        deliveryPerSheep: editForm.cancelled ? 0 : deliveryPerSheep,
-        deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
-        basePriceTotal: editForm.cancelled ? 0 : baseLiveTotal,
+        deliveryPerSheep,
+        deliveryTotal,
+        basePriceTotal: baseLiveTotal,
         preferredWeight: "",
         weightBreakdown: [],
         cutPreferences: [],
@@ -1442,7 +1470,7 @@ const deliveryAreaSummary = useMemo(() => {
 
     const nextWeightBreakdown = editForm.cancelled ? [] : weightBreakdown;
 
-    await applyQurbaniStockTransaction({
+       await applyQurbaniStockTransaction({
       existingOrder: selectedOrder,
       nextWeightBreakdown,
       buildOrderPayload: () => ({
@@ -1491,6 +1519,14 @@ const deliveryAreaSummary = useMemo(() => {
           buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
         );
       }
+
+      await deleteDoc(doc(db, "orders", selectedOrder.id));
+
+      setHasUnsavedChanges(false);
+      setSelectedOrder(null);
+      setSaveMessage("Booking removed successfully.");
+      setTimeout(() => setSaveMessage(""), 3000);
+      return;
     }
 
     setHasUnsavedChanges(false);
@@ -1916,28 +1952,36 @@ const deliveryAreaSummary = useMemo(() => {
   />
 
   {isOwner && (
-    <SummaryCard
-      label="Collected"
-      value={formatZAR(totalCollected)}
-      helper={`${paidOrders.length} paid`}
-    />
-  )}
+  <SummaryCard
+    label="Collected"
+    value={formatZAR(totalCollected)}
+    helper={`${paidOrders.length} paid`}
+  />
+)}
 
-  {isOwner && (
-    <SummaryCard
-      label="Live Sheep Value"
-      value={formatZAR(totalLiveValue)}
-      helper="All live sheep totals"
-    />
-  )}
+{isOwner && (
+  <SummaryCard
+    label="Outstanding"
+    value={formatZAR(totalOutstanding)}
+    helper={`${unpaidOrders.length} unpaid`}
+  />
+)}
 
-  {isOwner && (
-    <SummaryCard
-      label="Live Unpaid"
-      value={formatZAR(liveOutstandingValue)}
-      helper="Outstanding live sheep"
-    />
-  )}
+{isOwner && (
+  <SummaryCard
+    label="Live Sheep Value"
+    value={formatZAR(totalLiveValue)}
+    helper="All live sheep totals"
+  />
+)}
+
+{isOwner && (
+  <SummaryCard
+    label="Live Unpaid"
+    value={formatZAR(liveOutstandingValue)}
+    helper="Outstanding live sheep"
+  />
+)}
 
   {isOwner && (
     <SummaryCard
@@ -1979,11 +2023,7 @@ const deliveryAreaSummary = useMemo(() => {
   helper="Slaughtered, not delivered"
 />
 
-  <SummaryCard
-    label="Live Sheep Ordered"
-    value={String(totalLiveSheepOrdered)}
-    helper={`${liveOrders.length} live bookings`}
-  />
+  
 </div>
             <div className="grid gap-4 md:grid-cols-1">
               <MiniBarChart title="Booked Sheep By Size" data={sizeBreakdown} />
@@ -1992,19 +2032,26 @@ const deliveryAreaSummary = useMemo(() => {
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
               <div className="flex flex-wrap gap-3">
   <button
-    type="button"
-    onClick={() => {
-      setShowManualForm((prev) => !prev);
-      if (showSettings) setShowSettings(false);
-    }}
-    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-      showManualForm
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
-  </button>
+  type="button"
+  onClick={() => {
+    const next = !showManualForm;
+    setShowManualForm(next);
+    setShowOutstandingPanel(false);
+    setShowExpensesPanel(false);
+    setShowSettings(false);
+
+    if (next) {
+      scrollToRef(manualBookingRef);
+    }
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    showManualForm
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
+</button>
 
   <button
   type="button"
@@ -2020,46 +2067,73 @@ const deliveryAreaSummary = useMemo(() => {
 
   {isOwner && (
     <button
-      type="button"
-      onClick={() => setShowOutstandingPanel((prev) => !prev)}
-      className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-        showOutstandingPanel
-          ? "bg-[#c6a268] text-[#161015]"
-          : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-      }`}
-    >
-      {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
-    </button>
+  type="button"
+  onClick={() => {
+    const next = !showOutstandingPanel;
+    setShowOutstandingPanel(next);
+    setShowManualForm(false);
+    setShowExpensesPanel(false);
+    setShowSettings(false);
+
+    if (next) {
+      scrollToRef(outstandingPanelRef);
+    }
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    showOutstandingPanel
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
+</button>
   )}
 
   {isOwner && (
-  <button
-    type="button"
-    onClick={() => setShowExpensesPanel((prev) => !prev)}
-    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-      showExpensesPanel
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {showExpensesPanel ? "Hide Expenses" : "Expenses"}
-  </button>
+ <button
+  type="button"
+  onClick={() => {
+    const next = !showExpensesPanel;
+    setShowExpensesPanel(next);
+    setShowManualForm(false);
+    setShowOutstandingPanel(false);
+    setShowSettings(false);
+
+    if (next) {
+      scrollToRef(expensesPanelRef);
+    }
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    showExpensesPanel
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  {showExpensesPanel ? "Hide Expenses" : "Expenses"}
+</button>
 )}
 
   <button
-    type="button"
-    onClick={() => {
-      setShowSettings((prev) => !prev);
-      if (showManualForm) setShowManualForm(false);
-    }}
-    className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-      showSettings
-        ? "bg-[#c6a268] text-[#161015]"
-        : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-    }`}
-  >
-    {showSettings ? "Hide Settings" : "Settings"}
-  </button>
+  type="button"
+  onClick={() => {
+    const next = !showSettings;
+    setShowSettings(next);
+    setShowManualForm(false);
+    setShowOutstandingPanel(false);
+    setShowExpensesPanel(false);
+
+    if (next) {
+      scrollToRef(settingsPanelRef);
+    }
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    showSettings
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  {showSettings ? "Hide Settings" : "Settings"}
+</button>
 
   {isOwner && (
     <button
@@ -2273,7 +2347,10 @@ const deliveryAreaSummary = useMemo(() => {
               </div>
 
               {showManualForm ? (
-                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+  <div
+    ref={manualBookingRef}
+    className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5"
+  >
                   <h3 className="text-lg font-semibold text-white">Add Manual Booking</h3>
                   <p className="mt-1 text-sm text-white/55">
                     Add a qurbani booking directly for a customer without using the order page.
@@ -2453,7 +2530,10 @@ const deliveryAreaSummary = useMemo(() => {
               ) : null}
 
               {showSettings ? (
-                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                <div
+                  ref={settingsPanelRef}
+                  className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5"
+                >
                   <h3 className="text-lg font-semibold text-white">Settings</h3>
                   <p className="mt-1 text-sm text-white/55">
                     Banking details, booking dates, and yearly sheep prices.
@@ -2547,7 +2627,10 @@ const deliveryAreaSummary = useMemo(() => {
               ) : null}
 
               {isOwner && showOutstandingPanel ? (
-                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                <div
+    ref={outstandingPanelRef}
+    className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5"
+  >
                   <h3 className="text-lg font-semibold text-white">Outstanding Payments</h3>
                   <p className="mt-1 text-sm text-white/55">
                     Quick follow-up list of unpaid customers.
@@ -2617,7 +2700,10 @@ const deliveryAreaSummary = useMemo(() => {
               ) : null}
 
               {isOwner && showExpensesPanel ? (
-                <div className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5">
+                <div
+              ref={expensesPanelRef}
+              className="mt-6 rounded-[28px] border border-white/10 bg-black/10 p-5"
+            >
                   <h3 className="text-lg font-semibold text-white">Expenses</h3>
                   <p className="mt-1 text-sm text-white/55">
                     Track farm costs like skinners, workers, trailer hire, and any other operational expenses.
@@ -3548,29 +3634,7 @@ const deliveryAreaSummary = useMemo(() => {
                             </p>
                           </div>
 
-                          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                            <label className="flex items-start gap-3">
-                              <input
-                                type="checkbox"
-                                checked={editForm.fullDistributionCut}
-                                onChange={(e) => {
-                                  markDirty();
-                                  setEditForm((prev) =>
-                                    prev ? { ...prev, fullDistributionCut: e.target.checked } : prev
-                                  );
-                                }}
-                                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                              />
-                              <div>
-                                <p className="font-medium text-white">
-                                  Slice the full sheep for distribution
-                                </p>
-                                <p className="text-sm text-white/55">
-                                  Keep the slicing preference simple for the team.
-                                </p>
-                              </div>
-                            </label>
-                          </div>
+                        
 
                           <div>
                             <label className="mb-2 block text-sm font-medium text-white/82">

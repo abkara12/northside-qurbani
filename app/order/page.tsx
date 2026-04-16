@@ -1252,28 +1252,6 @@ export default function OrderPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                        <p className="text-sm font-medium text-white/80">
-                          Slicing preference
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-white/55">
-                          Keep this simple for smooth operations.
-                        </p>
-
-                        <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                          <input
-                            type="checkbox"
-                            checked={form.fullDistributionCut}
-                            onChange={(e) =>
-                              updateField("fullDistributionCut", e.target.checked)
-                            }
-                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                          />
-                          <span className="text-sm text-white/75">
-                            Slice the full sheep for distribution
-                          </span>
-                        </label>
-                      </div>
 
                       <div className="h-px bg-white/10" />
 
@@ -1297,7 +1275,7 @@ export default function OrderPage() {
                                 Skinning, cleaning, storage, slicing, and packaging —
                                 <span className="font-medium text-[#d8b67e]">
                                   {" "}
-                                  {formatZAR(400)} per sheep
+                                  {formatZAR(600)} per sheep
                                 </span>
                               </p>
 
