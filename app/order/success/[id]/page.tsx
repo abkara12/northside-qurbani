@@ -14,6 +14,12 @@ type WeightBreakdownItem = {
   subtotal?: number;
 };
 
+type SheepPreferenceItem = {
+  sheepNo: number;
+  weightLabel: string;
+  cutPreferences: string[];
+};
+
 type OrderData = {
   orderType?: "qurbani" | "live";
   fullName?: string;
@@ -23,6 +29,7 @@ type OrderData = {
   liveQuantity?: number;
   preferredWeight?: string;
   weightBreakdown?: WeightBreakdownItem[];
+  sheepPreferences?: SheepPreferenceItem[];
   cutPreferences?: string[];
   notes?: string;
   addServices?: boolean;
@@ -286,7 +293,7 @@ export default function OrderSuccessPage() {
 
     const unsubOrder = onSnapshot(
       doc(db, "orders", id),
-            (orderSnap) => {
+      (orderSnap) => {
         if (!orderSnap.exists()) {
           if (typeof window !== "undefined") {
             localStorage.removeItem("northside_last_order_id");
@@ -348,13 +355,13 @@ export default function OrderSuccessPage() {
     };
   }, []);
 
-const liveOrder = isLiveOrder(order);
-const orderReference = orderId ? orderReferenceValue(orderId, order) : "—";
-const workflowStatus = getWorkflowStatus(order);
-const paymentStatus = getPaymentStatus(order);
-const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
-const selectedTagNumbers = order?.selectedSheepTagNumbers?.filter(Boolean) || [];
-const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
+  const liveOrder = isLiveOrder(order);
+  const orderReference = orderId ? orderReferenceValue(orderId, order) : "—";
+  const workflowStatus = getWorkflowStatus(order);
+  const paymentStatus = getPaymentStatus(order);
+  const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
+  const selectedTagNumbers = order?.selectedSheepTagNumbers?.filter(Boolean) || [];
+  const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -474,27 +481,27 @@ const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
                 </div>
 
                 {hasSelectedTagNumbers ? (
-  <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
-    <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
-      Selected Sheep Tag Numbers
-    </p>
+                  <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+                      Selected Sheep Tag Numbers
+                    </p>
 
-    <div className="mt-4 flex flex-wrap gap-3">
-      {selectedTagNumbers.map((tag) => (
-        <div
-          key={tag}
-          className="inline-flex min-h-[46px] items-center justify-center rounded-full border border-white/10 bg-black/20 px-5 text-sm font-semibold tracking-[0.08em] text-white"
-        >
-          {tag}
-        </div>
-      ))}
-    </div>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      {selectedTagNumbers.map((tag) => (
+                        <div
+                          key={tag}
+                          className="inline-flex min-h-[46px] items-center justify-center rounded-full border border-white/10 bg-black/20 px-5 text-sm font-semibold tracking-[0.08em] text-white"
+                        >
+                          {tag}
+                        </div>
+                      ))}
+                    </div>
 
-    <p className="mt-4 text-sm leading-6 text-white/70">
-      Please show these tag numbers to the team on qurbani day.
-    </p>
-  </div>
-) : null}
+                    <p className="mt-4 text-sm leading-6 text-white/70">
+                      Please show these tag numbers to the team on qurbani day.
+                    </p>
+                  </div>
+                ) : null}
 
                 {!liveOrder ? (
                   queueAssigned ? (
@@ -632,7 +639,9 @@ const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
                         <SummaryRow
                           label="Slicing preference"
                           value={
-                            order?.fullDistributionCut
+                            order?.sheepPreferences?.length
+                              ? `${order.sheepPreferences.length} sheep configured`
+                              : order?.fullDistributionCut
                               ? "Full sheep sliced for distribution"
                               : "Standard"
                           }
@@ -699,6 +708,36 @@ const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
                               </p>
                             </div>
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {!liveOrder && order?.sheepPreferences?.length ? (
+                  <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                    <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                      Slicing preferences
+                    </p>
+
+                    <div className="mt-4 space-y-3">
+                      {order.sheepPreferences.map((item) => (
+                        <div
+                          key={`${item.sheepNo}-${item.weightLabel}`}
+                          className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-white">
+                              Sheep {item.sheepNo}
+                            </p>
+                            <p className="mt-1 text-xs text-white/45">{item.weightLabel}</p>
+                          </div>
+
+                          <p className="mt-3 text-sm leading-6 text-white/75">
+                            {item.cutPreferences?.length
+                              ? item.cutPreferences.join(", ")
+                              : "No slicing preference selected"}
+                          </p>
                         </div>
                       ))}
                     </div>
