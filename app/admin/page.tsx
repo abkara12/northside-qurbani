@@ -3678,7 +3678,10 @@ const deliveryAreaSummary = useMemo(() => {
                               ))}
                               
                             </div>
-                            <div className="sm:col-span-2">
+                            
+                            
+                          </div>
+                          <div className="sm:col-span-2">
   <label className="mb-2 block text-sm font-medium text-white/82">
     Slicing preferences per sheep
   </label>
@@ -3732,8 +3735,6 @@ const deliveryAreaSummary = useMemo(() => {
     )}
   </div>
 </div>
-                            
-                          </div>
                           
 
 
