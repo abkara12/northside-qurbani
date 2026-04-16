@@ -518,11 +518,19 @@ export default function Home() {
       return;
     }
 
-    try {
+       try {
       const snap = await getDoc(doc(db, "orders", id));
 
       if (snap.exists()) {
-        setSavedOrder({ id, reference });
+        const data = snap.data() as any;
+
+        if (data?.cancelled) {
+          localStorage.removeItem("northside_last_order_id");
+          localStorage.removeItem("northside_last_order_reference");
+          setSavedOrder(null);
+        } else {
+          setSavedOrder({ id, reference });
+        }
       } else {
         localStorage.removeItem("northside_last_order_id");
         localStorage.removeItem("northside_last_order_reference");

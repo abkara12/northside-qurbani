@@ -27,6 +27,12 @@ type WeightBreakdownItem = {
   subtotal: number;
 };
 
+type SheepPreferenceItem = {
+  sheepNo: number;
+  weightLabel: string;
+  cutPreferences: string[];
+};
+
 type OrderItem = {
   id: string;
   fullName?: string;
@@ -35,6 +41,7 @@ type OrderItem = {
   quantity?: number;
   preferredWeight?: string;
   weightBreakdown?: WeightBreakdownItem[];
+  sheepPreferences?: SheepPreferenceItem[];
   cutPreferences?: string[];
   notes?: string;
   addServices?: boolean;
@@ -90,7 +97,7 @@ type EditFormState = {
   fullName: string;
   phone: string;
   email: string;
-  cutPreferences: string;
+  sheepPreferences: SheepPreferenceItem[];
   notes: string;
   addServices: boolean;
   delivery: boolean;
@@ -163,6 +170,18 @@ const DEFAULT_SETTINGS: AppSettings = {
     { label: "56–60 kg", price: 4200, stock: null },
   ],
 };
+
+const CUT_OPTIONS = [
+  "Curry Packs",
+  "Chops",
+  "Ribs",
+  "Whole Leg",
+  "Leg Sliced",
+  "Front Leg Whole",
+  "Front Leg Sliced",
+  "Liver",
+  "Whole",
+];
 
 function formatZAR(value?: number) {
   return new Intl.NumberFormat("en-ZA", {
@@ -815,7 +834,7 @@ useEffect(() => {
     fullName: selectedOrder.fullName || "",
     phone: selectedOrder.phone || "",
     email: selectedOrder.email || "",
-    cutPreferences: (selectedOrder.cutPreferences || []).join(", "),
+    sheepPreferences: selectedOrder.sheepPreferences || [],
     notes: selectedOrder.notes || "",
     addServices: !!selectedOrder.addServices,
     delivery: !!selectedOrder.delivery,
@@ -1094,6 +1113,34 @@ const deliveryAreaSummary = useMemo(() => {
     setSaveMessage("");
   }
 
+    function toggleEditSheepCutPreference(
+    sheepNo: number,
+    weightLabel: string,
+    cut: string
+  ) {
+    if (!editForm) return;
+
+    setEditForm({
+      ...editForm,
+      sheepPreferences: editForm.sheepPreferences.map((item) => {
+        if (item.sheepNo !== sheepNo || item.weightLabel !== weightLabel) {
+          return item;
+        }
+
+        const exists = item.cutPreferences.includes(cut);
+
+        return {
+          ...item,
+          cutPreferences: exists
+            ? item.cutPreferences.filter((value) => value !== cut)
+            : [...item.cutPreferences, cut],
+        };
+      }),
+    });
+
+    markDirty();
+  }
+
     function scrollToRef(ref: React.RefObject<HTMLDivElement | null>) {
   setTimeout(() => {
     ref.current?.scrollIntoView({
@@ -1329,6 +1376,119 @@ const deliveryAreaSummary = useMemo(() => {
     }, 150);
   }
 
+    function handlePrintOrders() {
+    const printableOrders = filteredOrders;
+
+    const html = `
+      <html>
+        <head>
+          <title>Northside Qurbani Orders</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 24px;
+              color: #111;
+            }
+            h1 {
+              margin-bottom: 8px;
+            }
+            .meta {
+              margin-bottom: 24px;
+              color: #555;
+              font-size: 14px;
+            }
+            .order {
+              border: 1px solid #ccc;
+              border-radius: 10px;
+              padding: 14px;
+              margin-bottom: 14px;
+              page-break-inside: avoid;
+            }
+            .row {
+              margin: 4px 0;
+              font-size: 14px;
+            }
+            .title {
+              font-weight: bold;
+              font-size: 16px;
+              margin-bottom: 8px;
+            }
+            .section {
+              margin-top: 10px;
+              padding-top: 10px;
+              border-top: 1px dashed #ccc;
+            }
+            ul {
+              margin: 6px 0 0 18px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Northside Qurbani Orders</h1>
+          <div class="meta">
+            Printed on ${new Date().toLocaleString("en-ZA")} • Total orders: ${printableOrders.length}
+          </div>
+
+          ${printableOrders
+            .map((order) => {
+              const sheepPreferencesHtml =
+                order.sheepPreferences && order.sheepPreferences.length
+                  ? `
+                    <div class="section">
+                      <div class="row"><strong>Slicing Preferences Per Sheep</strong></div>
+                      <ul>
+                        ${order.sheepPreferences
+                          .map(
+                            (item) =>
+                              `<li>Sheep ${item.sheepNo} (${item.weightLabel}): ${
+                                item.cutPreferences?.length
+                                  ? item.cutPreferences.join(", ")
+                                  : "No preference selected"
+                              }</li>`
+                          )
+                          .join("")}
+                      </ul>
+                    </div>
+                  `
+                  : "";
+
+              return `
+                <div class="order">
+                  <div class="title">${order.fullName || "Unnamed"} — ${orderReference(order.id)}</div>
+                  <div class="row"><strong>Phone:</strong> ${order.phone || "—"}</div>
+                  <div class="row"><strong>Email:</strong> ${order.email || "—"}</div>
+                  <div class="row"><strong>Order Type:</strong> ${order.orderType === "live" ? "Live Sheep" : "Qurbani"}</div>
+                  <div class="row"><strong>Sheep:</strong> ${sheepSummary(order)}</div>
+                  <div class="row"><strong>Payment:</strong> ${order.paymentStatus || "pending"}</div>
+                  <div class="row"><strong>Status:</strong> ${statusLabel(order)}</div>
+                  <div class="row"><strong>Delivery:</strong> ${order.delivery ? "Yes" : "No"}</div>
+                  <div class="row"><strong>Delivery Area:</strong> ${order.deliveryArea || "—"}</div>
+                  <div class="row"><strong>Address:</strong> ${order.deliveryAddress || "—"}</div>
+                  <div class="row"><strong>Total:</strong> ${bookingAmountLabel(order)}</div>
+                  <div class="row"><strong>Tag Numbers:</strong> ${(order.selectedSheepTagNumbers || []).join(", ") || "—"}</div>
+                  <div class="row"><strong>Notes:</strong> ${order.notes || "—"}</div>
+                  ${sheepPreferencesHtml}
+                </div>
+              `;
+            })
+            .join("")}
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=1200,height=900");
+    if (!printWindow) {
+      alert("Unable to open print window.");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
  async function saveEditForm() {
   if (!selectedOrder || !editForm) return;
 
@@ -1340,10 +1500,7 @@ const deliveryAreaSummary = useMemo(() => {
     alert("Please enter the customer phone number.");
     return;
   }
-  if (editForm.cancelled && !editForm.cancelReason.trim()) {
-    alert("Please enter a cancellation reason.");
-    return;
-  }
+  
 
   try {
     setSavingEdit(true);
@@ -1378,14 +1535,7 @@ const deliveryAreaSummary = useMemo(() => {
       const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
       const totalPrice = baseLiveTotal + deliveryTotal;
 
-            if (editForm.cancelled) {
-        if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
-          openWhatsAppForOrder(
-            selectedOrder,
-            buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
-          );
-        }
-
+                  if (editForm.cancelled) {
         await deleteDoc(doc(db, "orders", selectedOrder.id));
 
         setHasUnsavedChanges(false);
@@ -1433,20 +1583,8 @@ const deliveryAreaSummary = useMemo(() => {
         updatedAt: serverTimestamp(),
       });
 
-      if (editForm.cancelled) {
-        if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
-          openWhatsAppForOrder(
-            selectedOrder,
-            buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
-          );
-        }
-      }
-
-      setHasUnsavedChanges(false);
-      setSelectedOrder(null);
-      setSaveMessage("Saved successfully.");
-      setTimeout(() => setSaveMessage(""), 3000);
-      return;
+    
+     
     }
 
     const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
@@ -1463,10 +1601,8 @@ const deliveryAreaSummary = useMemo(() => {
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
     const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-    const cutPreferences = editForm.cutPreferences
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
+        const sheepPreferences = editForm.sheepPreferences || [];
+    const cutPreferences = sheepPreferences.flatMap((item) => item.cutPreferences);
 
     const nextWeightBreakdown = editForm.cancelled ? [] : weightBreakdown;
 
@@ -1482,6 +1618,7 @@ const deliveryAreaSummary = useMemo(() => {
           ? ""
           : buildLegacyPreferredWeight(weightBreakdown),
         weightBreakdown: nextWeightBreakdown,
+        sheepPreferences: editForm.cancelled ? [] : sheepPreferences,
         cutPreferences: editForm.cancelled ? [] : cutPreferences,
         notes: editForm.notes.trim(),
         addServices: editForm.cancelled ? false : editForm.addServices,
@@ -1508,18 +1645,11 @@ const deliveryAreaSummary = useMemo(() => {
         sliced: editForm.cancelled ? false : editForm.sliced,
         delivered: editForm.cancelled ? false : editForm.delivered,
         cancelled: editForm.cancelled,
-        cancelReason: editForm.cancelled ? editForm.cancelReason.trim() : "",
+        cancelReason: "",
       }),
     });
 
-    if (editForm.cancelled) {
-      if (window.confirm("Open WhatsApp cancellation notice for this customer?")) {
-        openWhatsAppForOrder(
-          selectedOrder,
-          buildCancellationMessage(selectedOrder, editForm.cancelReason.trim())
-        );
-      }
-
+        if (editForm.cancelled) {
       await deleteDoc(doc(db, "orders", selectedOrder.id));
 
       setHasUnsavedChanges(false);
@@ -1581,6 +1711,20 @@ const deliveryAreaSummary = useMemo(() => {
     .map((item) => item.trim())
     .filter(Boolean);
 
+      const sheepPreferences: SheepPreferenceItem[] = [];
+  let sheepNo = 1;
+
+  for (const row of weightBreakdown) {
+    for (let i = 0; i < row.quantity; i += 1) {
+      sheepPreferences.push({
+        sheepNo,
+        weightLabel: row.label,
+        cutPreferences,
+      });
+      sheepNo += 1;
+    }
+  }
+
   try {
     setManualSaving(true);
 
@@ -1604,6 +1748,7 @@ const deliveryAreaSummary = useMemo(() => {
         selectedSheepTagNumbers: [],
         basePriceTotal,
         servicesPerSheep,
+        sheepPreferences,
         servicesTotal,
         deliveryPerSheep,
         deliveryTotal,
@@ -2137,6 +2282,14 @@ const deliveryAreaSummary = useMemo(() => {
       Start Bulk Reminder Queue
     </button>
   )}
+
+  <button
+  type="button"
+  onClick={handlePrintOrders}
+  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+>
+  Print Orders
+</button>
 </div>
 
               {saveMessage ? (
@@ -3311,24 +3464,7 @@ const deliveryAreaSummary = useMemo(() => {
                               {editForm.cancelled ? "Booking Cancelled" : "Cancel Booking"}
                             </button>
 
-                            {editForm.cancelled ? (
-                              <div className="mt-4">
-                                <label className="mb-2 block text-sm font-medium text-white/90">
-                                  Cancellation reason
-                                </label>
-                                <textarea
-                                  rows={3}
-                                  value={editForm.cancelReason}
-                                  onChange={(e) => {
-                                    markDirty();
-                                    setEditForm((prev) =>
-                                      prev ? { ...prev, cancelReason: e.target.value } : prev
-                                    );
-                                  }}
-                                  className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
-                                />
-                              </div>
-                            ) : null}
+                            
                           </div>
 
                           <div className="flex flex-wrap gap-3">
@@ -3536,10 +3672,73 @@ const deliveryAreaSummary = useMemo(() => {
                                     Remove
                                   </button>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
 
+
+                                
+                              ))}
+                              
+                            </div>
+                            <div className="sm:col-span-2">
+  <label className="mb-2 block text-sm font-medium text-white/82">
+    Slicing preferences per sheep
+  </label>
+
+  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+    {!editForm?.sheepPreferences?.length ? (
+      <p className="text-sm text-white/45">No sheep preferences found for this booking.</p>
+    ) : (
+      <div className="space-y-4">
+        {editForm.sheepPreferences.map((item) => (
+          <div
+            key={`${item.sheepNo}-${item.weightLabel}`}
+            className="rounded-[20px] border border-white/10 bg-black/10 p-4"
+          >
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-white">
+                Sheep {item.sheepNo}
+              </p>
+              <p className="text-xs text-white/45">{item.weightLabel}</p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {CUT_OPTIONS.map((cut) => {
+                const checked = item.cutPreferences.includes(cut);
+
+                return (
+                  <label
+                    key={cut}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/75"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        toggleEditSheepCutPreference(
+                          item.sheepNo,
+                          item.weightLabel,
+                          cut
+                        )
+                      }
+                      className="h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                    />
+                    <span>{cut}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
+                            
+                          </div>
+                          
+
+
+
+                              
                           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                               <div>

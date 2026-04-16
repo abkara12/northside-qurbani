@@ -34,6 +34,12 @@ type WeightBreakdownItem = {
   subtotal: number;
 };
 
+type SheepPreferenceItem = {
+  sheepNo: number;
+  weightLabel: string;
+  cutPreferences: string[];
+};
+
 type AppSettings = {
   bookingsOpen: boolean;
   bookingCutoffDate: string;
@@ -57,6 +63,8 @@ type FormData = {
   email: string;
 
   weightSelections: WeightSelectionRow[];
+  sheepPreferences: SheepPreferenceItem[];
+
   addServices: boolean;
   delivery: boolean;
   deliveryArea: string;
@@ -119,6 +127,18 @@ const DEFAULT_SETTINGS: AppSettings = {
     "Live sheep purchases are handled separately from qurbani processing bookings.",
 };
 
+const CUT_OPTIONS = [
+  "Curry Packs",
+  "Chops",
+  "Ribs",
+  "Whole Leg",
+  "Leg Sliced",
+  "Front Leg Whole",
+  "Front Leg Sliced",
+  "Liver",
+  "Whole",
+];
+
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -139,6 +159,7 @@ function createInitialForm(): FormData {
         quantity: "1",
       },
     ],
+    sheepPreferences: [],
     addServices: false,
     delivery: false,
     deliveryArea: "",
@@ -645,6 +666,40 @@ export default function OrderPage() {
     .map((row) => `${row.label} x${row.quantity}`)
     .join(", ");
 
+  const sheepPreferenceRows = useMemo(() => {
+    if (form.orderType !== "qurbani") return [];
+
+    let sheepNo = 1;
+    const rows: SheepPreferenceItem[] = [];
+
+    for (const item of weightBreakdown) {
+      for (let i = 0; i < item.quantity; i += 1) {
+        const existing = form.sheepPreferences.find(
+          (pref) => pref.sheepNo === sheepNo && pref.weightLabel === item.label
+        );
+
+        rows.push({
+          sheepNo,
+          weightLabel: item.label,
+          cutPreferences: existing?.cutPreferences || [],
+        });
+
+        sheepNo += 1;
+      }
+    }
+
+    return rows;
+  }, [form.orderType, weightBreakdown, form.sheepPreferences]);
+
+  useEffect(() => {
+    if (form.orderType !== "qurbani") return;
+
+    setForm((prev) => ({
+      ...prev,
+      sheepPreferences: sheepPreferenceRows,
+    }));
+  }, [sheepPreferenceRows, form.orderType]);
+
   const filledCount = useMemo(() => {
     let count = 0;
 
@@ -724,10 +779,35 @@ export default function OrderPage() {
     setErrors((prev) => ({ ...prev, weightSelections: undefined }));
   }
 
+  function toggleSheepCutPreference(
+    sheepNo: number,
+    weightLabel: string,
+    cut: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      sheepPreferences: prev.sheepPreferences.map((item) => {
+        if (item.sheepNo !== sheepNo || item.weightLabel !== weightLabel) {
+          return item;
+        }
+
+        const exists = item.cutPreferences.includes(cut);
+
+        return {
+          ...item,
+          cutPreferences: exists
+            ? item.cutPreferences.filter((value) => value !== cut)
+            : [...item.cutPreferences, cut],
+        };
+      }),
+    }));
+  }
+
   function switchOrderType(type: OrderType) {
     setForm((prev) => ({
       ...prev,
       orderType: type,
+      sheepPreferences: type === "qurbani" ? prev.sheepPreferences : [],
       addServices: type === "qurbani" ? prev.addServices : false,
       delivery: type === "qurbani" ? prev.delivery : false,
       deliveryArea: type === "qurbani" ? prev.deliveryArea : "",
@@ -906,6 +986,10 @@ export default function OrderPage() {
 
           preferredWeight: isQurbani ? legacyPreferredWeight : "",
           weightBreakdown: isQurbani ? weightBreakdown : [],
+          sheepPreferences: isQurbani ? form.sheepPreferences : [],
+          cutPreferences: isQurbani
+            ? form.sheepPreferences.flatMap((item) => item.cutPreferences)
+            : [],
 
           liveQuantity: isQurbani ? null : liveQuantityNumber,
           livePriceEnabled: isQurbani ? false : liveSettings.liveSheepPriceEnabled,
@@ -1252,6 +1336,74 @@ export default function OrderPage() {
                         </div>
                       </div>
 
+                      <div>
+                        <div className="mb-5 text-center lg:text-left">
+                          <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
+                            Slicing preferences
+                          </p>
+                          <h2 className="mt-2 text-[1.45rem] font-semibold text-white">
+                            Choose slicing for each sheep
+                          </h2>
+                        </div>
+
+                        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                          <p className="text-sm leading-6 text-white/60">
+                            Each sheep can have its own slicing preference.
+                          </p>
+
+                          {sheepPreferenceRows.length === 0 ? (
+                            <p className="mt-3 text-sm text-white/45">
+                              Add your sheep selections above first.
+                            </p>
+                          ) : (
+                            <div className="mt-4 space-y-4">
+                              {sheepPreferenceRows.map((item) => (
+                                <div
+                                  key={`${item.sheepNo}-${item.weightLabel}`}
+                                  className="rounded-[20px] border border-white/10 bg-black/10 p-4"
+                                >
+                                  <div className="mb-3">
+                                    <p className="text-sm font-semibold text-white">
+                                      Sheep {item.sheepNo}
+                                    </p>
+                                    <p className="text-xs text-white/45">
+                                      {item.weightLabel}
+                                    </p>
+                                  </div>
+
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    {CUT_OPTIONS.map((cut) => {
+                                      const checked =
+                                        item.cutPreferences.includes(cut);
+
+                                      return (
+                                        <label
+                                          key={cut}
+                                          className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/75"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            onChange={() =>
+                                              toggleSheepCutPreference(
+                                                item.sheepNo,
+                                                item.weightLabel,
+                                                cut
+                                              )
+                                            }
+                                            className="h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                                          />
+                                          <span>{cut}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
                       <div className="h-px bg-white/10" />
 
@@ -1275,7 +1427,7 @@ export default function OrderPage() {
                                 Skinning, cleaning, storage, slicing, and packaging —
                                 <span className="font-medium text-[#d8b67e]">
                                   {" "}
-                                  {formatZAR(600)} per sheep
+                                  {formatZAR(400)} per sheep
                                 </span>
                               </p>
 
@@ -1615,11 +1767,37 @@ export default function OrderPage() {
                         <SummaryRow
                           label="Slicing"
                           value={
-                            form.fullDistributionCut
-                              ? "Full sheep sliced for distribution"
+                            sheepPreferenceRows.length
+                              ? `${sheepPreferenceRows.length} sheep configured`
                               : "Standard"
                           }
                         />
+
+                        {sheepPreferenceRows.length ? (
+                          <div className="border-b border-white/10 py-3">
+                            <div className="mb-2 text-sm text-white/45">
+                              Per sheep preferences
+                            </div>
+                            <div className="space-y-2">
+                              {sheepPreferenceRows.map((item) => (
+                                <div
+                                  key={`${item.sheepNo}-${item.weightLabel}`}
+                                  className="text-sm"
+                                >
+                                  <div className="font-medium text-white">
+                                    Sheep {item.sheepNo} • {item.weightLabel}
+                                  </div>
+                                  <div className="mt-1 text-xs text-white/45">
+                                    {item.cutPreferences.length
+                                      ? item.cutPreferences.join(", ")
+                                      : "No slicing selected"}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
                         <SummaryRow
                           label="Delivery"
                           value={form.delivery ? "Included" : "Not added"}

@@ -286,15 +286,34 @@ export default function OrderSuccessPage() {
 
     const unsubOrder = onSnapshot(
       doc(db, "orders", id),
-      (orderSnap) => {
+            (orderSnap) => {
         if (!orderSnap.exists()) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("northside_last_order_id");
+            localStorage.removeItem("northside_last_order_reference");
+          }
+
           setError("We could not find this booking.");
           setOrder(null);
           setLoading(false);
           return;
         }
 
-        setOrder(orderSnap.data() as OrderData);
+        const orderData = orderSnap.data() as OrderData;
+
+        if (orderData.cancelled) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("northside_last_order_id");
+            localStorage.removeItem("northside_last_order_reference");
+          }
+
+          setError("We could not find this booking.");
+          setOrder(null);
+          setLoading(false);
+          return;
+        }
+
+        setOrder(orderData);
         setError("");
         setLoading(false);
       },
