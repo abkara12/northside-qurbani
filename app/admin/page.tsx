@@ -2216,6 +2216,12 @@ const deliveryAreaSummary = useMemo(() => {
                       </div>
                       ) : null}
 
+                      {(order.selectedSheepTagNumbers || []).length ? (
+  <div className="mt-1 text-xs text-white/45">
+    Sheep tags: {(order.selectedSheepTagNumbers || []).join(", ")}
+  </div>
+) : null}
+
                           <div className="mt-1 text-sm text-[#d8b67e]">
   {sheepSummary(order)}
   {order.orderType === "live" &&
@@ -2310,6 +2316,12 @@ const deliveryAreaSummary = useMemo(() => {
                       <div className="mt-2 text-sm text-white/55">
                         {order.phone || "No phone"} • {sheepSummary(order)}
                       </div>
+
+                      {(order.selectedSheepTagNumbers || []).length ? (
+  <div className="mt-1 text-xs text-white/45">
+    Sheep tags: {(order.selectedSheepTagNumbers || []).join(", ")}
+  </div>
+) : null}
 
                       {order.cutPreferences && order.cutPreferences.length > 0 && (
                         <div className="mt-1 text-xs text-white/40">
