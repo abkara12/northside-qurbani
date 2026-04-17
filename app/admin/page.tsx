@@ -2454,36 +2454,44 @@ const deliveryAreaSummary = useMemo(() => {
           </button>
 
           <button
-            type="button"
-            onClick={() => {
-              setMode("management");
-              setShowManualForm(false);
-              setShowSettings(false);
-              setPaymentFilter("all");
-              setOrderTypeFilter("all");
-              setWorkflowFilter("awaiting_delivery");
-              setDeliveryAreaFilter("all");
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            Awaiting Delivery
-          </button>
+  type="button"
+  onClick={() => {
+    setMode("management");
+    setShowManualForm(false);
+    setShowSettings(false);
+    setPaymentFilter("all");
+    setOrderTypeFilter("all");
+    setWorkflowFilter("awaiting_delivery");
+    setDeliveryAreaFilter("all");
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    workflowFilter === "awaiting_delivery"
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  Awaiting Delivery
+</button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMode("management");
-              setShowManualForm(false);
-              setShowSettings(false);
-              setPaymentFilter("all");
-              setOrderTypeFilter("all");
-              setWorkflowFilter("delivered");
-              setDeliveryAreaFilter("all");
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            Delivered Orders
-          </button>
+<button
+  type="button"
+  onClick={() => {
+    setMode("management");
+    setShowManualForm(false);
+    setShowSettings(false);
+    setPaymentFilter("all");
+    setOrderTypeFilter("all");
+    setWorkflowFilter("delivered");
+    setDeliveryAreaFilter("all");
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    workflowFilter === "delivered"
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  Delivered Orders
+</button>
         </div>
       </div>
 
