@@ -125,7 +125,7 @@ type ManualFormState = {
   fullName: string;
   phone: string;
   email: string;
-  cutPreferences: string;
+  sheepPreferences: SheepPreferenceItem[];
   notes: string;
   addServices: boolean;
   delivery: boolean;
@@ -674,7 +674,7 @@ const isOwner = userRole === "admin";
   fullName: "",
   phone: "",
   email: "",
-  cutPreferences: "",
+  sheepPreferences: [],
   notes: "",
   addServices: false,
   delivery: false,
@@ -684,6 +684,8 @@ const isOwner = userRole === "admin";
   paymentStatus: "pending",
   weightRows: [{ id: slugId(), label: "", quantity: "1" }],
 });
+
+
   const [manualSaving, setManualSaving] = useState(false);
 
   const [bulkReminderActive, setBulkReminderActive] = useState(false);
@@ -1106,6 +1108,70 @@ const deliveryAreaSummary = useMemo(() => {
     .filter((item) => item.totalOrders > 0)
     .sort((a, b) => a.area.localeCompare(b.area));
 }, [deliveryAreas, undeliveredDeliveryOrders]);
+
+
+  const manualWeightBreakdown = useMemo(() => {
+    return computeBreakdownFromRows(manualForm.weightRows, settings);
+  }, [manualForm.weightRows, settings]);
+
+  const manualSheepPreferenceRows = useMemo(() => {
+    let sheepNo = 1;
+    const rows: SheepPreferenceItem[] = [];
+
+    for (const item of manualWeightBreakdown) {
+      for (let i = 0; i < item.quantity; i += 1) {
+        const existing = manualForm.sheepPreferences.find(
+          (pref) => pref.sheepNo === sheepNo && pref.weightLabel === item.label
+        );
+
+        rows.push({
+          sheepNo,
+          weightLabel: item.label,
+          cutPreferences: existing?.cutPreferences || [],
+        });
+
+        sheepNo += 1;
+      }
+    }
+
+    return rows;
+  }, [manualWeightBreakdown, manualForm.sheepPreferences]);
+
+  useEffect(() => {
+    const current = JSON.stringify(manualForm.sheepPreferences);
+    const next = JSON.stringify(manualSheepPreferenceRows);
+
+    if (current === next) return;
+
+    setManualForm((prev) => ({
+      ...prev,
+      sheepPreferences: manualSheepPreferenceRows,
+    }));
+  }, [manualSheepPreferenceRows, manualForm.sheepPreferences]);
+
+  function toggleManualSheepCutPreference(
+    sheepNo: number,
+    weightLabel: string,
+    cut: string
+  ) {
+    setManualForm((prev) => ({
+      ...prev,
+      sheepPreferences: prev.sheepPreferences.map((item) => {
+        if (item.sheepNo !== sheepNo || item.weightLabel !== weightLabel) {
+          return item;
+        }
+
+        const exists = item.cutPreferences.includes(cut);
+
+        return {
+          ...item,
+          cutPreferences: exists
+            ? item.cutPreferences.filter((value) => value !== cut)
+            : [...item.cutPreferences, cut],
+        };
+      }),
+    }));
+  }
 
     
   function markDirty() {
@@ -1596,7 +1662,7 @@ const deliveryAreaSummary = useMemo(() => {
 
     const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
     const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-    const servicesPerSheep = editForm.addServices ? 400 : 0;
+    const servicesPerSheep = editForm.addServices ? 600 : 0;
     const deliveryPerSheep = editForm.delivery ? 100 : 0;
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
@@ -1701,30 +1767,13 @@ const deliveryAreaSummary = useMemo(() => {
 
   const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
   const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-  const servicesPerSheep = manualForm.addServices ? 400 : 0;
+  const servicesPerSheep = manualForm.addServices ? 600 : 0;
   const deliveryPerSheep = manualForm.delivery ? 100 : 0;
   const servicesTotal = quantity * servicesPerSheep;
   const deliveryTotal = quantity * deliveryPerSheep;
   const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
-  const cutPreferences = manualForm.cutPreferences
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-      const sheepPreferences: SheepPreferenceItem[] = [];
-  let sheepNo = 1;
-
-  for (const row of weightBreakdown) {
-    for (let i = 0; i < row.quantity; i += 1) {
-      sheepPreferences.push({
-        sheepNo,
-        weightLabel: row.label,
-        cutPreferences,
-      });
-      sheepNo += 1;
-    }
-  }
-
+    const sheepPreferences = manualForm.sheepPreferences || [];
+  const cutPreferences = sheepPreferences.flatMap((item) => item.cutPreferences);
   try {
     setManualSaving(true);
 
@@ -1738,6 +1787,7 @@ const deliveryAreaSummary = useMemo(() => {
         quantity,
         preferredWeight: buildLegacyPreferredWeight(weightBreakdown),
         weightBreakdown,
+        sheepPreferences,
         cutPreferences,
         notes: manualForm.notes.trim(),
         addServices: manualForm.addServices,
@@ -1748,7 +1798,6 @@ const deliveryAreaSummary = useMemo(() => {
         selectedSheepTagNumbers: [],
         basePriceTotal,
         servicesPerSheep,
-        sheepPreferences,
         servicesTotal,
         deliveryPerSheep,
         deliveryTotal,
@@ -1766,11 +1815,11 @@ const deliveryAreaSummary = useMemo(() => {
       }),
     });
 
-    setManualForm({
+        setManualForm({
       fullName: "",
       phone: "",
       email: "",
-      cutPreferences: "",
+      sheepPreferences: [],
       notes: "",
       addServices: false,
       delivery: false,
@@ -2598,6 +2647,61 @@ const deliveryAreaSummary = useMemo(() => {
                             </button>
                           </div>
                         ))}
+
+                        <div className="sm:col-span-2">
+  <label className="mb-2 block text-sm font-medium text-white/82">
+    Slicing preferences per sheep
+  </label>
+
+  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+    {!manualSheepPreferenceRows.length ? (
+      <p className="text-sm text-white/45">Add sheep selections first.</p>
+    ) : (
+      <div className="space-y-4">
+        {manualSheepPreferenceRows.map((item) => (
+          <div
+            key={`${item.sheepNo}-${item.weightLabel}`}
+            className="rounded-[20px] border border-white/10 bg-black/10 p-4"
+          >
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-white">
+                Sheep {item.sheepNo}
+              </p>
+              <p className="text-xs text-white/45">{item.weightLabel}</p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {CUT_OPTIONS.map((cut) => {
+                const checked = item.cutPreferences.includes(cut);
+
+                return (
+                  <label
+                    key={cut}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/75"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        toggleManualSheepCutPreference(
+                          item.sheepNo,
+                          item.weightLabel,
+                          cut
+                        )
+                      }
+                      className="h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
+                    />
+                    <span>{cut}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
                       </div>
                     </div>
 
@@ -3503,7 +3607,18 @@ const deliveryAreaSummary = useMemo(() => {
                           <DetailRow
                             label="Slicing preference"
                             value={
-                              selectedOrder.fullDistributionCut
+                              selectedOrder.sheepPreferences?.length
+                                ? selectedOrder.sheepPreferences
+                                    .map(
+                                      (item) =>
+                                        `Sheep ${item.sheepNo}: ${
+                                          item.cutPreferences?.length
+                                            ? item.cutPreferences.join(", ")
+                                            : "No preference selected"
+                                        }`
+                                    )
+                                    .join(" • ")
+                                : selectedOrder.fullDistributionCut
                                 ? "Full sheep sliced for distribution"
                                 : "Standard"
                             }

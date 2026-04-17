@@ -634,7 +634,7 @@ export default function OrderPage() {
 
   const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
 
-  const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 400 : 0;
+  const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 600 : 0;
   const deliveryPerSheep =
     form.orderType === "qurbani"
       ? form.delivery
@@ -666,7 +666,7 @@ export default function OrderPage() {
     .map((row) => `${row.label} x${row.quantity}`)
     .join(", ");
 
-  const sheepPreferenceRows = useMemo(() => {
+    const sheepPreferenceRows = useMemo(() => {
     if (form.orderType !== "qurbani") return [];
 
     let sheepNo = 1;
@@ -694,11 +694,16 @@ export default function OrderPage() {
   useEffect(() => {
     if (form.orderType !== "qurbani") return;
 
+    const current = JSON.stringify(form.sheepPreferences);
+    const next = JSON.stringify(sheepPreferenceRows);
+
+    if (current === next) return;
+
     setForm((prev) => ({
       ...prev,
       sheepPreferences: sheepPreferenceRows,
     }));
-  }, [sheepPreferenceRows, form.orderType]);
+  }, [form.orderType, sheepPreferenceRows, form.sheepPreferences]);
 
   const filledCount = useMemo(() => {
     let count = 0;
@@ -1427,7 +1432,7 @@ export default function OrderPage() {
                                 Skinning, cleaning, storage, slicing, and packaging —
                                 <span className="font-medium text-[#d8b67e]">
                                   {" "}
-                                  {formatZAR(400)} per sheep
+                                  {formatZAR(600)} per sheep
                                 </span>
                               </p>
 
@@ -1922,7 +1927,7 @@ export default function OrderPage() {
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Skinning, slicing, cleaning, storage and packaging at{" "}
-                      {formatZAR(400)} per sheep
+                      {formatZAR(600)} per sheep
                     </SmallInfoCard>
                     <SmallInfoCard>
                       Delivery at {formatZAR(100)} per sheep
