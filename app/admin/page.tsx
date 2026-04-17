@@ -2453,16 +2453,19 @@ const deliveryAreaSummary = useMemo(() => {
             {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
           </button>
 
-          <button
+<button
   type="button"
   onClick={() => {
+    const isActive = workflowFilter === "awaiting_delivery";
+
     setMode("management");
     setShowManualForm(false);
     setShowSettings(false);
     setPaymentFilter("all");
     setOrderTypeFilter("all");
-    setWorkflowFilter("awaiting_delivery");
     setDeliveryAreaFilter("all");
+
+    setWorkflowFilter(isActive ? "all" : "awaiting_delivery");
   }}
   className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
     workflowFilter === "awaiting_delivery"
@@ -2476,13 +2479,16 @@ const deliveryAreaSummary = useMemo(() => {
 <button
   type="button"
   onClick={() => {
+    const isActive = workflowFilter === "delivered";
+
     setMode("management");
     setShowManualForm(false);
     setShowSettings(false);
     setPaymentFilter("all");
     setOrderTypeFilter("all");
-    setWorkflowFilter("delivered");
     setDeliveryAreaFilter("all");
+
+    setWorkflowFilter(isActive ? "all" : "delivered");
   }}
   className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
     workflowFilter === "delivered"
