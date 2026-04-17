@@ -1322,6 +1322,8 @@ const deliveryAreaSummary = useMemo(() => {
       notes: "",
     });
 
+    setShowExpensesPanel(false);
+
     setSaveMessage("Expense added successfully.");
     setTimeout(() => setSaveMessage(""), 3000);
   } catch (error) {
