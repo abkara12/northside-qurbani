@@ -2416,10 +2416,6 @@ const deliveryAreaSummary = useMemo(() => {
           easier to use, and less mentally draining.
         </p>
       </div>
-
-      <div className="inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-white/45">
-        Quick Access
-      </div>
     </div>
 
     <div className="grid gap-4 xl:grid-cols-3">
@@ -2556,16 +2552,6 @@ const deliveryAreaSummary = useMemo(() => {
                 active={workflowFilter === "pending"}
                 label="Pending"
                 onClick={() => setWorkflowFilter("pending")}
-              />
-              <FilterButton
-                active={workflowFilter === "awaiting_delivery"}
-                label="Awaiting Delivery"
-                onClick={() => setWorkflowFilter("awaiting_delivery")}
-              />
-              <FilterButton
-                active={workflowFilter === "delivered"}
-                label="Delivered"
-                onClick={() => setWorkflowFilter("delivered")}
               />
 
             </div>
