@@ -1555,6 +1555,175 @@ const deliveryAreaSummary = useMemo(() => {
     printWindow.print();
   }
 
+  function handlePrintSheepTags() {
+  const printableOrders = filteredOrders.filter(
+    (order) => order.orderType !== "live" && !order.cancelled
+  );
+
+  const sheepTags = printableOrders.flatMap((order) => {
+    const ref = orderReference(order.id);
+    const customer = order.fullName || "Unnamed Customer";
+    const phone = order.phone || "—";
+    const assignedTags = order.selectedSheepTagNumbers || [];
+
+    if (order.sheepPreferences?.length) {
+      return order.sheepPreferences.map((item, index) => ({
+        ref,
+        customer,
+        phone,
+        sheepNo: item.sheepNo,
+        weightLabel: item.weightLabel,
+        cuts:
+          item.cutPreferences?.length
+            ? item.cutPreferences.join(", ")
+            : "No preference selected",
+        assignedTag: assignedTags[index] || "",
+      }));
+    }
+
+    return [];
+  });
+
+  const html = `
+    <html>
+      <head>
+        <title>Northside Qurbani Sheep Tags</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #111;
+          }
+
+          .page-title {
+            padding: 10px 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+          }
+
+          .page-subtitle {
+            padding: 4px 12px 12px;
+            font-size: 12px;
+            color: #555;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 0 12px 12px;
+          }
+
+          .tag {
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 12px;
+            min-height: 180px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+
+          .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 10px;
+          }
+
+          .brand {
+            font-size: 16px;
+            font-weight: bold;
+          }
+
+          .ref {
+            font-size: 13px;
+            font-weight: bold;
+          }
+
+          .line {
+            margin: 6px 0;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+
+          .big {
+            font-size: 15px;
+            font-weight: bold;
+          }
+
+          .cuts {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #777;
+            font-size: 13px;
+            line-height: 1.5;
+          }
+
+          .tag-number {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page-title">Northside Qurbani Sheep Tags</div>
+        <div class="page-subtitle">
+          Printed on ${new Date().toLocaleString("en-ZA")} • Total sheep tags: ${sheepTags.length}
+        </div>
+
+        <div class="grid">
+          ${sheepTags
+            .map(
+              (tag) => `
+                <div class="tag">
+                  <div class="top">
+                    <div class="brand">Northside Qurbani</div>
+                    <div class="ref">${tag.ref}</div>
+                  </div>
+
+                  <div class="line big">${tag.customer}</div>
+                  <div class="line">Phone: ${tag.phone}</div>
+                  <div class="line">Sheep No: ${tag.sheepNo}</div>
+                  <div class="line">Weight: ${tag.weightLabel}</div>
+
+                  <div class="cuts">
+                    <strong>Slicing:</strong><br />
+                    ${tag.cuts}
+                  </div>
+
+                  <div class="tag-number">
+                    ${tag.assignedTag ? `Assigned Tag: ${tag.assignedTag}` : "Assigned Tag: __________"}
+                  </div>
+                </div>
+              `
+            )
+            .join("")}
+        </div>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank", "width=1200,height=900");
+  if (!printWindow) {
+    alert("Unable to open print window.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
  async function saveEditForm() {
   if (!selectedOrder || !editForm) return;
 
@@ -2338,6 +2507,14 @@ const deliveryAreaSummary = useMemo(() => {
   className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
 >
   Print Orders
+</button>
+
+<button
+  type="button"
+  onClick={handlePrintSheepTags}
+  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+>
+  Print Sheep Tags
 </button>
 </div>
 
