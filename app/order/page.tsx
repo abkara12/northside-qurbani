@@ -1105,9 +1105,6 @@ export default function OrderPage() {
             <div className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">
               Northside Qurbani
             </div>
-            <div className="mt-1 text-sm text-white/55">
-              Premium qurbani and livestock bookings
-            </div>
           </div>
         </Link>
 
@@ -1169,17 +1166,7 @@ export default function OrderPage() {
               </p>
 
               <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-center lg:text-left">
-                    <p className="text-sm uppercase tracking-[0.22em] text-[#d8b67e]">
-                      Booking progress
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-white">{progress}%</div>
-                    <div className="text-xs text-white/45">Completed</div>
-                  </div>
-                </div>
+         
 
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
                   <div
