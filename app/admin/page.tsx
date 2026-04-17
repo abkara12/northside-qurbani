@@ -525,6 +525,30 @@ function FilterButton({
   );
 }
 
+function ManagementTabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition ${
+        active
+          ? "bg-[#c6a268] text-[#161015] shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
+          : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function SummaryCard({
   label,
   value,
@@ -652,6 +676,10 @@ const [userRole, setUserRole] = useState<"admin" | "staff" | "">("");
   const [showSettings, setShowSettings] = useState(false);
   const [showOutstandingPanel, setShowOutstandingPanel] = useState(false);
 
+  const [managementTab, setManagementTab] = useState<
+  "overview" | "bookings" | "payments" | "delivery" | "manual" | "expenses" | "settings"
+>("overview");
+
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -661,6 +689,8 @@ const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 const [loadingExpenses, setLoadingExpenses] = useState(true);
 const [showExpensesPanel, setShowExpensesPanel] = useState(false);
 const [expenseSaving, setExpenseSaving] = useState(false);
+
+
 
 const [expenseForm, setExpenseForm] = useState({
   title: "",
@@ -2363,233 +2393,287 @@ const deliveryAreaSummary = useMemo(() => {
   />
 )}
 
-  <SummaryCard
-    label="Slaughtered"
-    value={String(slaughteredOrders.length)}
-    helper={`${deliveredOrders.length} delivered`}
-  />
-
-  <SummaryCard
-  label="Awaiting Delivery"
-  value={String(
-    activeQurbaniOrders.filter(
-      (o) => !o.cancelled && !!o.slaughtered && !o.delivered
-    ).length
-  )}
-  helper="Slaughtered, not delivered"
-/>
-
   
 </div>
-            <div className="grid gap-4 md:grid-cols-1">
-              <MiniBarChart title="Booked Sheep By Size" data={sizeBreakdown} />
-            </div>
           
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-              <div className="flex flex-wrap gap-3">
-  <button
-  type="button"
-  onClick={() => {
-    const next = !showManualForm;
-    setShowManualForm(next);
-    setShowOutstandingPanel(false);
-    setShowExpensesPanel(false);
-    setShowSettings(false);
+  <div className="space-y-6">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#c6a268]/80">
+          Management Operations
+        </p>
+        <h3 className="mt-2 text-lg font-semibold text-white sm:text-xl">
+          Organised owner controls
+        </h3>
+        <p className="mt-1 max-w-2xl text-sm text-white/60">
+          Actions are grouped properly so the dashboard feels cleaner, easier to scan,
+          and less mentally draining for the owners.
+        </p>
+      </div>
 
-    if (next) {
-      scrollToRef(manualBookingRef);
-    }
-  }}
-  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-    showManualForm
-      ? "bg-[#c6a268] text-[#161015]"
-      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-  }`}
->
-  {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
-</button>
+      <div className="inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-white/45">
+        Quick Access
+      </div>
+    </div>
 
-  <button
-  type="button"
-  onClick={() => {
-    setDeliveryAreaFilter("all");
-    setWorkflowFilter("awaiting_delivery");
-    setMode("management");
-  }}
-  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
->
-  Delivery Orders
-</button>
+    <div className="grid gap-4 xl:grid-cols-3">
+      <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
+            Workflow
+          </p>
+          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
+            Booking and delivery actions
+          </h4>
+        </div>
 
-  {isOwner && (
-    <button
-  type="button"
-  onClick={() => {
-    const next = !showOutstandingPanel;
-    setShowOutstandingPanel(next);
-    setShowManualForm(false);
-    setShowExpensesPanel(false);
-    setShowSettings(false);
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showManualForm;
+              setShowManualForm(next);
+              setShowOutstandingPanel(false);
+              setShowExpensesPanel(false);
+              setShowSettings(false);
 
-    if (next) {
-      scrollToRef(outstandingPanelRef);
-    }
-  }}
-  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-    showOutstandingPanel
-      ? "bg-[#c6a268] text-[#161015]"
-      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-  }`}
->
-  {showOutstandingPanel ? "Hide Outstanding Payments" : "Outstanding Payments"}
-</button>
-  )}
+              if (next) {
+                scrollToRef(manualBookingRef);
+              }
+            }}
+            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+              showManualForm
+                ? "bg-[#c6a268] text-[#161015]"
+                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+            }`}
+          >
+            {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
+          </button>
 
-  {isOwner && (
- <button
-  type="button"
-  onClick={() => {
-    const next = !showExpensesPanel;
-    setShowExpensesPanel(next);
-    setShowManualForm(false);
-    setShowOutstandingPanel(false);
-    setShowSettings(false);
+          <button
+            type="button"
+            onClick={() => {
+              setDeliveryAreaFilter("all");
+              setWorkflowFilter("awaiting_delivery");
+              setMode("management");
+            }}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            Delivery Orders
+          </button>
+        </div>
+      </div>
 
-    if (next) {
-      scrollToRef(expensesPanelRef);
-    }
-  }}
-  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-    showExpensesPanel
-      ? "bg-[#c6a268] text-[#161015]"
-      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-  }`}
->
-  {showExpensesPanel ? "Hide Expenses" : "Expenses"}
-</button>
-)}
+      <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
+            Finance
+          </p>
+          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
+            Payments and expense tracking
+          </h4>
+        </div>
 
-  <button
-  type="button"
-  onClick={() => {
-    const next = !showSettings;
-    setShowSettings(next);
-    setShowManualForm(false);
-    setShowOutstandingPanel(false);
-    setShowExpensesPanel(false);
+        <div className="flex flex-wrap gap-3">
+          {isOwner && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !showOutstandingPanel;
+                setShowOutstandingPanel(next);
+                setShowManualForm(false);
+                setShowExpensesPanel(false);
+                setShowSettings(false);
 
-    if (next) {
-      scrollToRef(settingsPanelRef);
-    }
-  }}
-  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-    showSettings
-      ? "bg-[#c6a268] text-[#161015]"
-      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-  }`}
->
-  {showSettings ? "Hide Settings" : "Settings"}
-</button>
+                if (next) {
+                  scrollToRef(outstandingPanelRef);
+                }
+              }}
+              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+                showOutstandingPanel
+                  ? "bg-[#c6a268] text-[#161015]"
+                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              {showOutstandingPanel
+                ? "Hide Outstanding Payments"
+                : "Outstanding Payments"}
+            </button>
+          )}
 
-  {isOwner && (
-    <button
-      type="button"
-      onClick={handleBulkPaymentReminders}
-      className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-    >
-      Start Bulk Reminder Queue
-    </button>
-  )}
+          {isOwner && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !showExpensesPanel;
+                setShowExpensesPanel(next);
+                setShowManualForm(false);
+                setShowOutstandingPanel(false);
+                setShowSettings(false);
 
-  <button
-  type="button"
-  onClick={handlePrintOrders}
-  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
->
-  Print Orders
-</button>
+                if (next) {
+                  scrollToRef(expensesPanelRef);
+                }
+              }}
+              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+                showExpensesPanel
+                  ? "bg-[#c6a268] text-[#161015]"
+                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              {showExpensesPanel ? "Hide Expenses" : "Expenses"}
+            </button>
+          )}
 
-<button
-  type="button"
-  onClick={handlePrintSheepTags}
-  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
->
-  Print Sheep Tags
-</button>
-</div>
+          {isOwner && (
+            <button
+              type="button"
+              onClick={handleBulkPaymentReminders}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Start Bulk Reminder Queue
+            </button>
+          )}
+        </div>
+      </div>
 
-              {saveMessage ? (
-                <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-200">
-                  {saveMessage}
-                </div>
-              ) : null}
+      <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
+            Tools
+          </p>
+          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
+            Printing and system settings
+          </h4>
+        </div>
 
-              {isOwner && bulkReminderActive && currentBulkReminderOrder ? (
-                <div className="mt-6 rounded-[28px] border border-[#c6a268]/25 bg-[#c6a268]/[0.06] p-5">
-                  <h3 className="text-lg font-semibold text-white">Bulk Reminder Queue</h3>
-                  <p className="mt-1 text-sm text-white/55">
-                    Open each unpaid customer one by one, send the message, then continue to the next.
-                  </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handlePrintOrders}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            Print Orders
+          </button>
 
-                  <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-sm text-white/45">
-                      Customer {bulkReminderIndex + 1} of {bulkReminderTargets.length}
-                    </div>
+          <button
+            type="button"
+            onClick={handlePrintSheepTags}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            Print Sheep Tags
+          </button>
 
-                    <div className="mt-2 text-lg font-semibold text-white">
-                      {currentBulkReminderOrder.fullName || "Unnamed booking"}
-                    </div>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showSettings;
+              setShowSettings(next);
+              setShowManualForm(false);
+              setShowOutstandingPanel(false);
+              setShowExpensesPanel(false);
 
-                    <div className="mt-1 text-sm text-white/55">
-                      {orderReference(currentBulkReminderOrder.id)} •{" "}
-                      {currentBulkReminderOrder.phone || "No phone"}
-                    </div>
+              if (next) {
+                scrollToRef(settingsPanelRef);
+              }
+            }}
+            className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+              showSettings
+                ? "bg-[#c6a268] text-[#161015]"
+                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+            }`}
+          >
+            {showSettings ? "Hide Settings" : "Settings"}
+          </button>
+        </div>
+      </div>
+    </div>
 
-                    <div className="mt-1 text-sm text-[#d8b67e]">
-                      {sheepSummary(currentBulkReminderOrder)}
-                    </div>
+    {saveMessage ? (
+      <div className="flex items-center">
+        <div className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-200">
+          {saveMessage}
+        </div>
+      </div>
+    ) : null}
 
-                    <div className="mt-1 text-sm font-medium text-white">
-                      {bookingAmountLabel(currentBulkReminderOrder)}
-                    </div>
+    {isOwner && bulkReminderActive && currentBulkReminderOrder ? (
+      <div className="rounded-[28px] border border-[#c6a268]/25 bg-[#c6a268]/[0.06] p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d8b67e]/80">
+              Reminder Session
+            </p>
+            <h3 className="mt-2 text-lg font-semibold text-white">
+              Bulk Reminder Queue
+            </h3>
+            <p className="mt-1 text-sm text-white/55">
+              Work through unpaid customers one by one without cluttering the main dashboard.
+            </p>
+          </div>
 
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={openCurrentBulkReminder}
-                        className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
-                      >
-                        Open WhatsApp
-                      </button>
+          <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/60">
+            Customer {bulkReminderIndex + 1} of {bulkReminderTargets.length}
+          </div>
+        </div>
 
-                      <button
-                        type="button"
-                        onClick={goToNextBulkReminder}
-                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                      >
-                        Next Customer
-                      </button>
+        <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="text-lg font-semibold text-white">
+            {currentBulkReminderOrder.fullName || "Unnamed booking"}
+          </div>
 
-                      <button
-                        type="button"
-                        onClick={skipBulkReminder}
-                        className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-                      >
-                        Skip
-                      </button>
+          <div className="mt-1 text-sm text-white/55">
+            {orderReference(currentBulkReminderOrder.id)} •{" "}
+            {currentBulkReminderOrder.phone || "No phone"}
+          </div>
 
-                      <button
-                        type="button"
-                        onClick={stopBulkReminder}
-                        className="inline-flex h-11 items-center justify-center rounded-full border border-rose-400/20 bg-rose-400/10 px-5 text-sm font-medium text-rose-200 transition hover:bg-rose-400/20"
-                      >
-                        End Bulk Session
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+          <div className="mt-2 text-sm text-[#d8b67e]">
+            {sheepSummary(currentBulkReminderOrder)}
+          </div>
 
+          <div className="mt-1 text-sm font-medium text-white">
+            {bookingAmountLabel(currentBulkReminderOrder)}
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={openCurrentBulkReminder}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
+            >
+              Open WhatsApp
+            </button>
+
+            <button
+              type="button"
+              onClick={goToNextBulkReminder}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Next Customer
+            </button>
+
+            <button
+              type="button"
+              onClick={skipBulkReminder}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Skip
+            </button>
+
+            <button
+              type="button"
+              onClick={stopBulkReminder}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-rose-400/20 bg-rose-400/10 px-5 text-sm font-medium text-rose-200 transition hover:bg-rose-400/20"
+            >
+              End Bulk Session
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+  </div>
+  
               <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
