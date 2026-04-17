@@ -255,7 +255,7 @@ function statusLabel(order: OrderItem) {
   if (order.delivered) return "Delivered";
   if (order.slaughtered) return "Slaughtered";
   if ((order.queueNumber || 0) > 0) return "In Queue";
-  return "Pending";
+  return "Unslaughtered";
 }
 
 function rowsFromOrder(order: OrderItem) {
@@ -956,7 +956,7 @@ useEffect(() => {
 
    const matchesWorkflow =
   workflowFilter === "all" ||
-  (workflowFilter === "pending" &&
+  (workflowFilter === "unslaughtered" &&
     !order.cancelled &&
     !order.delivered &&
     (order.orderType === "live" ? true : !order.slaughtered)) ||
@@ -2149,7 +2149,7 @@ const deliveryAreaSummary = useMemo(() => {
         {mode === "simple" ? (
           <div className="mt-8 space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SummaryCard label="Pending" value={String(pendingOrders.length)} />
+              <SummaryCard label="Unslaughtered" value={String(pendingOrders.length)} />
               <SummaryCard
                 label="In Queue"
                 value={String(queueOrders.length)}
@@ -2557,9 +2557,9 @@ const deliveryAreaSummary = useMemo(() => {
                 onClick={() => setWorkflowFilter("all")}
               />
               <FilterButton
-                active={workflowFilter === "pending"}
-                label="Pending"
-                onClick={() => setWorkflowFilter("pending")}
+                active={workflowFilter === "unslaughtered"}
+                label="Unslaughtered"
+                onClick={() => setWorkflowFilter("unslaughtered")}
               />
 
             </div>
@@ -4155,7 +4155,7 @@ const deliveryAreaSummary = useMemo(() => {
                                   : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                               }`}
                             >
-                              {editForm.slaughtered ? "Slaughtered" : "Pending"}
+                              {editForm.slaughtered ? "Slaughtered" : "Unslaughtered"}
                             </button>
 
                             <button

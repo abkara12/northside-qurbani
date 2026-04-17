@@ -231,7 +231,7 @@ function getWorkflowStatus(order: OrderData | null) {
   if ((order.queueNumber || 0) > 0) {
     return { label: "In Queue", variant: "violet" as const };
   }
-  return { label: "Pending", variant: "violet" as const };
+  return { label: "Unslaughtered", variant: "violet" as const };
 }
 
 function getPaymentStatus(order: OrderData | null) {
