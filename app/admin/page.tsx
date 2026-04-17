@@ -2616,10 +2616,7 @@ const deliveryAreaSummary = useMemo(() => {
         </div>
       </div>
     ) : null}
-  </div>
-</div>
-
-              <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
+    <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
                   <input
@@ -2664,6 +2661,10 @@ const deliveryAreaSummary = useMemo(() => {
   </div>
 </div>
 
+  </div>
+</div>
+
+              
                 
               {showManualForm ? (
   <div
