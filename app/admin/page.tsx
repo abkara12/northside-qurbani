@@ -2464,6 +2464,30 @@ const deliveryAreaSummary = useMemo(() => {
           >
             {showManualForm ? "Hide Manual Booking" : "Add Manual Booking"}
           </button>
+          <button
+  type="button"
+  onClick={() => {
+    const next = !showExpensesPanel;
+    setShowExpensesPanel(next);
+    setShowManualForm(false);
+    setShowSettings(false);
+    setPaymentFilter("all");
+    setOrderTypeFilter("all");
+    setWorkflowFilter("all");
+    setDeliveryAreaFilter("all");
+
+    if (next) {
+      scrollToRef(expensesPanelRef);
+    }
+  }}
+  className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
+    showExpensesPanel
+      ? "bg-[#c6a268] text-[#161015]"
+      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+  }`}
+>
+  {showExpensesPanel ? "Hide Expenses" : "Expenses"}
+</button>
 
 <button
   type="button"
