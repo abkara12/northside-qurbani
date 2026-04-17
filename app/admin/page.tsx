@@ -2407,8 +2407,8 @@ const deliveryAreaSummary = useMemo(() => {
           Organised owner controls
         </h3>
         <p className="mt-1 max-w-2xl text-sm text-white/60">
-          Actions are grouped properly so the dashboard feels cleaner, easier to scan,
-          and less mentally draining for the owners.
+          Filters and actions are grouped properly so the dashboard feels cleaner,
+          easier to use, and less mentally draining.
         </p>
       </div>
 
@@ -2434,9 +2434,10 @@ const deliveryAreaSummary = useMemo(() => {
             onClick={() => {
               const next = !showManualForm;
               setShowManualForm(next);
-              setShowOutstandingPanel(false);
-              setShowExpensesPanel(false);
               setShowSettings(false);
+              setPaymentFilter("all");
+              setOrderTypeFilter("all");
+              setWorkflowFilter("all");
 
               if (next) {
                 scrollToRef(manualBookingRef);
@@ -2454,13 +2455,33 @@ const deliveryAreaSummary = useMemo(() => {
           <button
             type="button"
             onClick={() => {
-              setDeliveryAreaFilter("all");
-              setWorkflowFilter("awaiting_delivery");
               setMode("management");
+              setShowManualForm(false);
+              setShowSettings(false);
+              setPaymentFilter("all");
+              setOrderTypeFilter("all");
+              setWorkflowFilter("awaiting_delivery");
+              setDeliveryAreaFilter("all");
             }}
             className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
           >
-            Delivery Orders
+            Awaiting Delivery
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode("management");
+              setShowManualForm(false);
+              setShowSettings(false);
+              setPaymentFilter("all");
+              setOrderTypeFilter("all");
+              setWorkflowFilter("delivered");
+              setDeliveryAreaFilter("all");
+            }}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            Delivered Orders
           </button>
         </div>
       </div>
@@ -2468,73 +2489,86 @@ const deliveryAreaSummary = useMemo(() => {
       <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 sm:p-5">
         <div className="mb-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
-            Finance
+            Filters
           </p>
           <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
-            Payments and expense tracking
+            Narrow down the order list
           </h4>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {isOwner && (
-            <button
-              type="button"
-              onClick={() => {
-                const next = !showOutstandingPanel;
-                setShowOutstandingPanel(next);
-                setShowManualForm(false);
-                setShowExpensesPanel(false);
-                setShowSettings(false);
+        <div className="space-y-4">
+          <div>
+            <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
+            <div className="flex flex-wrap gap-2">
+              <FilterButton
+                active={paymentFilter === "all"}
+                label="All"
+                onClick={() => setPaymentFilter("all")}
+              />
+              <FilterButton
+                active={paymentFilter === "unpaid"}
+                label="Unpaid"
+                onClick={() => setPaymentFilter("unpaid")}
+              />
+              <FilterButton
+                active={paymentFilter === "paid"}
+                label="Paid"
+                onClick={() => setPaymentFilter("paid")}
+              />
+            </div>
+          </div>
 
-                if (next) {
-                  scrollToRef(outstandingPanelRef);
-                }
-              }}
-              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-                showOutstandingPanel
-                  ? "bg-[#c6a268] text-[#161015]"
-                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-              }`}
-            >
-              {showOutstandingPanel
-                ? "Hide Outstanding Payments"
-                : "Outstanding Payments"}
-            </button>
-          )}
+          <div>
+            <div className="mb-2 text-sm font-medium text-white/82">Type</div>
+            <div className="flex flex-wrap gap-2">
+              <FilterButton
+                active={orderTypeFilter === "all"}
+                label="All"
+                onClick={() => setOrderTypeFilter("all")}
+              />
+              <FilterButton
+                active={orderTypeFilter === "qurbani"}
+                label="Qurbani"
+                onClick={() => setOrderTypeFilter("qurbani")}
+              />
+              <FilterButton
+                active={orderTypeFilter === "live"}
+                label="Live Sheep"
+                onClick={() => setOrderTypeFilter("live")}
+              />
+            </div>
+          </div>
 
-          {isOwner && (
-            <button
-              type="button"
-              onClick={() => {
-                const next = !showExpensesPanel;
-                setShowExpensesPanel(next);
-                setShowManualForm(false);
-                setShowOutstandingPanel(false);
-                setShowSettings(false);
-
-                if (next) {
-                  scrollToRef(expensesPanelRef);
-                }
-              }}
-              className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition ${
-                showExpensesPanel
-                  ? "bg-[#c6a268] text-[#161015]"
-                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-              }`}
-            >
-              {showExpensesPanel ? "Hide Expenses" : "Expenses"}
-            </button>
-          )}
-
-          {isOwner && (
-            <button
-              type="button"
-              onClick={handleBulkPaymentReminders}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              Start Bulk Reminder Queue
-            </button>
-          )}
+          <div>
+            <div className="mb-2 text-sm font-medium text-white/82">Status</div>
+            <div className="flex flex-wrap gap-2">
+              <FilterButton
+                active={workflowFilter === "all"}
+                label="All"
+                onClick={() => setWorkflowFilter("all")}
+              />
+              <FilterButton
+                active={workflowFilter === "pending"}
+                label="Pending"
+                onClick={() => setWorkflowFilter("pending")}
+              />
+              <FilterButton
+                active={workflowFilter === "awaiting_delivery"}
+                label="Awaiting Delivery"
+                onClick={() => setWorkflowFilter("awaiting_delivery")}
+              />
+              <FilterButton
+                active={workflowFilter === "delivered"}
+                label="Delivered"
+                onClick={() => setWorkflowFilter("delivered")}
+              />
+              <FilterButton
+                active={workflowFilter === "cancelled"}
+                label="Cancelled"
+                onClick={() => setWorkflowFilter("cancelled")}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2571,8 +2605,6 @@ const deliveryAreaSummary = useMemo(() => {
               const next = !showSettings;
               setShowSettings(next);
               setShowManualForm(false);
-              setShowOutstandingPanel(false);
-              setShowExpensesPanel(false);
 
               if (next) {
                 scrollToRef(settingsPanelRef);
@@ -2597,83 +2629,9 @@ const deliveryAreaSummary = useMemo(() => {
         </div>
       </div>
     ) : null}
-
-    {isOwner && bulkReminderActive && currentBulkReminderOrder ? (
-      <div className="rounded-[28px] border border-[#c6a268]/25 bg-[#c6a268]/[0.06] p-5 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d8b67e]/80">
-              Reminder Session
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-white">
-              Bulk Reminder Queue
-            </h3>
-            <p className="mt-1 text-sm text-white/55">
-              Work through unpaid customers one by one without cluttering the main dashboard.
-            </p>
-          </div>
-
-          <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/60">
-            Customer {bulkReminderIndex + 1} of {bulkReminderTargets.length}
-          </div>
-        </div>
-
-        <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-          <div className="text-lg font-semibold text-white">
-            {currentBulkReminderOrder.fullName || "Unnamed booking"}
-          </div>
-
-          <div className="mt-1 text-sm text-white/55">
-            {orderReference(currentBulkReminderOrder.id)} •{" "}
-            {currentBulkReminderOrder.phone || "No phone"}
-          </div>
-
-          <div className="mt-2 text-sm text-[#d8b67e]">
-            {sheepSummary(currentBulkReminderOrder)}
-          </div>
-
-          <div className="mt-1 text-sm font-medium text-white">
-            {bookingAmountLabel(currentBulkReminderOrder)}
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={openCurrentBulkReminder}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#c6a268] px-5 text-sm font-semibold text-[#161015] transition hover:brightness-105"
-            >
-              Open WhatsApp
-            </button>
-
-            <button
-              type="button"
-              onClick={goToNextBulkReminder}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              Next Customer
-            </button>
-
-            <button
-              type="button"
-              onClick={skipBulkReminder}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              Skip
-            </button>
-
-            <button
-              type="button"
-              onClick={stopBulkReminder}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-rose-400/20 bg-rose-400/10 px-5 text-sm font-medium text-rose-200 transition hover:bg-rose-400/20"
-            >
-              End Bulk Session
-            </button>
-          </div>
-        </div>
-      </div>
-    ) : null}
   </div>
-  
+</div>
+
               <div className="mt-6 grid gap-4 xl:grid-cols-[1.5fr_auto_auto_auto] xl:items-end">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/82">Search</label>
@@ -2686,47 +2644,7 @@ const deliveryAreaSummary = useMemo(() => {
                   />
                 </div>
 
-                <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">Payment</div>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterButton
-                      active={paymentFilter === "all"}
-                      label="All"
-                      onClick={() => setPaymentFilter("all")}
-                    />
-                    <FilterButton
-                      active={paymentFilter === "unpaid"}
-                      label="Unpaid"
-                      onClick={() => setPaymentFilter("unpaid")}
-                    />
-                    <FilterButton
-                      active={paymentFilter === "paid"}
-                      label="Paid"
-                      onClick={() => setPaymentFilter("paid")}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">Type</div>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterButton
-                      active={orderTypeFilter === "all"}
-                      label="All"
-                      onClick={() => setOrderTypeFilter("all")}
-                    />
-                    <FilterButton
-                      active={orderTypeFilter === "qurbani"}
-                      label="Qurbani"
-                      onClick={() => setOrderTypeFilter("qurbani")}
-                    />
-                    <FilterButton
-                      active={orderTypeFilter === "live"}
-                      label="Live Sheep"
-                      onClick={() => setOrderTypeFilter("live")}
-                    />
-                  </div>
-                </div>
+          
 
                <div>
   <label className="mb-2 block text-sm font-medium text-white/82">
@@ -2760,48 +2678,6 @@ const deliveryAreaSummary = useMemo(() => {
 </div>
 
                 
-                <div>
-                  <div className="mb-2 text-sm font-medium text-white/82">Status</div>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterButton
-                      active={workflowFilter === "all"}
-                      label="All"
-                      onClick={() => setWorkflowFilter("all")}
-                    />
-                    <FilterButton
-                      active={workflowFilter === "pending"}
-                      label="Pending"
-                      onClick={() => setWorkflowFilter("pending")}
-                    />
-                    <FilterButton
-  active={workflowFilter === "slaughtered"}
-  label="Slaughtered"
-  onClick={() => setWorkflowFilter("slaughtered")}
-/>
-<FilterButton
-  active={workflowFilter === "sliced"}
-  label="Sliced"
-  onClick={() => setWorkflowFilter("sliced")}
-/>
-<FilterButton
-  active={workflowFilter === "awaiting_delivery"}
-  label="Awaiting Delivery"
-  onClick={() => setWorkflowFilter("awaiting_delivery")}
-/>
-<FilterButton
-  active={workflowFilter === "delivered"}
-  label="Delivered"
-  onClick={() => setWorkflowFilter("delivered")}
-/>
-                    <FilterButton
-                      active={workflowFilter === "cancelled"}
-                      label="Cancelled"
-                      onClick={() => setWorkflowFilter("cancelled")}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {showManualForm ? (
   <div
     ref={manualBookingRef}
