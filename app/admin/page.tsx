@@ -954,27 +954,32 @@ useEffect(() => {
       (orderTypeFilter === "qurbani" && order.orderType !== "live") ||
       (orderTypeFilter === "live" && order.orderType === "live");
 
-    const matchesWorkflow =
-      workflowFilter === "all" ||
-      (workflowFilter === "pending" &&
-        !order.cancelled &&
-        !order.delivered &&
-        (order.orderType === "live" ? true : !order.slaughtered)) ||
-      (workflowFilter === "slaughtered" &&
-        order.orderType !== "live" &&
-        !order.cancelled &&
-        !!order.slaughtered &&
-        !order.delivered) ||
-      (workflowFilter === "sliced" &&
-        order.orderType !== "live" &&
-        !order.cancelled &&
-        !!order.sliced) ||
-      (workflowFilter === "awaiting_delivery" &&
-        !order.cancelled &&
-        !!order.delivery &&
-        !order.delivered) ||
-      (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
-      (workflowFilter === "cancelled" && !!order.cancelled);
+   const matchesWorkflow =
+  workflowFilter === "all" ||
+  (workflowFilter === "pending" &&
+    !order.cancelled &&
+    !order.delivered &&
+    (order.orderType === "live" ? true : !order.slaughtered)) ||
+  (workflowFilter === "slaughtered" &&
+    order.orderType !== "live" &&
+    !order.cancelled &&
+    !!order.slaughtered &&
+    !order.sliced &&
+    !order.delivered) ||
+  (workflowFilter === "sliced" &&
+    order.orderType !== "live" &&
+    !order.cancelled &&
+    !!order.sliced &&
+    !order.delivered) ||
+  (workflowFilter === "awaiting_delivery" &&
+    !order.cancelled &&
+    !order.delivered &&
+    (
+      (order.orderType !== "live" && !!order.sliced) ||
+      (!!order.delivery && !order.sliced)
+    )) ||
+  (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
+  (workflowFilter === "cancelled" && !!order.cancelled);
 
     const matchesDeliveryArea =
       deliveryAreaFilter === "all"
@@ -2562,11 +2567,7 @@ const deliveryAreaSummary = useMemo(() => {
                 label="Delivered"
                 onClick={() => setWorkflowFilter("delivered")}
               />
-              <FilterButton
-                active={workflowFilter === "cancelled"}
-                label="Cancelled"
-                onClick={() => setWorkflowFilter("cancelled")}
-              />
+
             </div>
           </div>
         </div>
