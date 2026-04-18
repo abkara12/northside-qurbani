@@ -1220,6 +1220,55 @@ const deliveryAreaSummary = useMemo(() => {
     }));
   }, [manualSheepPreferenceRows, manualForm.sheepPreferences]);
 
+
+    const editWeightBreakdown = useMemo(() => {
+  if (!editForm) return [];
+  return computeBreakdownFromRows(editForm.weightRows, settings);
+}, [editForm, settings]);
+
+const editSheepPreferenceRows = useMemo(() => {
+  if (!editForm) return [];
+
+  let sheepNo = 1;
+  const rows: SheepPreferenceItem[] = [];
+
+  for (const item of editWeightBreakdown) {
+    for (let i = 0; i < item.quantity; i += 1) {
+      const existing = editForm.sheepPreferences.find(
+        (pref) => pref.sheepNo === sheepNo && pref.weightLabel === item.label
+      );
+
+      rows.push({
+        sheepNo,
+        weightLabel: item.label,
+        cutPreferences: existing?.cutPreferences || [],
+      });
+
+      sheepNo += 1;
+    }
+  }
+
+  return rows;
+}, [editWeightBreakdown, editForm]);
+
+useEffect(() => {
+  if (!editForm) return;
+
+  const current = JSON.stringify(editForm.sheepPreferences);
+  const next = JSON.stringify(editSheepPreferenceRows);
+
+  if (current === next) return;
+
+  setEditForm((prev) =>
+    prev
+      ? {
+          ...prev,
+          sheepPreferences: editSheepPreferenceRows,
+        }
+      : prev
+  );
+}, [editSheepPreferenceRows, editForm]);
+
   function toggleManualSheepCutPreference(
     sheepNo: number,
     weightLabel: string,
@@ -2043,7 +2092,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
         deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
         totalPrice: editForm.cancelled ? 0 : totalPrice,
         paymentStatus: editForm.paymentStatus,
-        
+
         slaughtered: editForm.cancelled ? false : finalSlaughtered,
         sliced: editForm.cancelled ? false : finalSliced,
         delivered: editForm.cancelled ? false : finalDelivered,
