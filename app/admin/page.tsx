@@ -2482,8 +2482,8 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                         </div>
                       )}
 
-                      <div className="mt-2 text-sm text-white/55">
-  {order.phone || "No phone"} • {sheepSummary(order)}
+                   <div className="mt-2 text-sm text-white/55">
+  {orderReference(order.id)} • {order.phone || "No phone"} • {sheepSummary(order)}
 </div>
 
 {(order.selectedSheepTagNumbers || []).length ? (
