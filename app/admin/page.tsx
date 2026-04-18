@@ -1678,48 +1678,23 @@ if (!counterSnap.exists()) {
           </div>
 
           ${printableOrders
-            .map((order) => {
-              const sheepPreferencesHtml =
-                order.sheepPreferences && order.sheepPreferences.length
-                  ? `
-                    <div class="section">
-                      <div class="row"><strong>Slicing Preferences Per Sheep</strong></div>
-                      <ul>
-                        ${order.sheepPreferences
-                          .map(
-                            (item) =>
-                              `<li>Sheep ${item.sheepNo} (${item.weightLabel}): ${
-                                item.cutPreferences?.length
-                                  ? item.cutPreferences.join(", ")
-                                  : "No preference selected"
-                              }</li>`
-                          )
-                          .join("")}
-                      </ul>
-                    </div>
-                  `
-                  : "";
-
-              return `
-                <div class="order">
-                  <div class="title">${order.fullName || "Unnamed"} — ${orderReference(order.id)}</div>
-                  <div class="row"><strong>Phone:</strong> ${order.phone || "—"}</div>
-                  <div class="row"><strong>Email:</strong> ${order.email || "—"}</div>
-                  <div class="row"><strong>Order Type:</strong> ${order.orderType === "live" ? "Live Sheep" : "Qurbani"}</div>
-                  <div class="row"><strong>Sheep:</strong> ${sheepSummary(order)}</div>
-                  <div class="row"><strong>Payment:</strong> ${order.paymentStatus || "pending"}</div>
-                  <div class="row"><strong>Status:</strong> ${statusLabel(order)}</div>
-                  <div class="row"><strong>Delivery:</strong> ${order.delivery ? "Yes" : "No"}</div>
-                  <div class="row"><strong>Delivery Area:</strong> ${order.deliveryArea || "—"}</div>
-                  <div class="row"><strong>Address:</strong> ${order.deliveryAddress || "—"}</div>
-                  <div class="row"><strong>Total:</strong> ${bookingAmountLabel(order)}</div>
-                  <div class="row"><strong>Tag Numbers:</strong> ${(order.selectedSheepTagNumbers || []).join(", ") || "—"}</div>
-                  <div class="row"><strong>Notes:</strong> ${order.notes || "—"}</div>
-                  ${sheepPreferencesHtml}
-                </div>
-              `;
-            })
-            .join("")}
+  .map((order) => {
+    return `
+      <div class="order">
+        <div class="title">${order.fullName || "Unnamed"} — ${orderReference(order.id)}</div>
+        <div class="row"><strong>Phone:</strong> ${order.phone || "—"}</div>
+        <div class="row"><strong>Order Type:</strong> ${order.orderType === "live" ? "Live Sheep" : "Qurbani"}</div>
+        <div class="row"><strong>Sheep:</strong> ${sheepSummary(order)}</div>
+        <div class="row"><strong>Payment:</strong> ${order.paymentStatus || "pending"}</div>
+        <div class="row"><strong>Status:</strong> ${statusLabel(order)}</div>
+        <div class="row"><strong>Delivery:</strong> ${order.delivery ? "Yes" : "No"}</div>
+        <div class="row"><strong>Delivery Area:</strong> ${order.deliveryArea || "—"}</div>
+        <div class="row"><strong>Total:</strong> ${bookingAmountLabel(order)}</div>
+        <div class="row"><strong>Tag Numbers:</strong> ${(order.selectedSheepTagNumbers || []).join(", ") || "—"}</div>
+      </div>
+    `;
+  })
+  .join("")}
         </body>
       </html>
     `;
