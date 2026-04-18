@@ -2468,7 +2468,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                           <span className="text-base font-semibold text-white">
                             {order.fullName || "Unnamed"}
                           </span>
-                          <PaymentBadge value={order.paymentStatus} />
                         </div>
                         {isOwner ? (
   <span className="text-sm font-semibold text-[#d8b67e]">
