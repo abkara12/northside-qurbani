@@ -769,28 +769,7 @@ export default function OrderSuccessPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                    Confirmation kept safe
-                  </p>
-                  <div className="mt-4 grid gap-3">
-                    <InfoCard>
-                      {liveOrder
-                        ? "Your live sheep order remains available on this confirmation page"
-                        : "Your booking remains available on this confirmation page"}
-                    </InfoCard>
-                    <InfoCard>
-                      {liveOrder
-                        ? "Your order reference can be used for payment and follow-up"
-                        : "Your booking reference can be used for payment and follow-up"}
-                    </InfoCard>
-                    <InfoCard>Your submitted pricing and preferences remain visible here</InfoCard>
-                    <InfoCard>
-                      Live workflow, payment status, and queue or collection status will reflect here as the order is updated
-                    </InfoCard>
-                  </div>
-                </div>
-
+                
                 {order?.notes?.trim() ? (
                   <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                     <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
