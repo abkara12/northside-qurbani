@@ -2386,18 +2386,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                             {orderReference(order.id)} • {order.phone || "No phone"}
                           </div>
 
-                          {order.deliveryArea ? (
-                      <div className="mt-1 text-xs text-white/45">
-                        Delivery area: {order.deliveryArea}
-                      </div>
-                    ) : null}
-
-                    {order.deliveryAddress ? (
-                      <div className="mt-1 text-xs text-white/45">
-                        Address: {order.deliveryAddress}
-                      </div>
-                      ) : null}
-
                       {(order.selectedSheepTagNumbers || []).length ? (
   <div className="mt-1 text-xs text-white/45">
     Sheep tags: {(order.selectedSheepTagNumbers || []).join(", ")}
@@ -2496,20 +2484,14 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                       )}
 
                       <div className="mt-2 text-sm text-white/55">
-                        {order.phone || "No phone"} • {sheepSummary(order)}
-                      </div>
+  {order.phone || "No phone"} • {sheepSummary(order)}
+</div>
 
-                      {(order.selectedSheepTagNumbers || []).length ? (
+{(order.selectedSheepTagNumbers || []).length ? (
   <div className="mt-1 text-xs text-white/45">
     Sheep tags: {(order.selectedSheepTagNumbers || []).join(", ")}
   </div>
 ) : null}
-
-                      {order.cutPreferences && order.cutPreferences.length > 0 && (
-                        <div className="mt-1 text-xs text-white/40">
-                          Cuts: {order.cutPreferences.join(", ")}
-                        </div>
-                      )}
 
                       <div className="mt-4 flex flex-wrap gap-2">
                      
