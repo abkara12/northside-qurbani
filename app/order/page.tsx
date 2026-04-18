@@ -1154,16 +1154,15 @@ export default function OrderPage() {
                 Place Order
               </div>
 
-              <h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
-                Book qurbani or
-                <span className="mt-1 block">purchase live sheep</span>
-                <span className="mt-1 block">with confidence.</span>
-              </h1>
+<h1 className="mt-5 bg-[linear-gradient(135deg,#fbf4e8_0%,#d8b67e_44%,#ffffff_100%)] bg-clip-text text-center text-[2.15rem] font-semibold leading-[1.08] tracking-[-0.05em] text-transparent sm:text-[2.7rem] lg:text-left lg:text-[3.8rem]">
+  Qurbani, handled properly.
+  <span className="mt-1 block">From selection to completion.</span>
+</h1>
 
-              <p className="mx-auto mt-5 max-w-2xl text-center text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-                Choose the type of order you need, complete your details, and submit
-                everything in one smooth premium flow.
-              </p>
+<p className="mx-auto mt-5 max-w-2xl text-center text-[0.98rem] leading-7 text-white/68 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+  Book your qurbani or purchase a live sheep through a structured,
+  well-managed process from start to finish.
+</p>
 
               <form
                 onSubmit={handleSubmit}
@@ -1875,41 +1874,7 @@ export default function OrderPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                  <p className="text-center text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] lg:text-left">
-                    Included pricing
-                  </p>
-                  <div className="mt-4 grid gap-3">
-                    <SmallInfoCard>
-                      Switch between qurbani service and live sheep purchase on one
-                      page
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      Multiple weight categories can be booked in one qurbani order
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      Weight ranges now reflect live stock availability where stock has
-                      been set
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      Skinning, slicing, cleaning, storage and packaging at{" "}
-                      {formatZAR(600)} per sheep
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      Delivery at {formatZAR(100)} per sheep
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      {settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0
-                        ? `Live sheep pricing currently set at ${formatZAR(
-                            settings.liveSheepPrice
-                          )} per sheep`
-                        : "Live sheep pricing can stay manual until you are ready to set a fixed amount"}
-                    </SmallInfoCard>
-                    <SmallInfoCard>
-                      Prices and bank details pull from admin settings
-                    </SmallInfoCard>
-                  </div>
-                </div>
+                
               </div>
             </div>
           </div>

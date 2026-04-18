@@ -2299,7 +2299,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           <p className="mx-auto mt-4 max-w-3xl text-[0.95rem] leading-7 text-white/62 sm:text-[1.04rem] sm:leading-8 xl:mx-0">
             {mode === "simple"
               ? "When a customer arrives at the farm, search for the qurbani booking and place them into the queue. Live sheep bookings stay out of this flow."
-              : "Owner control for bookings, live sheep pricing, payments, settings, reminders, manual bookings, and full booking edits."}
+              : "Admin control for bookings, live sheep pricing, payments, settings, reminders, manual bookings, and full booking edits."}
           </p>
         </div>
 
@@ -2559,12 +2559,8 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           Management Operations
         </p>
         <h3 className="mt-2 text-lg font-semibold text-white sm:text-xl">
-          Organised owner controls
+          Admin controls
         </h3>
-        <p className="mt-1 max-w-2xl text-sm text-white/60">
-          Filters and actions are grouped properly so the dashboard feels cleaner,
-          easier to use, and less mentally draining.
-        </p>
       </div>
     </div>
 
@@ -2574,9 +2570,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
             Workflow
           </p>
-          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
-            Booking and delivery actions
-          </h4>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -2680,9 +2673,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
             Filters
           </p>
-          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
-            Narrow down the order list
-          </h4>
         </div>
 
         <div className="space-y-4">
@@ -2752,9 +2742,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c6a268]/75">
             Tools
           </p>
-          <h4 className="mt-2 text-sm font-semibold text-white sm:text-base">
-            Printing and system settings
-          </h4>
         </div>
 
         <div className="flex flex-wrap gap-3">

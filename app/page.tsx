@@ -1317,7 +1317,7 @@ from beginning to end.
                   rel="noopener noreferrer"
                   className="group flex items-center gap-2 text-xs text-white/40 transition hover:text-[#d8b67e]"
                 >
-                  <span>Website by</span>
+                  <span>Platform by</span>
                   <span className="font-medium text-white/70 group-hover:text-[#d8b67e]">
                     AK Web Design
                   </span>
