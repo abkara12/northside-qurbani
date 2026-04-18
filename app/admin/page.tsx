@@ -972,12 +972,11 @@ useEffect(() => {
     !!order.sliced &&
     !order.delivered) ||
   (workflowFilter === "awaiting_delivery" &&
-    !order.cancelled &&
-    !order.delivered &&
-    (
-      (order.orderType !== "live" && !!order.sliced) ||
-      (!!order.delivery && !order.sliced)
-    )) ||
+  order.orderType !== "live" &&
+  !order.cancelled &&
+  !!order.delivery &&
+  !!order.sliced &&
+  !order.delivered) ||
   (workflowFilter === "delivered" && !order.cancelled && !!order.delivered) ||
   (workflowFilter === "cancelled" && !!order.cancelled);
 
