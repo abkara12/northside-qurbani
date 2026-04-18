@@ -839,10 +839,10 @@ export default function Home() {
 
             <div className="mx-auto mt-6 hidden max-w-3xl gap-4 md:grid md:grid-cols-3 lg:mx-0">
               {[
-                { k: "Trusted Service", v: "Handled with dignity and care" },
-                { k: "Premium Ordering", v: "Simple, polished, and modern" },
-                { k: "Smooth Operations", v: "Better structure on the day" },
-              ].map((item) => (
+  { k: "Carefully managed", v: "Every detail handled properly" },
+  { k: "Clear process", v: "Simple and easy to follow" },
+  { k: "Reliable service", v: "Consistent from start to finish" },
+].map((item) => (
                 <div
                   key={item.k}
                   className="rounded-[22px] border border-white/10 bg-white/[0.045] px-5 py-4 text-center shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-left"
@@ -869,42 +869,26 @@ export default function Home() {
                 </div>
 
                 <h3 className="mt-4 text-[1.55rem] font-semibold leading-tight lg:text-[1.72rem]">
-                  A premium qurbani service,
+                  A refined qurbani service,
                   <br />
-                  supported by a modern platform.
+                  supported by a modern system.
                 </h3>
 
                 <p className="mt-3 text-[0.95rem] leading-6 text-white/68">
-                  Designed to give customers a smoother experience and give staff
-                  clearer control across ordering, coordination, and collection.
+                  Designed to make the experience easier for customers,
+while allowing the team to manage everything with greater precision.
                 </p>
 
                 <div className="mt-6 grid gap-3">
-                  <StatPill label="Customer ordering" value="Elegant and easy to complete" />
+                  <StatPill label="Customer ordering" value="Easy to complete" />
                   <StatPill label="Operations" value="More structured on Qurbani day" />
                   <StatPill label="Delivery / Collection" value="Clearer and more professional" />
                 </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  {[
-                    ["Service", "Premium"],
-                    ["Workflow", "Refined"],
-                    ["Trust", "Established"],
-                    ["Experience", "Elevated"],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center sm:text-left"
-                    >
-                      <div className="text-sm text-white/42">{label}</div>
-                      <div className="mt-1 text-sm font-semibold text-[#d8b67e]">{value}</div>
-                    </div>
-                  ))}
+        
                 </div>
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* ABOUT / BRAND STORY */}
@@ -989,11 +973,12 @@ export default function Home() {
             <h2 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-white sm:text-[2.4rem] lg:text-[2.9rem]">
               A more refined qurbani experience,
               <br className="hidden sm:block" />
-              built around service, clarity, and trust.
+              built around care,
+structure, and reliability.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[0.98rem] leading-7 text-white/68 sm:text-[1.02rem] sm:leading-8">
-              Every part of the Northside Qurbani experience is designed to feel
-              smooth, organised, and easy to navigate for both customers and staff.
+              Each part of the experience is designed to feel smooth, clear,
+and professionally handled from beginning to end.
             </p>
           </div>
 
@@ -1023,8 +1008,8 @@ export default function Home() {
           <div className="mb-10 text-center sm:text-left">
             <SectionEyebrow>The platform</SectionEyebrow>
             <h2 className="mt-2 text-4xl font-semibold tracking-tight text-white">
-              Bringing clarity and structure
-              to every stage of the process.
+              A structured process
+from beginning to end.
             </h2>
           </div>
 
@@ -1250,7 +1235,7 @@ export default function Home() {
                     Northside Qurbani
                   </div>
                   <div className="mt-1 max-w-[16rem] text-sm leading-6 text-white/55 lg:max-w-[18rem]">
-                    Premium qurbani service presented through a refined digital
+                     A Premium qurbani service presented through a refined digital
                     experience for customers and staff.
                   </div>
                 </div>
@@ -1319,63 +1304,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-10 rounded-[32px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
-                <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#a98a61]">
-                      Northside Qurbani
-                    </div>
-                    <div className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-white">
-                      Trusted service, elevated presentation
-                    </div>
-                    <div className="mt-2 max-w-[30rem] text-sm leading-6 text-[#c8bdc3]">
-                      Premium qurbani coordination presented through a refined
-                      platform designed to support clarity, trust, and a smooth
-                      overall experience.
-                    </div>
-
-                    {!isStaff && savedOrder ? (
-                      <div className="mt-3 text-sm font-semibold text-[#d8b67e]">
-                        Saved booking reference: {savedOrder.reference}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:items-center">
-                    {isStaff ? (
-                      <a
-                        href="/admin"
-                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
-                      >
-                        Staff Dashboard
-                      </a>
-                    ) : savedOrder ? (
-                      <a
-                        href={`/order/success/${savedOrder.id}`}
-                        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
-                      >
-                        View My Order
-                      </a>
-                    ) : (
-                      <>
-                        <a
-                          href="/order"
-                          className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:min-w-0 lg:w-auto lg:px-7"
-                        >
-                          Place Your Order
-                        </a>
-
-                        <a
-                          href="/login"
-                          className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:min-w-0 lg:w-auto lg:px-6"
-                        >
-                          Staff Sign In
-                        </a>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+              
 
               <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
                 <div className="text-xs text-white/40">
