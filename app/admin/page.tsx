@@ -8,6 +8,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -358,35 +359,36 @@ async function applyQurbaniStockTransaction({
     const previousMap = mergeWeightQuantities(existingOrder?.weightBreakdown || []);
     const nextMap = mergeWeightQuantities(nextWeightBreakdown);
 
-    const updatedWeightOptions = liveSettings.weightOptions.map((option) => {
-      const currentStock = normaliseStock(option.stock);
+const updatedWeightOptions = liveSettings.weightOptions.map((option) => {
+  const currentStock = normaliseStock(option.stock);
 
-      if (currentStock === null) {
-        throw new Error(`Stock has not been set for ${option.label}.`);
-      }
+  const previousQty = previousMap.get(option.label) || 0;
+  const nextQty = nextMap.get(option.label) || 0;
+  const delta = nextQty - previousQty;
 
-      const previousQty = previousMap.get(option.label) || 0;
-      const nextQty = nextMap.get(option.label) || 0;
-      const delta = nextQty - previousQty;
+  if (delta === 0) return option;
 
-      if (delta === 0) return option;
+  // null stock = unlimited
+  if (currentStock === null) {
+    return option;
+  }
 
-      if (delta < 0) {
-        return {
-          ...option,
-          stock: currentStock + Math.abs(delta),
-        };
-      }
+  if (delta < 0) {
+    return {
+      ...option,
+      stock: currentStock + Math.abs(delta),
+    };
+  }
 
-      if (delta > currentStock) {
-        throw new Error(`${option.label} only has ${currentStock} left.`);
-      }
+  if (delta > currentStock) {
+    throw new Error(`${option.label} only has ${currentStock} left.`);
+  }
 
-      return {
-        ...option,
-        stock: currentStock - delta,
-      };
-    });
+  return {
+    ...option,
+    stock: currentStock - delta,
+  };
+});
 
     transaction.update(settingsRef, {
       weightOptions: updatedWeightOptions,
@@ -689,6 +691,41 @@ const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 const [loadingExpenses, setLoadingExpenses] = useState(true);
 const [showExpensesPanel, setShowExpensesPanel] = useState(false);
 const [expenseSaving, setExpenseSaving] = useState(false);
+
+async function initialiseQueueCounter() {
+  try {
+    const ordersSnap = await getDocs(collection(db, "orders"));
+
+    let maxQueueNumber = 0;
+
+    ordersSnap.forEach((docSnap) => {
+      const data = docSnap.data() as Omit<OrderItem, "id">;
+
+      if (
+        data.orderType !== "live" &&
+        !data.cancelled &&
+        (data.queueNumber || 0) > maxQueueNumber
+      ) {
+        maxQueueNumber = data.queueNumber || 0;
+      }
+    });
+
+    await setDoc(
+      doc(db, "queueMeta", "qurbani"),
+      {
+        nextQueueNumber: maxQueueNumber + 1,
+        updatedAt: serverTimestamp(),
+        initialisedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    alert(`Queue counter initialised. Next queue number is #${maxQueueNumber + 1}`);
+  } catch (error) {
+    console.error("Queue counter init failed:", error);
+    alert("Could not initialise the queue counter.");
+  }
+}
 
 
 
@@ -1441,15 +1478,70 @@ const deliveryAreaSummary = useMemo(() => {
   if (order.cancelled || order.delivered || order.slaughtered) return;
   if (order.queueNumber && order.queueNumber > 0) return;
 
-  const assignedQueueNumber = nextQueueNumber;
-
   try {
     setUpdatingField(order.id);
 
-    await updateDoc(doc(db, "orders", order.id), {
-      queueNumber: assignedQueueNumber,
-      queueCheckedInAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    const assignedQueueNumber = await runTransaction(db, async (transaction) => {
+      const orderRef = doc(db, "orders", order.id);
+      const counterRef = doc(db, "queueMeta", "qurbani");
+
+      const orderSnap = await transaction.get(orderRef);
+      const counterSnap = await transaction.get(counterRef);
+
+      if (!orderSnap.exists()) {
+        throw new Error("Booking no longer exists.");
+      }
+
+      const latest = orderSnap.data() as Omit<OrderItem, "id">;
+
+      if (
+        latest.orderType === "live" ||
+        latest.cancelled ||
+        latest.delivered ||
+        latest.slaughtered ||
+        (latest.queueNumber || 0) > 0
+      ) {
+        throw new Error("This booking cannot be queued.");
+      }
+
+if (!counterSnap.exists()) {
+  transaction.set(counterRef, {
+    nextQueueNumber: 2,
+    updatedAt: serverTimestamp(),
+  });
+
+  transaction.update(orderRef, {
+    queueNumber: 1,
+    queueCheckedInAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return 1;
+}
+
+      const counterData = counterSnap.data() as { nextQueueNumber?: number };
+      const nextQueueNumber = Number(counterData.nextQueueNumber || 0);
+
+      if (!Number.isInteger(nextQueueNumber) || nextQueueNumber <= 0) {
+        throw new Error("Queue counter is invalid. Please fix the queue counter.");
+      }
+
+      transaction.update(orderRef, {
+        queueNumber: nextQueueNumber,
+        queueCheckedInAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      transaction.set(
+        counterRef,
+        {
+          nextQueueNumber: nextQueueNumber + 1,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return nextQueueNumber;
     });
 
     setSimpleSearch("");
@@ -1457,11 +1549,16 @@ const deliveryAreaSummary = useMemo(() => {
     setTimeout(() => setSaveMessage(""), 3000);
   } catch (error) {
     console.error("Queue assignment failed:", error);
-    alert("Unable to assign the queue number right now.");
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Unable to assign the queue number right now."
+    );
   } finally {
     setUpdatingField("");
   }
 }
+
   function handleOpenBooking(order: OrderItem) {
   setMode("management");
   setShowOutstandingPanel(false);
@@ -1854,9 +1951,43 @@ const deliveryAreaSummary = useMemo(() => {
         updatedAt: serverTimestamp(),
       });
 
-    
-     
+
+            setHasUnsavedChanges(false);
+      setSelectedOrder(null);
+      setSaveMessage("Saved successfully.");
+      setTimeout(() => setSaveMessage(""), 3000);
+      return;
     }
+
+  if (editForm.sliced && !editForm.slaughtered) {
+    alert("A booking cannot be marked as sliced before it is marked as slaughtered.");
+    return;
+  }
+
+  if (editForm.delivered && !editForm.sliced) {
+    alert("A qurbani booking cannot be marked as delivered before it is marked as sliced.");
+    return;
+  }
+
+  if (editForm.delivered && !editForm.delivery) {
+    alert("A booking cannot be marked as delivered if delivery is not enabled.");
+    return;
+  }
+
+  if (editForm.delivery && !editForm.deliveryArea.trim()) {
+    alert("Please enter the delivery area.");
+    return;
+  }
+
+  if (editForm.delivery && !editForm.deliveryAddress.trim()) {
+    alert("Please enter the delivery address.");
+    return;
+  }
+
+  const finalSlaughtered = !!editForm.slaughtered;
+const finalSliced = finalSlaughtered ? !!editForm.sliced : false;
+const finalDelivered = finalSliced ? !!editForm.delivered : false;
+
 
     const weightBreakdown = computeBreakdownFromRows(editForm.weightRows, settings);
 
@@ -1912,9 +2043,9 @@ const deliveryAreaSummary = useMemo(() => {
         deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
         totalPrice: editForm.cancelled ? 0 : totalPrice,
         paymentStatus: editForm.paymentStatus,
-        slaughtered: editForm.cancelled ? false : editForm.slaughtered,
-        sliced: editForm.cancelled ? false : editForm.sliced,
-        delivered: editForm.cancelled ? false : editForm.delivered,
+        slaughtered: editForm.cancelled ? false : finalSlaughtered,
+        sliced: editForm.cancelled ? false : finalSliced,
+        delivered: editForm.cancelled ? false : finalDelivered,
         cancelled: editForm.cancelled,
         cancelReason: "",
       }),
@@ -4309,4 +4440,4 @@ const deliveryAreaSummary = useMemo(() => {
       </section>
     </main>
   );
-}
+ }
