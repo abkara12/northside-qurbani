@@ -3079,6 +3079,39 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                         </button>
                       ))}
 
+                      {manualForm.delivery ? (
+  <div className="grid gap-4 md:grid-cols-2">
+    <div>
+      <label className="mb-2 block text-sm font-medium text-white/82">
+        Delivery area
+      </label>
+      <input
+        value={manualForm.deliveryArea}
+        onChange={(e) =>
+          setManualForm((prev) => ({ ...prev, deliveryArea: e.target.value }))
+        }
+        placeholder="Example: Lenasia"
+        className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+      />
+    </div>
+
+    <div className="md:col-span-2">
+      <label className="mb-2 block text-sm font-medium text-white/82">
+        Delivery address
+      </label>
+      <textarea
+        rows={3}
+        value={manualForm.deliveryAddress}
+        onChange={(e) =>
+          setManualForm((prev) => ({ ...prev, deliveryAddress: e.target.value }))
+        }
+        placeholder="Enter the full delivery address"
+        className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none"
+      />
+    </div>
+  </div>
+) : null}
+
                       <button
                         type="button"
                         onClick={() =>
