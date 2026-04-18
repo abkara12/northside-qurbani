@@ -1600,16 +1600,6 @@ export default function OrderPage() {
                             </div>
                           ) : null}
 
-                          <div className="sm:col-span-2">
-                            <div className="rounded-[24px] border border-white/10 bg-[#c6a268]/[0.06] p-4">
-                              <p className="text-sm font-medium text-white">
-                                Live sheep note
-                              </p>
-                              <p className="mt-2 text-sm leading-6 text-white/60">
-                                {settings.liveSheepNote}
-                              </p>
-                            </div>
-                          </div>
 
                           <div className="sm:col-span-2">
                             <Label htmlFor="notes">
@@ -1861,7 +1851,7 @@ export default function OrderPage() {
                               ? formatZAR(liveBaseTotal)
                               : settings.liveSheepPriceEnabled
                               ? formatZAR(0)
-                              : "Price confirmed manually"
+                              : "Price to be confirmed"
                           }
                         />
                         <SummaryRow

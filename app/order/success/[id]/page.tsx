@@ -361,7 +361,7 @@ export default function OrderSuccessPage() {
   const paymentStatus = getPaymentStatus(order);
   const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
   const selectedTagNumbers = order?.selectedSheepTagNumbers?.filter(Boolean) || [];
-  const hasSelectedTagNumbers = !liveOrder && selectedTagNumbers.length > 0;
+  const hasSelectedTagNumbers = selectedTagNumbers.length > 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -498,8 +498,10 @@ export default function OrderSuccessPage() {
                     </div>
 
                     <p className="mt-4 text-sm leading-6 text-white/70">
-                      Please show these tag numbers to the team on qurbani day.
-                    </p>
+  {liveOrder
+    ? "Please keep these tag numbers ready for collection or delivery coordination."
+    : "Please show these tag numbers to the team on qurbani day."}
+</p>
                   </div>
                 ) : null}
 
