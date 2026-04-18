@@ -2043,6 +2043,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
         deliveryTotal: editForm.cancelled ? 0 : deliveryTotal,
         totalPrice: editForm.cancelled ? 0 : totalPrice,
         paymentStatus: editForm.paymentStatus,
+        
         slaughtered: editForm.cancelled ? false : finalSlaughtered,
         sliced: editForm.cancelled ? false : finalSliced,
         delivered: editForm.cancelled ? false : finalDelivered,

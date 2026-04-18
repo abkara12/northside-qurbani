@@ -1165,10 +1165,6 @@ export default function OrderPage() {
                 everything in one smooth premium flow.
               </p>
 
-              <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
-         
-              </div>
-
               <form
                 onSubmit={handleSubmit}
                 noValidate
