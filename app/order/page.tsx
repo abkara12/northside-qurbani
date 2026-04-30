@@ -136,7 +136,6 @@ const CUT_OPTIONS = [
   "Chops",
   "Ribs",
   "Whole Leg",
-  "Leg Sliced",
   "Whole",
 ];
 
@@ -662,7 +661,7 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
 
   const hasPOASelection = weightBreakdown.some((row) => row.isPOA);
 
-  const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 600 : 0;
+  const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 500 : 0;
   const deliveryPerSheep =
     form.orderType === "qurbani"
       ? form.delivery
@@ -1452,7 +1451,7 @@ if (form.orderType === "live") {
                                 Skinning, cleaning, storage, slicing, and packaging —
                                 <span className="font-medium text-[#d8b67e]">
                                   {" "}
-                                  {formatZAR(600)} per sheep
+                                  {formatZAR(500)} per sheep
                                 </span>
                               </p>
 

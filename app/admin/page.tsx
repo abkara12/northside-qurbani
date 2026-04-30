@@ -181,7 +181,6 @@ const CUT_OPTIONS = [
   "Chops",
   "Ribs",
   "Whole Leg",
-  "Leg Sliced",
   "Whole",
 ];
 
@@ -2091,7 +2090,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
     const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
     const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-    const servicesPerSheep = editForm.addServices ? 600 : 0;
+    const servicesPerSheep = editForm.addServices ? 500 : 0;
     const deliveryPerSheep = editForm.delivery ? 100 : 0;
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
@@ -2197,7 +2196,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
   const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
   const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
-  const servicesPerSheep = manualForm.addServices ? 600 : 0;
+  const servicesPerSheep = manualForm.addServices ? 500 : 0;
   const deliveryPerSheep = manualForm.delivery ? 100 : 0;
   const servicesTotal = quantity * servicesPerSheep;
   const deliveryTotal = quantity * deliveryPerSheep;
