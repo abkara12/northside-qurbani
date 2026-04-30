@@ -1594,36 +1594,6 @@ if (form.orderType === "live") {
                         />
                       </div>
 
-
-                          <div className="sm:col-span-2">
-                            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">
-                              <p className="text-sm font-medium text-white/80">
-                                Delivery
-                              </p>
-                              <p className="mt-1 text-sm leading-6 text-white/55">
-                                Add delivery only if live sheep delivery is required.
-                                <span className="font-medium text-[#d8b67e]">
-                                  {" "}
-                                  {formatZAR(100)} per sheep
-                                </span>
-                              </p>
-
-                              <label className="mt-4 flex items-start justify-center gap-3 lg:justify-start">
-                                <input
-                                  type="checkbox"
-                                  checked={form.liveDelivery}
-                                  onChange={(e) =>
-                                    updateField("liveDelivery", e.target.checked)
-                                  }
-                                  className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
-                                />
-                                <span className="text-sm text-white/75">
-                                  Add delivery to this live sheep order
-                                </span>
-                              </label>
-                            </div>
-                          </div>
-
                           {form.liveDelivery ? (
                             <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
                               <div>
