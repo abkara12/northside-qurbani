@@ -674,10 +674,10 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
   const servicesTotal = effectiveQuantity * servicesPerSheep;
   const deliveryTotal = effectiveQuantity * deliveryPerSheep;
 
-  const liveBaseTotal =
-    settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0
-      ? liveQuantityNumber * settings.liveSheepPrice
-      : 0;
+const liveBaseTotal =
+  liveRatePerKg && liveTotalKgNumber > 0
+    ? liveTotalKgNumber * liveRatePerKg
+    : 0;
 
   const totalPrice =
     form.orderType === "qurbani"
@@ -1872,17 +1872,21 @@ if (form.orderType === "live") {
                         />
                       </>
                     ) : (
-                      <>
-                        <SummaryRow
-                          label="Live sheep total"
-                          value={
-                            settings.liveSheepPriceEnabled && liveBaseTotal
-                              ? formatZAR(liveBaseTotal)
-                              : settings.liveSheepPriceEnabled
-                              ? formatZAR(0)
-                              : "Price to be confirmed"
-                          }
-                        />
+                                        <>
+                  <SummaryRow
+                    label="Live sheep rate"
+                    value={liveRatePerKg ? `R${liveRatePerKg}/kg excl. transport` : "To be confirmed"}
+                  />
+
+                  <SummaryRow
+                    label="Estimated total kg"
+                    value={liveTotalKgNumber ? `${liveTotalKgNumber} kg` : "—"}
+                  />
+
+                  <SummaryRow
+                    label="Live sheep total"
+                    value={liveBaseTotal ? formatZAR(liveBaseTotal) : "Price to be confirmed"}
+                  />
                         <SummaryRow
                           label="Delivery total"
                           value={
