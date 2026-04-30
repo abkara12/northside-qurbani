@@ -79,8 +79,9 @@ type OrderItem = {
 
 type SettingsWeightOption = {
   label: string;
-  price: number;
+  price: number | null;
   stock?: number | null;
+  isPOA?: boolean;
 };
 
 type AppSettings = {
@@ -2977,7 +2978,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               </option>
                               {settings.weightOptions.map((option) => (
                                 <option key={option.label} value={option.label} className="text-black">
-                                  {option.label} — {formatZAR(option.price)}
+                                  {option.label} — {option.isPOA ? "POA" : formatZAR(option.price ?? 0)}
 {typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                 </option>
                               ))}
@@ -3200,7 +3201,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
   <div className="space-y-3">
     {settings.weightOptions.map((option, index) => (
-      <div key={`${option.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_150px_150px]">
+      <div key={`${option.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_150px_150px_90px]">
 
         {/* LABEL */}
         <input
@@ -3217,48 +3218,59 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           placeholder="Weight label"
         />
 
-        {/* PRICE */}
-        <input
-          type="number"
-          min={0}
-          value={option.price}
-          onChange={(e) =>
-            setSettings((prev) => ({
-              ...prev,
-              weightOptions: prev.weightOptions.map((item, i) =>
-                i === index ? { ...item, price: Number(e.target.value || 0) } : item
-              ),
-            }))
-          }
-          className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-          placeholder="Price"
-        />
-
-
-        {/* STOCK */}
-        <input
-          type="number"
-          min={0}
-          value={option.stock ?? ""}
-          onChange={(e) =>
-            setSettings((prev) => ({
-              ...prev,
-              weightOptions: prev.weightOptions.map((item, i) =>
-                i === index
-                  ? {
-                      ...item,
-                      stock:
-                        e.target.value.trim() === ""
-                          ? null
-                          : Number(e.target.value),
-                    }
-                  : item
-              ),
-            }))
-          }
-          className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-          placeholder="Stock"
-        />
+        {option.isPOA ? (
+  <input
+    value="POA"
+    disabled
+    className="h-12 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white/60 outline-none"
+    placeholder="Price"
+  />
+) : (
+  <input
+    type="number"
+    min={0}
+    value={option.price ?? ""}
+    onChange={(e) =>
+      setSettings((prev) => ({
+        ...prev,
+        weightOptions: prev.weightOptions.map((item, i) =>
+          i === index ? { ...item, price: Number(e.target.value || 0) } : item
+        ),
+      }))
+    }
+    className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+    placeholder="Price"
+  />
+)}
+        {option.isPOA ? (
+  <input
+    value="No stock limit"
+    disabled
+    className="h-12 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white/60 outline-none"
+    placeholder="Stock"
+  />
+) : (
+  <input
+    type="number"
+    min={0}
+    value={option.stock ?? ""}
+    onChange={(e) =>
+      setSettings((prev) => ({
+        ...prev,
+        weightOptions: prev.weightOptions.map((item, i) =>
+          i === index
+            ? {
+                ...item,
+                stock: e.target.value.trim() === "" ? null : Number(e.target.value),
+              }
+            : item
+        ),
+      }))
+    }
+    className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+    placeholder="Stock"
+  />
+)}
       </div>
     ))}
   </div>
@@ -4116,7 +4128,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                         value={option.label}
                                         className="text-black"
                                       >
-                                        {option.label} — {formatZAR(option.price)}
+                                        {option.label} — {option.isPOA ? "POA" : formatZAR(option.price ?? 0)}
                                         {typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                       </option>
                                     ))}
