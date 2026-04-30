@@ -16,8 +16,9 @@ type OrderType = "qurbani" | "live";
 
 type WeightOption = {
   label: string;
-  price: number;
+  price: number | null;
   stock?: number | null;
+  isPOA?: boolean;
 };
 
 type WeightSelectionRow = {
@@ -29,7 +30,8 @@ type WeightSelectionRow = {
 type WeightBreakdownItem = {
   id: string;
   label: string;
-  price: number;
+  price: number | null;
+  isPOA: boolean;
   quantity: number;
   subtotal: number;
 };
@@ -114,13 +116,12 @@ const DEFAULT_SETTINGS: AppSettings = {
     "Please send your proof of payment / payment reference to Moulana Shaheed or Uncle Yaqoob on WhatsApp.",
   reminderMessageIntro:
     "Assalaamu alaikum. This is a kind reminder regarding your Northside Qurbani booking.",
-  weightOptions: [
-    { label: "35–39 kg", price: 2750, stock: null },
-    { label: "40–45 kg", price: 3150, stock: null },
-    { label: "46–50 kg", price: 3500, stock: null },
-    { label: "51–55 kg", price: 3850, stock: null },
-    { label: "56–60 kg", price: 4200, stock: null },
-  ],
+weightOptions: [
+  { label: "36–41 kg", price: 3100, stock: 90 },
+  { label: "42–47 kg", price: 3650, stock: 130 },
+  { label: "48–55 kg", price: 4200, stock: 30 },
+  { label: "55+ kg", price: null, isPOA: true },
+],
   liveSheepPriceEnabled: false,
   liveSheepPrice: 0,
   liveSheepNote:
@@ -180,6 +181,10 @@ function formatZAR(value: number) {
     currency: "ZAR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatWeightPrice(option: WeightOption) {
+  return option.isPOA || option.price === null ? "POA" : formatZAR(option.price);
 }
 
 function getTodayDateString() {
@@ -553,15 +558,22 @@ export default function OrderPage() {
         null;
 
       const quantity = Math.max(0, Number(row.quantity) || 0);
-      const price = selectedOption?.price || 0;
-      const subtotal = price * quantity;
+const isPOA = Boolean(selectedOption?.isPOA || selectedOption?.price === null);
 
-      return {
-        ...row,
-        quantityNumber: quantity,
-        selectedOption,
-        subtotal,
-      };
+const price = isPOA ? null : selectedOption?.price ?? 0;
+
+const subtotal = isPOA
+  ? 0
+  : (selectedOption?.price ?? 0) * quantity;
+
+return {
+  ...row,
+  quantityNumber: quantity,
+  selectedOption,
+  price,
+  isPOA,
+  subtotal,
+};
     });
   }, [form.weightSelections, settings.weightOptions]);
 
@@ -598,12 +610,12 @@ export default function OrderPage() {
 
         return {
           rawValue: option.label,
-          displayLabel:
-            stockLeft === null
-              ? `${option.label} — ${formatZAR(option.price)}`
-              : soldOut
-              ? `${option.label} — ${formatZAR(option.price)} — Sold Out`
-              : `${option.label} — ${formatZAR(option.price)} — ${stockLeft} left`,
+displayLabel:
+  stockLeft === null
+    ? `${option.label} — ${formatWeightPrice(option)}`
+    : soldOut
+    ? `${option.label} — ${formatWeightPrice(option)} — Sold Out`
+    : `${option.label} — ${formatWeightPrice(option)} — ${stockLeft} left`,
           disabled: soldOut,
         };
       });
@@ -622,17 +634,20 @@ export default function OrderPage() {
   const effectiveQuantity =
     form.orderType === "qurbani" ? qurbaniQuantity : liveQuantityNumber;
 
-  const weightBreakdown: WeightBreakdownItem[] = parsedSelections
-    .filter((row) => row.selectedOption && row.quantityNumber > 0)
-    .map((row) => ({
-      id: row.id,
-      label: row.selectedOption!.label,
-      price: row.selectedOption!.price,
-      quantity: row.quantityNumber,
-      subtotal: row.subtotal,
-    }));
+const weightBreakdown: WeightBreakdownItem[] = parsedSelections
+  .filter((row) => row.selectedOption && row.quantityNumber > 0)
+  .map((row) => ({
+    id: row.id,
+    label: row.selectedOption!.label,
+    price: row.isPOA ? null : row.selectedOption!.price,
+    isPOA: row.isPOA,
+    quantity: row.quantityNumber,
+    subtotal: row.subtotal,
+  }));
 
   const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
+
+  const hasPOASelection = weightBreakdown.some((row) => row.isPOA);
 
   const servicesPerSheep = form.orderType === "qurbani" && form.addServices ? 600 : 0;
   const deliveryPerSheep =
@@ -657,10 +672,10 @@ export default function OrderPage() {
       ? basePriceTotal + servicesTotal + deliveryTotal
       : liveBaseTotal + deliveryTotal;
 
-  const pricingVisible =
-    form.orderType === "qurbani"
-      ? totalPrice > 0
-      : settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0;
+const pricingVisible =
+  form.orderType === "qurbani"
+    ? totalPrice > 0 && !hasPOASelection
+    : settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0;
 
   const legacyPreferredWeight = weightBreakdown
     .map((row) => `${row.label} x${row.quantity}`)
@@ -876,6 +891,15 @@ export default function OrderPage() {
         nextErrors.weightSelections =
           "Please complete each sheep selection with a valid weight range and quantity.";
       } else {
+        const selectedPOA = parsedSelections.some((row) => row.isPOA);
+const selectedPriced = parsedSelections.some(
+  (row) => row.selectedOption && !row.isPOA && row.quantityNumber > 0
+);
+
+if (selectedPOA && selectedPriced) {
+  nextErrors.weightSelections =
+    "Please place POA sheep in a separate order. Do not mix POA and fixed-price sheep in one booking.";
+}
         const invalidStockSelection = parsedSelections.some((row) => {
           if (!row.selectedOption) return true;
           const stockLeft = getStockLeftForLabel(row.selectedOption.label, row.id);
@@ -1724,7 +1748,7 @@ export default function OrderPage() {
                                     </div>
                                   </div>
                                   <span className="font-medium text-white">
-                                    {formatZAR(row.subtotal)}
+                                    {row.isPOA ? "POA" : formatZAR(row.subtotal)}
                                   </span>
                                 </div>
                               ))}
@@ -1868,7 +1892,13 @@ export default function OrderPage() {
 
                     <SummaryRow
                       label="Total due"
-                      value={pricingVisible ? formatZAR(totalPrice) : "To be confirmed"}
+                      value={
+                        form.orderType === "qurbani" && hasPOASelection
+                          ? "POA"
+                          : pricingVisible
+                          ? formatZAR(totalPrice)
+                          : "To be confirmed"
+                      }
                       strong
                     />
                   </div>
