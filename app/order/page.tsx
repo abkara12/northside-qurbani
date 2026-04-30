@@ -64,6 +64,8 @@ type FormData = {
   phone: string;
   email: string;
 
+  liveTotalKg: string;
+
   weightSelections: WeightSelectionRow[];
   sheepPreferences: SheepPreferenceItem[];
 
@@ -94,6 +96,7 @@ type Errors = {
   liveQuantity?: string;
   liveDeliveryArea?: string;
   liveDeliveryAddress?: string;
+  liveTotalKg?: string;
   notes?: string;
   agree?: string;
 };
@@ -153,6 +156,7 @@ function createInitialForm(): FormData {
     fullName: "",
     phone: "",
     email: "",
+    liveTotalKg: "",
     weightSelections: [
       {
         id: makeId(),
@@ -631,6 +635,18 @@ displayLabel:
 
   const liveQuantityNumber = Math.max(0, Number(form.liveQuantity) || 0);
 
+  const liveTotalKgNumber = Math.max(0, Number(form.liveTotalKg) || 0);
+
+function getLiveRatePerKg(quantity: number) {
+  if (quantity >= 150) return 55;
+  if (quantity >= 100) return 57;
+  return null;
+}
+
+const liveRatePerKg = getLiveRatePerKg(liveQuantityNumber);
+
+
+
   const effectiveQuantity =
     form.orderType === "qurbani" ? qurbaniQuantity : liveQuantityNumber;
 
@@ -675,7 +691,7 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
 const pricingVisible =
   form.orderType === "qurbani"
     ? totalPrice > 0 && !hasPOASelection
-    : settings.liveSheepPriceEnabled && settings.liveSheepPrice > 0;
+    : liveRatePerKg !== null && liveTotalKgNumber > 0;
 
   const legacyPreferredWeight = weightBreakdown
     .map((row) => `${row.label} x${row.quantity}`)
@@ -913,13 +929,23 @@ if (selectedPOA && selectedPriced) {
       }
     }
 
-    if (form.orderType === "live") {
-      const qty = Number(form.liveQuantity);
-      if (!Number.isInteger(qty) || qty < 1) {
-        nextErrors.liveQuantity =
-          "Please enter a valid number of live sheep required.";
-      }
+if (form.orderType === "live") {
+  const qty = Number(form.liveQuantity);
+
+  if (!Number.isInteger(qty) || qty < 1) {
+    nextErrors.liveQuantity =
+      "Please enter a valid number of live sheep required.";
+  }
+
+  const liveTotalKg = Number(form.liveTotalKg);
+
+  if (qty >= 100) {
+    if (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0) {
+      nextErrors.liveTotalKg =
+        "Please enter the estimated total kg.";
     }
+  }
+}
 
     if (!form.agree) {
       nextErrors.agree = "Please confirm before submitting.";
@@ -1020,13 +1046,11 @@ if (selectedPOA && selectedPriced) {
             ? form.sheepPreferences.flatMap((item) => item.cutPreferences)
             : [],
 
-          liveQuantity: isQurbani ? null : liveQuantityNumber,
-          livePriceEnabled: isQurbani ? false : liveSettings.liveSheepPriceEnabled,
-          livePricePerSheep:
-            isQurbani || !liveSettings.liveSheepPriceEnabled
-              ? null
-              : liveSettings.liveSheepPrice,
-          liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
+            liveQuantity: isQurbani ? null : liveQuantityNumber,
+            liveTotalKg: isQurbani ? null : liveTotalKgNumber,
+            liveRatePerKg: isQurbani ? null : liveRatePerKg,
+            livePricePerSheep: null,
+            liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
 
           addServices: isQurbani ? form.addServices : false,
           delivery: isQurbani ? form.delivery : form.liveDelivery,
@@ -1558,6 +1582,22 @@ if (selectedPOA && selectedPriced) {
                               error={errors.liveQuantity}
                             />
                           </div>
+
+                                              <div className="sm:col-span-2">
+                        <Label htmlFor="liveTotalKg" required>
+                          Estimated total kg
+                        </Label>
+                        <Input
+                          id="liveTotalKg"
+                          type="number"
+                          min={1}
+                          value={form.liveTotalKg}
+                          onChange={(value) => updateField("liveTotalKg", value)}
+                          placeholder="Enter estimated total kg"
+                          error={errors.liveTotalKg}
+                        />
+                      </div>
+
 
                           <div className="sm:col-span-2">
                             <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-center lg:text-left">

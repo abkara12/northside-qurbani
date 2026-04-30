@@ -41,6 +41,8 @@ type OrderItem = {
   email?: string;
   quantity?: number;
   preferredWeight?: string;
+  liveTotalKg?: number;
+  liveRatePerKg?: number | null;
   weightBreakdown?: WeightBreakdownItem[];
   sheepPreferences?: SheepPreferenceItem[];
   cutPreferences?: string[];
@@ -99,6 +101,8 @@ type EditFormState = {
   phone: string;
   email: string;
   sheepPreferences: SheepPreferenceItem[];
+  liveTotalKg: string;
+  liveRatePerKg: string;
   notes: string;
   addServices: boolean;
   delivery: boolean;
@@ -118,7 +122,6 @@ type EditFormState = {
     quantity: string;
   }>;
   liveQuantity: string;
-  livePricePerSheep: string;
   pricingVisible: boolean;
 };
 
@@ -315,9 +318,22 @@ function bookingAmountLabel(order: OrderItem) {
   }
   return formatZAR(order.totalPrice || 0);
 }
+function getLiveRatePerKg(quantity: number) {
+  if (quantity >= 150) return 55;
+  if (quantity >= 100) return 57;
+  return null;
+}
+
 function getLiveCalculatedTotal(editForm: EditFormState | null) {
   if (!editForm) return 0;
-  return Number(editForm.liveQuantity || 0) * Number(editForm.livePricePerSheep || 0);
+
+  const quantity = Number(editForm.liveQuantity || 0);
+  const totalKg = Number(editForm.liveTotalKg || 0);
+  const rate = getLiveRatePerKg(quantity);
+
+  if (!rate || totalKg <= 0) return 0;
+
+  return totalKg * rate;
 }
 
 function normaliseStock(value: number | null | undefined) {
@@ -919,7 +935,8 @@ useEffect(() => {
     cancelReason: selectedOrder.cancelReason || "",
     weightRows: rowsFromOrder(selectedOrder),
     liveQuantity: String(selectedOrder.liveQuantity || selectedOrder.quantity || 1),
-    livePricePerSheep: String(selectedOrder.livePricePerSheep || 0),
+    liveTotalKg: String(selectedOrder.liveTotalKg || ""),
+    liveRatePerKg: String(selectedOrder.liveRatePerKg || ""),
     pricingVisible: selectedOrder.pricingVisible !== false,
   });
 
@@ -1371,8 +1388,49 @@ useEffect(() => {
     }
   }
 
+
+  async function deleteExpense(expense: ExpenseItem) {
+  if (!isOwner) return;
+
+  const confirmed = window.confirm(
+    `Delete this expense?\n\n${expense.title || "Untitled"} - ${formatZAR(expense.amount || 0)}`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "expenses", expense.id));
+
+    setSaveMessage("Expense deleted successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+  } catch (error) {
+    console.error("Expense delete failed:", error);
+    alert("Could not delete this expense.");
+  }
+}
+
   async function saveExpense() {
   if (!isOwner) return;
+
+  async function deleteExpense(expense: ExpenseItem) {
+  if (!isOwner) return;
+
+  const confirmed = window.confirm(
+    `Delete this expense?\n\n${expense.title || "Untitled"} - ${formatZAR(expense.amount || 0)}`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "expenses", expense.id));
+
+    setSaveMessage("Expense deleted successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+  } catch (error) {
+    console.error("Expense delete failed:", error);
+    alert("Could not delete this expense.");
+  }
+}
 
   const title = expenseForm.title.trim();
   const amount = Number(expenseForm.amount || 0);
@@ -1895,90 +1953,103 @@ if (!counterSnap.exists()) {
     setSavingEdit(true);
 
     if (selectedOrder.orderType === "live") {
-      const liveQuantity = Number(editForm.liveQuantity || 0);
-      const livePricePerSheep = Number(editForm.livePricePerSheep || 0);
-      const pricingVisible = !!editForm.pricingVisible;
+  const liveQuantity = Number(editForm.liveQuantity || 0);
+  const liveTotalKg = Number(editForm.liveTotalKg || 0);
+  const liveRatePerKg = getLiveRatePerKg(liveQuantity);
 
-      if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
-        alert("Please enter a valid live sheep quantity.");
-        return;
-      }
+  if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
+    alert("Please enter a valid live sheep quantity.");
+    return;
+  }
 
-      if (pricingVisible && livePricePerSheep < 0) {
-        alert("Please enter a valid price per sheep.");
-        return;
-      }
+  if (liveQuantity >= 100 && (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0)) {
+    alert("Please enter the estimated total kg.");
+    return;
+  }
 
-      if (editForm.delivery && !editForm.deliveryArea.trim()) {
-        alert("Please enter the delivery area.");
-        return;
-      }
+  if (editForm.delivery && !editForm.deliveryArea.trim()) {
+    alert("Please enter the delivery area.");
+    return;
+  }
 
-      if (editForm.delivery && !editForm.deliveryAddress.trim()) {
-        alert("Please enter the delivery address.");
-        return;
-      }
+  if (editForm.delivery && !editForm.deliveryAddress.trim()) {
+    alert("Please enter the delivery address.");
+    return;
+  }
 
-      const baseLiveTotal = pricingVisible ? liveQuantity * livePricePerSheep : 0;
-      const deliveryPerSheep = editForm.delivery ? 100 : 0;
-      const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
-      const totalPrice = baseLiveTotal + deliveryTotal;
+  const liveBaseTotal =
+    liveRatePerKg && liveTotalKg > 0 ? liveTotalKg * liveRatePerKg : 0;
 
-                  if (editForm.cancelled) {
-        await deleteDoc(doc(db, "orders", selectedOrder.id));
+  const pricingVisible = liveRatePerKg !== null && liveTotalKg > 0;
 
-        setHasUnsavedChanges(false);
-        setSelectedOrder(null);
-        setSaveMessage("Booking removed successfully.");
-        setTimeout(() => setSaveMessage(""), 3000);
-        return;
-      }
+  const deliveryPerSheep = editForm.delivery ? 100 : 0;
+  const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
+  const totalPrice = liveBaseTotal + deliveryTotal;
 
-      await updateDoc(doc(db, "orders", selectedOrder.id), {
-        fullName: editForm.fullName.trim(),
-        phone: editForm.phone.trim(),
-        email: editForm.email.trim(),
-        notes: editForm.notes.trim(),
-        quantity: liveQuantity,
-        liveQuantity,
-        livePricePerSheep,
-        pricingVisible,
-        totalPrice,
-        paymentStatus: editForm.paymentStatus,
-        sliced: false,
-        delivered: editForm.delivered,
-        cancelled: false,
-        cancelReason: "",
-        slaughtered: false,
-        queueNumber: null,
-        queueCheckedInAt: null,
-        addServices: false,
-        delivery: editForm.delivery,
-        deliveryArea: editForm.delivery ? editForm.deliveryArea.trim() : "",
-        deliveryAddress: editForm.delivery ? editForm.deliveryAddress.trim() : "",
-        fullDistributionCut: false,
-        selectedSheepTagNumbers: editForm.selectedSheepTagNumbers
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean),
-        servicesPerSheep: 0,
-        servicesTotal: 0,
-        deliveryPerSheep,
-        deliveryTotal,
-        basePriceTotal: baseLiveTotal,
-        preferredWeight: "",
-        weightBreakdown: [],
-        cutPreferences: [],
-        updatedAt: serverTimestamp(),
-      });
+  if (editForm.cancelled) {
+    await deleteDoc(doc(db, "orders", selectedOrder.id));
 
+    setHasUnsavedChanges(false);
+    setSelectedOrder(null);
+    setSaveMessage("Booking removed successfully.");
+    setTimeout(() => setSaveMessage(""), 3000);
+    return;
+  }
 
-            setHasUnsavedChanges(false);
-      setSelectedOrder(null);
-      setSaveMessage("Saved successfully.");
-      setTimeout(() => setSaveMessage(""), 3000);
-      return;
-    }
+  await updateDoc(doc(db, "orders", selectedOrder.id), {
+    fullName: editForm.fullName.trim(),
+    phone: editForm.phone.trim(),
+    email: editForm.email.trim(),
+    notes: editForm.notes.trim(),
+
+    quantity: liveQuantity,
+    liveQuantity,
+    liveTotalKg,
+    liveRatePerKg,
+    livePricePerSheep: null,
+
+    pricingVisible,
+    basePriceTotal: liveBaseTotal,
+    liveBaseTotal,
+    totalPrice,
+
+    paymentStatus: editForm.paymentStatus,
+    sliced: false,
+    delivered: editForm.delivered,
+    cancelled: false,
+    cancelReason: "",
+    slaughtered: false,
+    queueNumber: null,
+    queueCheckedInAt: null,
+
+    addServices: false,
+    delivery: editForm.delivery,
+    deliveryArea: editForm.delivery ? editForm.deliveryArea.trim() : "",
+    deliveryAddress: editForm.delivery ? editForm.deliveryAddress.trim() : "",
+    fullDistributionCut: false,
+
+    selectedSheepTagNumbers: editForm.selectedSheepTagNumbers
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+
+    servicesPerSheep: 0,
+    servicesTotal: 0,
+    deliveryPerSheep,
+    deliveryTotal,
+
+    preferredWeight: "",
+    weightBreakdown: [],
+    cutPreferences: [],
+    updatedAt: serverTimestamp(),
+  });
+
+  setHasUnsavedChanges(false);
+  setSelectedOrder(null);
+  setSaveMessage("Saved successfully.");
+  setTimeout(() => setSaveMessage(""), 3000);
+  return;
+}
 
   if (editForm.sliced && !editForm.slaughtered) {
     alert("A booking cannot be marked as sliced before it is marked as slaughtered.");
@@ -3380,11 +3451,22 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                   <div className="mt-2 text-sm text-white/60">{item.notes}</div>
                                 ) : null}
                               </div>
+                                
+
+                                <div className="flex items-center gap-2">
 
                               <div className="text-sm font-semibold text-[#d8b67e]">
                                 {formatZAR(item.amount || 0)}
                               </div>
-                            </div>
+                              <button
+                          type="button"
+                          onClick={() => deleteExpense(item)}
+                          className="inline-flex h-9 items-center justify-center rounded-full border border-red-400/20 bg-red-400/10 px-4 text-xs font-semibold text-red-200 transition hover:bg-red-400/20"
+                        >
+                          Delete
+                        </button>
+                        </div>
+                             </div>
                           </div>
                         ))
                       )}
@@ -3596,21 +3678,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                             label="Sheep tag number(s)"
                             value={(selectedOrder.selectedSheepTagNumbers || []).join(", ") || "—"}
                           />
-                          {isOwner ? (
-                            <DetailRow
-                              label="Total"
-                              value={
-                                editForm.pricingVisible
-                                  ? formatZAR(getLiveCalculatedTotal(editForm) + ((editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)))
-                                  : "To be confirmed"
-                              }
-                            />
-                          ) : null}
-                          {(!editForm.pricingVisible || Number(editForm.livePricePerSheep || 0) <= 0) && (
-                            <div className="rounded-[20px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-                              This live sheep booking is still awaiting admin pricing.
-                            </div>
-                          )}
                           <DetailRow
                             label="Current Status"
                             value={statusLabel(selectedOrder) === "Delivered" ? "Collected" : statusLabel(selectedOrder)}
@@ -3664,23 +3731,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               />
                             </div>
 
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-white/82">
-                                Price per sheep
-                              </label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={editForm.livePricePerSheep}
-                                onChange={(e) => {
-                                  markDirty();
-                                  setEditForm((prev) =>
-                                    prev ? { ...prev, livePricePerSheep: e.target.value } : prev
-                                  );
-                                }}
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
-                            </div>
                           </div>
 
                           {isOwner ? (

@@ -27,6 +27,8 @@ type OrderData = {
   email?: string;
   quantity?: number;
   liveQuantity?: number;
+  liveTotalKg?: number;
+  liveRatePerKg?: number | null;
   preferredWeight?: string;
   weightBreakdown?: WeightBreakdownItem[];
   sheepPreferences?: SheepPreferenceItem[];
@@ -625,15 +627,16 @@ export default function OrderSuccessPage() {
                           }
                         />
                         <SummaryRow label="Workflow status" value={workflowStatus.label} />
+
                         <SummaryRow
-                          label="Price status"
-                          value={
-                            order?.pricingVisible === false
-                              ? "To be confirmed"
-                              : formatZAR(order?.totalPrice || 0)
-                          }
-                          strong
-                        />
+                label="Estimated total kg"
+                value={order?.liveTotalKg ? `${order.liveTotalKg} kg` : "—"}
+              />
+                        
+                    <SummaryRow
+                      label="Live sheep rate"
+                      value={order?.liveRatePerKg ? `R${order.liveRatePerKg} per kg` : "To be confirmed"}
+                    />
                       </>
                     ) : (
                       <>
