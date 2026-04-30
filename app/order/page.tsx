@@ -137,9 +137,6 @@ const CUT_OPTIONS = [
   "Ribs",
   "Whole Leg",
   "Leg Sliced",
-  "Front Leg Whole",
-  "Front Leg Sliced",
-  "Liver",
   "Whole",
 ];
 
