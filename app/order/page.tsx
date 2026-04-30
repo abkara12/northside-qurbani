@@ -123,7 +123,7 @@ weightOptions: [
   { label: "36–41 kg", price: 3100, stock: 90 },
   { label: "42–47 kg", price: 3650, stock: 130 },
   { label: "48–55 kg", price: 4200, stock: 30 },
-  { label: "55+ kg", price: null, isPOA: true },
+  { label: "55+ kg", price: null, isPOA: true, stock: null },
 ],
   liveSheepPriceEnabled: false,
   liveSheepPrice: 0,
