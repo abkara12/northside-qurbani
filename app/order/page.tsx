@@ -891,15 +891,6 @@ const pricingVisible =
         nextErrors.weightSelections =
           "Please complete each sheep selection with a valid weight range and quantity.";
       } else {
-        const selectedPOA = parsedSelections.some((row) => row.isPOA);
-const selectedPriced = parsedSelections.some(
-  (row) => row.selectedOption && !row.isPOA && row.quantityNumber > 0
-);
-
-if (selectedPOA && selectedPriced) {
-  nextErrors.weightSelections =
-    "Please place POA sheep in a separate order. Do not mix POA and fixed-price sheep in one booking.";
-}
         const invalidStockSelection = parsedSelections.some((row) => {
           if (!row.selectedOption) return true;
           const stockLeft = getStockLeftForLabel(row.selectedOption.label, row.id);
@@ -981,11 +972,9 @@ if (form.orderType === "live") {
                 ? option.stock
                 : null;
 
-            if (currentStock === null) {
-              throw new Error(
-                `Stock has not been set for ${option.label}. Please ask staff to set stock first.`
-              );
-            }
+if (currentStock === null) {
+  return option;
+}
 
             if (requested > currentStock) {
               throw new Error(
