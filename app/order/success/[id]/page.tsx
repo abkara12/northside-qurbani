@@ -465,7 +465,7 @@ export default function OrderSuccessPage() {
                 <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
                   {liveOrder
                     ? "Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up."
-                    : "Please scroll down and make payment using the banking details below. Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader. On Qurbani day, open this page and show it to the staff so they can add your booking to the queue — your queue number will appear here."}
+                    : "Please scroll down and make payment using the banking details below. Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader. On Qurbani day, open this page and show it to the staff so they can add your booking to the queue — your queue number will appear on this page."}
                 </p>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -481,34 +481,6 @@ export default function OrderSuccessPage() {
                     {orderReference}
                   </p>
                 </div>
-
-                {!liveOrder ? (
-                  <div className="mt-6 rounded-[26px] border border-[#c6a268]/35 bg-[#c6a268]/12 p-5 shadow-[0_18px_45px_rgba(198,162,104,0.08)]">
-                    <p className="text-xs uppercase tracking-[0.24em] text-[#d8b67e]">
-                      Qurbani Day Process
-                    </p>
-
-                    <h3 className="mt-3 text-[1.25rem] font-semibold tracking-[-0.02em] text-white">
-                      Access this page on the day.
-                    </h3>
-
-                    <div className="mt-4 space-y-3 text-sm leading-6 text-white/75">
-                      <p>
-                        On the day of Qurbani, please open this confirmation page and show it to the staff when you arrive.
-                      </p>
-                      <p>
-                        Staff will use this page to find your booking and add you to the processing queue.
-                      </p>
-                      <p>
-                        Once your queue number is assigned, it will appear automatically on this page.
-                      </p>
-                    </div>
-
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm font-medium leading-6 text-white">
-                      You can return to this page anytime using “View My Order”.
-                    </div>
-                  </div>
-                ) : null}
 
                 {hasSelectedTagNumbers ? (
                   <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
@@ -571,38 +543,6 @@ export default function OrderSuccessPage() {
                     </div>
                   </div>
                 )}
-
-                <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
-                  <p className="text-sm font-medium text-white/82">What happens next?</p>
-                  <div className="mt-3 space-y-3 text-sm leading-6 text-white/65">
-                    {liveOrder ? (
-                      <>
-                        <p>
-                          Your live sheep order has been recorded with your quantity,
-                          delivery preference, and customer details.
-                        </p>
-                        <p>
-                          If pricing has been confirmed, payment can be made using the banking details below. If not, the final amount will be confirmed by the team first.
-                        </p>
-                        <p>
-                          This page will continue to reflect live updates such as payment status and collection or delivery status.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p>
-                          Make payment using the banking details below.
-                        </p>
-                        <p>
-                          Use your name and surname as the payment reference, then send proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader.
-                        </p>
-                        <p>
-                          On Qurbani day, open this confirmation page from “View My Order” and show it to the staff.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
 
                 <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:items-start">
                   <CopyValueButton value={orderReference} />
