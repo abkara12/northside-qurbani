@@ -1095,7 +1095,7 @@ if (form.orderType === "live") {
         localStorage.setItem("northside_last_order_reference", savedOrderReference);
       }
 
-      window.location.assign(`/order/success/${savedOrderId}`);
+      window.location.replace(`/order/success/${savedOrderId}`);
     } catch (error) {
       console.error("Error saving order:", error);
       setSubmitError(
