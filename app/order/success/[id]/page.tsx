@@ -509,7 +509,7 @@ export default function OrderSuccessPage() {
           <p className="text-sm leading-6 text-white/80">
             On Qurbani day, open this page and show it to the staff. Your{" "}
             <span className="text-white font-semibold">queue number</span>{" "}
-            will appear here once assigned.
+            will appear below once assigned.
           </p>
         </div>
       </div>
