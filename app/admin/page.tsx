@@ -1996,17 +1996,23 @@ if (!counterSnap.exists()) {
     if (selectedOrder.orderType === "live") {
   const liveQuantity = Number(editForm.liveQuantity || 0);
   const liveTotalKg = Number(editForm.liveTotalKg || 0);
-  const liveRatePerKg = getLiveRatePerKg(liveQuantity);
-
+    const automaticRate = getLiveRatePerKg(liveQuantity);
+    const manualRate = Number(editForm.liveRatePerKg || 0);
+    const liveRatePerKg = automaticRate ?? (manualRate > 0 ? manualRate : null);
   if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
     alert("Please enter a valid live sheep quantity.");
     return;
   }
 
-  if (liveQuantity >= 100 && (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0)) {
-    alert("Please enter the estimated total kg.");
-    return;
-  }
+if (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0) {
+  alert("Please enter the total kg.");
+  return;
+}
+
+if (!liveRatePerKg) {
+  alert("Please enter the live sheep rate per kg for this order.");
+  return;
+}
 
   if (editForm.delivery && !editForm.deliveryArea.trim()) {
     alert("Please enter the delivery area.");
@@ -3807,6 +3813,17 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                 className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
                               />
                             </div>
+
+                                                  <input
+                        type="number"
+                        value={editForm.liveRatePerKg}
+                        onChange={(e) => {
+                          setEditForm({ ...editForm, liveRatePerKg: e.target.value });
+                          markDirty();
+                        }}
+                        placeholder="Rate per kg, e.g. 60"
+                        className="h-12 w-full rounded-[18px] border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                      />
 
                           </div>
 
