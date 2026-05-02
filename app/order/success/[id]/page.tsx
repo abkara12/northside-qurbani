@@ -206,23 +206,52 @@ async function copyToClipboard(value: string) {
   }
 }
 
+function copyText(value: string) {
+  if (!value) return false;
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "absolute";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "0";
+  textArea.style.opacity = "0";
+
+  document.body.appendChild(textArea);
+
+  textArea.focus();
+  textArea.select();
+  textArea.setSelectionRange(0, textArea.value.length);
+
+  let copied = false;
+
+  try {
+    copied = document.execCommand("copy");
+  } catch (error) {
+    console.error("Copy failed:", error);
+  }
+
+  document.body.removeChild(textArea);
+
+  return copied;
+}
+
 function CopyValueButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
-    const success = await copyToClipboard(value);
+  function handleCopy() {
+    copyText(value);
 
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
   }
 
   return (
     <button
       type="button"
-      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white transition hover:bg-white/10"
       onClick={handleCopy}
+      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white transition hover:bg-white/10"
     >
       {copied ? "Copied" : "Copy Reference"}
     </button>
@@ -238,13 +267,11 @@ function CopyField({
 }) {
   const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
-    const success = await copyToClipboard(value);
+  function handleCopy() {
+    copyText(value);
 
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
