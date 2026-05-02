@@ -178,16 +178,43 @@ function StatusBadge({
   );
 }
 
+async function copyToClipboard(value: string) {
+  if (!value) return false;
+
+  try {
+    if (navigator?.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+
+    const textArea = document.createElement("textarea");
+    textArea.value = value;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+
+    return successful;
+  } catch (error) {
+    console.error("Copy failed:", error);
+    return false;
+  }
+}
+
 function CopyValueButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(value);
+    const success = await copyToClipboard(value);
+
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch (error) {
-      console.error("Copy failed:", error);
     }
   }
 
@@ -212,12 +239,11 @@ function CopyField({
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(value);
+    const success = await copyToClipboard(value);
+
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch (error) {
-      console.error("Copy failed:", error);
     }
   }
 
