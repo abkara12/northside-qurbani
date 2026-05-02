@@ -240,7 +240,10 @@ function copyText(value: string) {
 function CopyValueButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
+  function handleCopy(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+
     copyText(value);
 
     setCopied(true);
@@ -267,7 +270,10 @@ function CopyField({
 }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
+  function handleCopy(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+
     copyText(value);
 
     setCopied(true);
@@ -293,7 +299,6 @@ function CopyField({
     </div>
   );
 }
-
 function isLiveOrder(order: OrderData | null) {
   return order?.orderType === "live";
 }
