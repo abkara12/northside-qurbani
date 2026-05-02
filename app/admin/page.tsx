@@ -183,8 +183,9 @@ const CUT_OPTIONS = [
   "Curry Packs",
   "Chops",
   "Ribs",
-  "Whole Leg",
-  "Whole",
+  "1 Whole Leg",
+  "2 Whole Legs",
+  "Distribution",
 ];
 
 function formatZAR(value?: number) {
