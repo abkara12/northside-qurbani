@@ -656,10 +656,10 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
   const deliveryPerSheep =
     form.orderType === "qurbani"
       ? form.delivery
-        ? 100
+        ? 150
         : 0
       : form.liveDelivery
-      ? 100
+      ? 150
       : 0;
 
   const servicesTotal = effectiveQuantity * servicesPerSheep;

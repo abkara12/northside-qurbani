@@ -351,16 +351,28 @@ function computeBreakdownFromRows(
     subtotal: row.subtotal,
   })) as WeightBreakdownItem[];
 }
+function getLiveRatePerKg(quantity: number) {
+  if (quantity >= 150) return 55;
+  if (quantity >= 100) return 57;
+  return null;
+}
+
 function getLiveCalculatedTotal(editForm: EditFormState | null) {
   if (!editForm) return 0;
 
   const quantity = Number(editForm.liveQuantity || 0);
-  const finalLiveSheepPrice = Number(editForm.liveRatePerKg || 0);
+  const totalKg = Number(editForm.liveTotalKg || 0);
+
+  const automaticRate = getLiveRatePerKg(quantity);
+  const manualRate = Number(editForm.liveRatePerKg || 0);
+  const rate = automaticRate ?? (manualRate > 0 ? manualRate : null);
+
+  if (!rate || totalKg <= 0) return 0;
 
   const deliveryPerSheep = editForm.delivery ? 100 : 0;
   const deliveryTotal = editForm.delivery ? quantity * deliveryPerSheep : 0;
 
-  return (finalLiveSheepPrice > 0 ? finalLiveSheepPrice : 0) + deliveryTotal;
+  return totalKg * rate + deliveryTotal;
 }
 
 function normaliseStock(value: number | null | undefined) {
@@ -961,13 +973,8 @@ useEffect(() => {
     cancelReason: selectedOrder.cancelReason || "",
     weightRows: rowsFromOrder(selectedOrder),
     liveQuantity: String(selectedOrder.liveQuantity || selectedOrder.quantity || 1),
-    liveTotalKg: "",
-    liveRatePerKg: String(
-      selectedOrder.basePriceTotal ||
-        selectedOrder.livePricePerSheep ||
-        selectedOrder.liveRatePerKg ||
-        ""
-    ),
+    liveTotalKg: String(selectedOrder.liveTotalKg || ""),
+    liveRatePerKg: String(selectedOrder.liveRatePerKg || ""),
     pricingVisible: selectedOrder.pricingVisible !== false,
   });
 
@@ -1994,15 +2001,22 @@ if (!counterSnap.exists()) {
 
     if (selectedOrder.orderType === "live") {
   const liveQuantity = Number(editForm.liveQuantity || 0);
-  const finalLiveSheepPrice = Number(editForm.liveRatePerKg || 0);
-
+  const liveTotalKg = Number(editForm.liveTotalKg || 0);
+    const automaticRate = getLiveRatePerKg(liveQuantity);
+    const manualRate = Number(editForm.liveRatePerKg || 0);
+    const liveRatePerKg = automaticRate ?? (manualRate > 0 ? manualRate : null);
   if (!Number.isInteger(liveQuantity) || liveQuantity <= 0) {
     alert("Please enter a valid live sheep quantity.");
     return;
   }
 
-if (!Number.isFinite(finalLiveSheepPrice) || finalLiveSheepPrice <= 0) {
-  alert("Please enter the final live sheep price for this order.");
+if (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0) {
+  alert("Please enter the total kg.");
+  return;
+}
+
+if (!liveRatePerKg) {
+  alert("Please enter the live sheep rate per kg for this order.");
   return;
 }
 
@@ -2016,8 +2030,10 @@ if (!Number.isFinite(finalLiveSheepPrice) || finalLiveSheepPrice <= 0) {
     return;
   }
 
-  const liveBaseTotal = finalLiveSheepPrice;
-  const pricingVisible = true;
+  const liveBaseTotal =
+    liveRatePerKg && liveTotalKg > 0 ? liveTotalKg * liveRatePerKg : 0;
+
+  const pricingVisible = liveRatePerKg !== null && liveTotalKg > 0;
 
   const deliveryPerSheep = editForm.delivery ? 100 : 0;
   const deliveryTotal = editForm.delivery ? liveQuantity * deliveryPerSheep : 0;
@@ -2041,12 +2057,12 @@ if (!Number.isFinite(finalLiveSheepPrice) || finalLiveSheepPrice <= 0) {
 
     quantity: liveQuantity,
     liveQuantity,
-    liveTotalKg: null,
-    liveRatePerKg: null,
+    liveTotalKg,
+    liveRatePerKg,
     livePricePerSheep: null,
 
     pricingVisible,
-    pricingFinalized: true,
+    pricingFinalized: pricingVisible,
     basePriceTotal: liveBaseTotal,
     liveBaseTotal,
     totalPrice,
@@ -3804,29 +3820,26 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               />
                             </div>
 
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-white/82">
-                                Final live sheep price
-                              </label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={editForm.liveRatePerKg}
-                                onChange={(e) => {
-                                  setEditForm({ ...editForm, liveRatePerKg: e.target.value });
-                                  markDirty();
-                                }}
-                                placeholder="Enter final total price"
-                                className="h-12 w-full rounded-[18px] border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
-                              />
-                            </div>
+                                                  <input
+                        type="number"
+                        value={editForm.liveRatePerKg}
+                        onChange={(e) => {
+                          setEditForm({ ...editForm, liveRatePerKg: e.target.value });
+                          markDirty();
+                        }}
+                        placeholder="Rate per kg, e.g. 60"
+                        className="h-12 w-full rounded-[18px] border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                      />
 
                           </div>
 
                           {isOwner ? (
                             <div className="mt-2 text-2xl font-semibold text-white">
                               {editForm.pricingVisible
-                                ? formatZAR(getLiveCalculatedTotal(editForm))
+                                ? formatZAR(
+                                    getLiveCalculatedTotal(editForm) +
+                                      (editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)
+                                  )
                                 : "To be confirmed"}
                             </div>
                           ) : null}
@@ -3836,7 +3849,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               <div>
                                 <p className="font-medium text-white">Live pricing</p>
                                 <p className="text-sm text-white/55">
-                                  Admin sets the final total price for this live sheep order here.
+                                  Admin controls the price for live sheep bookings here.
                                 </p>
                               </div>
 
@@ -3859,10 +3872,13 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                             </div>
 
                             <div className="mt-4 rounded-[20px] border border-white/10 bg-black/10 p-4">
-                              <div className="text-sm text-white/55">Final total</div>
+                              <div className="text-sm text-white/55">Calculated total</div>
                               <div className="mt-2 text-2xl font-semibold text-white">
                                 {editForm.pricingVisible
-                                  ? formatZAR(getLiveCalculatedTotal(editForm))
+                                  ? formatZAR(
+                                      getLiveCalculatedTotal(editForm) +
+                                        (editForm.delivery ? Number(editForm.liveQuantity || 0) * 100 : 0)
+                                    )
                                   : "To be confirmed"}
                               </div>
                             </div>
