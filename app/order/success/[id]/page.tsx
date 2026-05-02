@@ -578,8 +578,8 @@ export default function OrderSuccessPage() {
                     <div className="mt-6 rounded-[24px] border border-white/10 bg-black/10 p-5">
                       <p className="text-sm font-medium text-white/82">Queue status</p>
                       <div className="mt-3 space-y-2 text-sm leading-6 text-white/65">
-                        <p>Your booking has not yet been added to the queue.</p>
-                        <p>Once staff assign your queue number, it will appear here automatically.</p>
+                        <p>Queue details will be displayed here once assigned.</p>
+                        <p>If the status above reflects “Slaughtered”, your Qurbani is complete.</p>
                       </div>
                     </div>
                   )
