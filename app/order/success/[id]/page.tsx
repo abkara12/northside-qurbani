@@ -89,7 +89,7 @@ function isPOAValue(value?: number | null) {
 }
 
 function isPOARow(row: WeightBreakdownItem) {
-  return row.label.toLowerCase().includes("55+") || isPOAValue(row.price);
+  return isPOAValue(row.price);
 }
 
 function hasPOAPricing(order: OrderData | null) {
