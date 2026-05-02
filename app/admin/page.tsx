@@ -23,9 +23,9 @@ import { auth, db } from "../lib/firebase";
 type WeightBreakdownItem = {
   id: string;
   label: string;
-  price: number;
+  price: number | null;
   quantity: number;
-  subtotal: number;
+  subtotal: number | null;
 };
 
 type SheepPreferenceItem = {
@@ -75,6 +75,7 @@ type OrderItem = {
   liveQuantity?: number;
   livePricePerSheep?: number;
   pricingVisible?: boolean;
+  pricingFinalized?: boolean;
 };
 
 type SettingsWeightOption = {
@@ -121,6 +122,7 @@ type EditFormState = {
     id: string;
     label: string;
     quantity: string;
+    price: string;
   }>;
   liveQuantity: string;
   pricingVisible: boolean;
@@ -142,6 +144,7 @@ type ManualFormState = {
     id: string;
     label: string;
     quantity: string;
+    price: string;
   }>;
 };
 
@@ -269,6 +272,7 @@ function rowsFromOrder(order: OrderItem) {
       id: row.id || slugId(),
       label: row.label,
       quantity: String(row.quantity || 1),
+      price: row.price && row.price > 0 ? String(row.price) : "",
     }));
   }
 
@@ -277,6 +281,7 @@ function rowsFromOrder(order: OrderItem) {
       id: slugId(),
       label: order.preferredWeight || "",
       quantity: String(order.quantity || 1),
+      price: "",
     },
   ];
 }
@@ -287,18 +292,53 @@ function buildLegacyPreferredWeight(weightBreakdown: WeightBreakdownItem[]) {
 
 function getPriceForLabel(label: string, settings: AppSettings) {
   const match = settings.weightOptions.find((item) => item.label === label.trim());
-  return match?.price || 0;
+  return match?.price ?? null;
+}
+
+function isPOAOptionLabel(label?: string) {
+  const normalised = (label || "").toLowerCase().replace(/\s+/g, "");
+  return normalised.includes("55+") || normalised.includes("55plus") || normalised.includes("poa");
+}
+
+function isPOABreakdownRow(row: WeightBreakdownItem) {
+  return row.price === null || row.price === undefined || row.price <= 0;
+}
+
+function hasPOAPricing(order: OrderItem) {
+  if (order.orderType === "live") return order.pricingVisible === false;
+  return order.weightBreakdown?.some(isPOABreakdownRow) || false;
+}
+
+function isPricingFinalized(order: OrderItem) {
+  return !hasPOAPricing(order);
+}
+
+function knownExtrasTotal(order: OrderItem) {
+  return (order.servicesTotal || 0) + (order.deliveryTotal || 0);
+}
+
+function bookingAmountLabel(order: OrderItem) {
+  if (hasPOAPricing(order)) {
+    const extras = knownExtrasTotal(order);
+    return extras > 0
+      ? `${formatZAR(extras)} + sheep price to be confirmed`
+      : "Sheep price to be confirmed";
+  }
+
+  return formatZAR(order.totalPrice || 0);
 }
 
 function computeBreakdownFromRows(
-  rows: Array<{ id: string; label: string; quantity: string }>,
+  rows: Array<{ id: string; label: string; quantity: string; price?: string }>,
   settings: AppSettings
 ) {
   const validRows = rows
     .map((row) => {
       const quantity = Number(row.quantity || 0);
-      const price = getPriceForLabel(row.label, settings);
-      const subtotal = quantity * price;
+      const typedPrice = Number(row.price || 0);
+      const settingsPrice = getPriceForLabel(row.label, settings);
+      const price = Number.isFinite(typedPrice) && typedPrice > 0 ? typedPrice : settingsPrice;
+      const subtotal = price && price > 0 ? quantity * price : null;
       return { id: row.id, label: row.label.trim(), quantity, price, subtotal };
     })
     .filter((row) => row.label && Number.isInteger(row.quantity) && row.quantity > 0);
@@ -310,13 +350,6 @@ function computeBreakdownFromRows(
     price: row.price,
     subtotal: row.subtotal,
   })) as WeightBreakdownItem[];
-}
-
-function bookingAmountLabel(order: OrderItem) {
-  if (order.orderType === "live" && order.pricingVisible === false) {
-    return "To be confirmed";
-  }
-  return formatZAR(order.totalPrice || 0);
 }
 function getLiveRatePerKg(quantity: number) {
   if (quantity >= 150) return 55;
@@ -427,10 +460,9 @@ const updatedWeightOptions = liveSettings.weightOptions.map((option) => {
 function buildPaymentReminderMessage(order: OrderItem, settings: AppSettings) {
   const ref = orderReference(order.id);
   const summary = sheepSummary(order);
-  const amountLine =
-    order.orderType === "live" && order.pricingVisible === false
-      ? "Amount Due: To be confirmed by admin"
-      : `Amount Due: ${formatZAR(order.totalPrice || 0)}`;
+  const amountLine = hasPOAPricing(order)
+    ? `Amount Due: ${bookingAmountLabel(order)}`
+    : `Amount Due: ${formatZAR(order.totalPrice || 0)}`;
 
   return `${settings.reminderMessageIntro}
 
@@ -762,7 +794,7 @@ const isOwner = userRole === "admin";
   deliveryAddress: "",
   fullDistributionCut: false,
   paymentStatus: "pending",
-  weightRows: [{ id: slugId(), label: "", quantity: "1" }],
+  weightRows: [{ id: slugId(), label: "", quantity: "1", price: "" }],
 });
 
 
@@ -1115,8 +1147,12 @@ useEffect(() => {
   const deliveredOrders = activeOrders.filter((o) => !!o.delivered);
   const pendingOrders = activeQurbaniOrders.filter((o) => !o.slaughtered && !o.cancelled);
   const cancelledOrders = orders.filter((o) => !!o.cancelled);
-  const totalCollected = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-  const totalOutstanding = unpaidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalCollected = paidOrders
+    .filter(isPricingFinalized)
+    .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalOutstanding = unpaidOrders
+    .filter(isPricingFinalized)
+    .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
  const liveOrders = activeOrders.filter((o) => o.orderType === "live");
 
 const totalLiveSheepOrdered = liveOrders.reduce(
@@ -1124,14 +1160,19 @@ const totalLiveSheepOrdered = liveOrders.reduce(
   0
 );
 
-const totalLiveValue = liveOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+const totalLiveValue = liveOrders
+  .filter(isPricingFinalized)
+  .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
 const totalExpenses = expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
 const netCollectedAfterExpenses = totalCollected - totalExpenses;
 
 const liveOutstandingValue = liveOrders
   .filter((o) => (o.paymentStatus || "pending").toLowerCase() !== "paid")
+  .filter(isPricingFinalized)
   .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+
+const poaOrders = activeOrders.filter(hasPOAPricing);
 
   const sizeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -2009,6 +2050,7 @@ if (!counterSnap.exists()) {
     livePricePerSheep: null,
 
     pricingVisible,
+    pricingFinalized: pricingVisible,
     basePriceTotal: liveBaseTotal,
     liveBaseTotal,
     totalPrice,
@@ -2089,12 +2131,15 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
     }
 
     const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
-    const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
+    const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + (row.subtotal || 0), 0);
     const servicesPerSheep = editForm.addServices ? 500 : 0;
     const deliveryPerSheep = editForm.delivery ? 100 : 0;
     const servicesTotal = quantity * servicesPerSheep;
     const deliveryTotal = quantity * deliveryPerSheep;
-    const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+    const pricingFinalized = !weightBreakdown.some(isPOABreakdownRow);
+    const totalPrice = pricingFinalized
+      ? basePriceTotal + servicesTotal + deliveryTotal
+      : servicesTotal + deliveryTotal;
         const sheepPreferences = editForm.sheepPreferences || [];
     const cutPreferences = sheepPreferences.flatMap((item) => item.cutPreferences);
 
@@ -2129,6 +2174,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
               .map((v) => v.trim())
               .filter(Boolean),
         basePriceTotal: editForm.cancelled ? 0 : basePriceTotal,
+        pricingFinalized: editForm.cancelled ? true : pricingFinalized,
         servicesPerSheep: editForm.cancelled ? 0 : servicesPerSheep,
         servicesTotal: editForm.cancelled ? 0 : servicesTotal,
         deliveryPerSheep: editForm.cancelled ? 0 : deliveryPerSheep,
@@ -2195,12 +2241,15 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
   }
 
   const quantity = weightBreakdown.reduce((sum, row) => sum + row.quantity, 0);
-  const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + row.subtotal, 0);
+  const basePriceTotal = weightBreakdown.reduce((sum, row) => sum + (row.subtotal || 0), 0);
   const servicesPerSheep = manualForm.addServices ? 500 : 0;
   const deliveryPerSheep = manualForm.delivery ? 100 : 0;
   const servicesTotal = quantity * servicesPerSheep;
   const deliveryTotal = quantity * deliveryPerSheep;
-  const totalPrice = basePriceTotal + servicesTotal + deliveryTotal;
+  const pricingFinalized = !weightBreakdown.some(isPOABreakdownRow);
+  const totalPrice = pricingFinalized
+    ? basePriceTotal + servicesTotal + deliveryTotal
+    : servicesTotal + deliveryTotal;
     const sheepPreferences = manualForm.sheepPreferences || [];
   const cutPreferences = sheepPreferences.flatMap((item) => item.cutPreferences);
   try {
@@ -2226,6 +2275,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
         fullDistributionCut: manualForm.fullDistributionCut,
         selectedSheepTagNumbers: [],
         basePriceTotal,
+        pricingFinalized,
         servicesPerSheep,
         servicesTotal,
         deliveryPerSheep,
@@ -2256,7 +2306,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
       deliveryAddress: "",
       fullDistributionCut: false,
       paymentStatus: "pending",
-      weightRows: [{ id: slugId(), label: "", quantity: "1" }],
+      weightRows: [{ id: slugId(), label: "", quantity: "1", price: "" }],
     });
     setShowManualForm(false);
     setSaveMessage("Manual booking added successfully.");
@@ -2948,7 +2998,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                           onClick={() =>
                             setManualForm((prev) => ({
                               ...prev,
-                              weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1" }],
+                              weightRows: [...prev.weightRows, { id: slugId(), label: "", quantity: "1", price: "" }],
                             }))
                           }
                           className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition hover:bg-white/10"
@@ -2959,7 +3009,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
                       <div className="space-y-3">
                         {manualForm.weightRows.map((row) => (
-                          <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+                          <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_160px_auto]">
                             <select
                               value={row.label}
                               onChange={(e) =>
@@ -2977,7 +3027,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               </option>
                               {settings.weightOptions.map((option) => (
                                 <option key={option.label} value={option.label} className="text-black">
-                                  {option.label} — {option.isPOA ? "POA" : formatZAR(option.price ?? 0)}
+                                  {option.label} — {(option.isPOA || option.price === null) ? "POA" : formatZAR(option.price ?? 0)}
 {typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                 </option>
                               ))}
@@ -2992,6 +3042,22 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                   ...prev,
                                   weightRows: prev.weightRows.map((item) =>
                                     item.id === row.id ? { ...item, quantity: e.target.value } : item
+                                  ),
+                                }))
+                              }
+                              className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                            />
+
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="Price if POA"
+                              value={row.price}
+                              onChange={(e) =>
+                                setManualForm((prev) => ({
+                                  ...prev,
+                                  weightRows: prev.weightRows.map((item) =>
+                                    item.id === row.id ? { ...item, price: e.target.value } : item
                                   ),
                                 }))
                               }
@@ -3217,7 +3283,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           placeholder="Weight label"
         />
 
-        {option.isPOA ? (
+        {option.isPOA || option.price === null ? (
   <input
     value="POA"
     disabled
@@ -3241,7 +3307,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
     placeholder="Price"
   />
 )}
-        {option.isPOA ? (
+        {option.isPOA || option.price === null ? (
   <input
     value="No stock limit"
     disabled
@@ -4084,7 +4150,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                           ...prev,
                                           weightRows: [
                                             ...prev.weightRows,
-                                            { id: slugId(), label: "", quantity: "1" },
+                                            { id: slugId(), label: "", quantity: "1", price: "" },
                                           ],
                                         }
                                       : prev
@@ -4098,7 +4164,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
                             <div className="space-y-3">
                               {editForm.weightRows.map((row) => (
-                                <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
+                                <div key={row.id} className="grid gap-3 md:grid-cols-[1fr_120px_160px_auto]">
                                   <select
                                     value={row.label}
                                     onChange={(e) => {
@@ -4127,7 +4193,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                         value={option.label}
                                         className="text-black"
                                       >
-                                        {option.label} — {option.isPOA ? "POA" : formatZAR(option.price ?? 0)}
+                                        {option.label} — {(option.isPOA || option.price === null) ? "POA" : formatZAR(option.price ?? 0)}
                                         {typeof option.stock === "number" ? ` — ${option.stock} left` : ""}
                                       </option>
                                     ))}
@@ -4146,6 +4212,29 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                                               weightRows: prev.weightRows.map((item) =>
                                                 item.id === row.id
                                                   ? { ...item, quantity: e.target.value }
+                                                  : item
+                                              ),
+                                            }
+                                          : prev
+                                      );
+                                    }}
+                                    className="h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none"
+                                  />
+
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    placeholder="Price if POA"
+                                    value={row.price}
+                                    onChange={(e) => {
+                                      markDirty();
+                                      setEditForm((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              weightRows: prev.weightRows.map((item) =>
+                                                item.id === row.id
+                                                  ? { ...item, price: e.target.value }
                                                   : item
                                               ),
                                             }
