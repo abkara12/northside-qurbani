@@ -719,6 +719,22 @@ const pricingVisible =
     }));
   }, [form.orderType, sheepPreferenceRows, form.sheepPreferences]);
 
+
+  useEffect(() => {
+  if (form.orderType !== "qurbani") return;
+
+  const hasAnySlicingPreference = form.sheepPreferences.some(
+    (item) => item.cutPreferences.length > 0
+  );
+
+  if (hasAnySlicingPreference && !form.addServices) {
+    setForm((prev) => ({
+      ...prev,
+      addServices: true,
+    }));
+  }
+}, [form.orderType, form.sheepPreferences, form.addServices]);
+
   const filledCount = useMemo(() => {
     let count = 0;
 
@@ -1435,9 +1451,18 @@ if (form.orderType === "live") {
                                 <input
                                   type="checkbox"
                                   checked={form.addServices}
-                                  onChange={(e) =>
-                                    updateField("addServices", e.target.checked)
-                                  }
+onChange={(e) => {
+  const hasAnySlicingPreference = form.sheepPreferences.some(
+    (item) => item.cutPreferences.length > 0
+  );
+
+  if (hasAnySlicingPreference) {
+    updateField("addServices", true);
+    return;
+  }
+
+  updateField("addServices", e.target.checked);
+}}
                                   className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#c6a268]"
                                 />
                                 <span className="text-sm text-white/75">
