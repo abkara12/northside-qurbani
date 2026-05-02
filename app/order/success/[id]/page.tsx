@@ -462,11 +462,60 @@ export default function OrderSuccessPage() {
                   )}
                 </h1>
 
-                <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-                  {liveOrder
-                    ? "Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up."
-                    : "Please scroll down and make payment using the banking details below. Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader. On Qurbani day, open this page and show it to the staff so they can add your booking to the queue — your queue number will appear on this page."}
-                </p>
+{liveOrder ? (
+  <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+    Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up.
+  </p>
+) : (
+  <div className="mt-6 space-y-4">
+    <div className="rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+      <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+        What happens next
+      </p>
+
+      <div className="mt-4 space-y-4">
+        {/* Step 1 */}
+        <div className="flex items-start gap-3">
+          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+            1
+          </div>
+          <p className="text-sm leading-6 text-white/80">
+            Make payment using the banking details below.
+          </p>
+        </div>
+
+        {/* Step 2 */}
+        <div className="flex items-start gap-3">
+          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+            2
+          </div>
+          <p className="text-sm leading-6 text-white/80">
+            Use your <span className="text-white font-semibold">name and surname</span> as the reference and send your proof of payment to{" "}
+            <span className="text-white font-semibold">
+              Moulana Shaheed Bhabha
+            </span>{" "}
+            or{" "}
+            <span className="text-white font-semibold">
+              Yaqoob Sader
+            </span>.
+          </p>
+        </div>
+
+        {/* Step 3 */}
+        <div className="flex items-start gap-3">
+          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+            3
+          </div>
+          <p className="text-sm leading-6 text-white/80">
+            On Qurbani day, open this page and show it to the staff. Your{" "}
+            <span className="text-white font-semibold">queue number</span>{" "}
+            will appear here once assigned.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <StatusBadge label={workflowStatus.label} variant={workflowStatus.variant} />
