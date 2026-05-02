@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -656,10 +655,10 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
   const deliveryPerSheep =
     form.orderType === "qurbani"
       ? form.delivery
-        ? 150
+        ? 100
         : 0
       : form.liveDelivery
-      ? 150
+      ? 100
       : 0;
 
   const servicesTotal = effectiveQuantity * servicesPerSheep;
@@ -891,6 +890,15 @@ const pricingVisible =
         nextErrors.weightSelections =
           "Please complete each sheep selection with a valid weight range and quantity.";
       } else {
+        const selectedPOA = parsedSelections.some((row) => row.isPOA);
+const selectedPriced = parsedSelections.some(
+  (row) => row.selectedOption && !row.isPOA && row.quantityNumber > 0
+);
+
+if (selectedPOA && selectedPriced) {
+  nextErrors.weightSelections =
+    "Please place POA sheep in a separate order. Do not mix POA and fixed-price sheep in one booking.";
+}
         const invalidStockSelection = parsedSelections.some((row) => {
           if (!row.selectedOption) return true;
           const stockLeft = getStockLeftForLabel(row.selectedOption.label, row.id);
@@ -972,9 +980,11 @@ if (form.orderType === "live") {
                 ? option.stock
                 : null;
 
-if (currentStock === null) {
-  return option;
-}
+            if (currentStock === null) {
+              throw new Error(
+                `Stock has not been set for ${option.label}. Please ask staff to set stock first.`
+              );
+            }
 
             if (requested > currentStock) {
               throw new Error(
@@ -1850,7 +1860,7 @@ if (currentStock === null) {
                           : form.orderType === "live"
                           ? deliveryTotal
                             ? `${formatZAR(deliveryTotal)} + live sheep price to be confirmed`
-                            : "Price to be confirmed"
+                            : "Live sheep price to be confirmed by admin"
                           : pricingVisible
                           ? formatZAR(totalPrice)
                           : "To be confirmed"

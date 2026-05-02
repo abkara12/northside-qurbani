@@ -116,7 +116,7 @@ function totalDueValue(order: OrderData | null) {
       return `${formatZAR(delivery)} + live sheep price to be confirmed`;
     }
 
-    return "Price to be confirmed by admin";
+    return "Live sheep price to be confirmed by admin";
   }
 
   if (hasPOAPricing(order)) {
