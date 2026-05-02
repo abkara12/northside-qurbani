@@ -1861,7 +1861,7 @@ if (form.orderType === "live") {
                           : form.orderType === "live"
                           ? deliveryTotal
                             ? `${formatZAR(deliveryTotal)} + live sheep price to be confirmed`
-                            : "Live sheep price to be confirmed by admin"
+                            : "Price to be confirmed"
                           : pricingVisible
                           ? formatZAR(totalPrice)
                           : "To be confirmed"
