@@ -209,11 +209,13 @@ async function copyToClipboard(value: string) {
 function copyText(value: string) {
   if (!value) return false;
 
+  const scrollY = window.scrollY; // 👈 SAVE scroll position
+
   const textArea = document.createElement("textarea");
   textArea.value = value;
 
   textArea.setAttribute("readonly", "");
-  textArea.style.position = "absolute";
+  textArea.style.position = "fixed"; // 👈 IMPORTANT (not absolute)
   textArea.style.left = "-9999px";
   textArea.style.top = "0";
   textArea.style.opacity = "0";
@@ -222,7 +224,6 @@ function copyText(value: string) {
 
   textArea.focus();
   textArea.select();
-  textArea.setSelectionRange(0, textArea.value.length);
 
   let copied = false;
 
@@ -233,6 +234,8 @@ function copyText(value: string) {
   }
 
   document.body.removeChild(textArea);
+
+  window.scrollTo(0, scrollY); // 👈 RESTORE scroll position
 
   return copied;
 }
