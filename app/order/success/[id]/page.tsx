@@ -73,7 +73,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
   referenceHint:
-    "Please send your proof of payment / payment reference to Moulana Shaheed or Uncle Yaqoob on WhatsApp.",
+    "Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader.",
 };
 
 function formatZAR(value: number) {
@@ -462,10 +462,10 @@ export default function OrderSuccessPage() {
                   )}
                 </h1>
 
-                <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/80 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+                <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
                   {liveOrder
                     ? "Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up."
-                    : "Thank you. Please keep your booking reference safe for payment and any future follow-up."}
+                    : "Please scroll down and make payment using the banking details below. Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader. On Qurbani day, open this page and show it to the staff so they can add your booking to the queue — your queue number will appear here."}
                 </p>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -482,34 +482,33 @@ export default function OrderSuccessPage() {
                   </p>
                 </div>
 
-
                 {!liveOrder ? (
-  <div className="mt-6 rounded-[26px] border border-[#c6a268]/35 bg-[#c6a268]/12 p-5 shadow-[0_18px_45px_rgba(198,162,104,0.08)]">
-    <p className="text-xs uppercase tracking-[0.24em] text-[#d8b67e]">
-      Important for Qurbani Day
-    </p>
+                  <div className="mt-6 rounded-[26px] border border-[#c6a268]/35 bg-[#c6a268]/12 p-5 shadow-[0_18px_45px_rgba(198,162,104,0.08)]">
+                    <p className="text-xs uppercase tracking-[0.24em] text-[#d8b67e]">
+                      Qurbani Day Process
+                    </p>
 
-    <h3 className="mt-3 text-[1.25rem] font-semibold tracking-[-0.02em] text-white">
-      Access this page on the day.
-    </h3>
+                    <h3 className="mt-3 text-[1.25rem] font-semibold tracking-[-0.02em] text-white">
+                      Access this page on the day.
+                    </h3>
 
-    <div className="mt-4 space-y-3 text-sm leading-6 text-white/75">
-      <p>
-        On the day of Qurbani, please open this confirmation page and show it to the staff when you arrive.
-      </p>
-      <p>
-        Staff will use your booking reference to check your details and add your booking to the processing queue.
-      </p>
-      <p>
-        Once your queue number is assigned, it will appear automatically on this page.
-      </p>
-    </div>
+                    <div className="mt-4 space-y-3 text-sm leading-6 text-white/75">
+                      <p>
+                        On the day of Qurbani, please open this confirmation page and show it to the staff when you arrive.
+                      </p>
+                      <p>
+                        Staff will use this page to find your booking and add you to the processing queue.
+                      </p>
+                      <p>
+                        Once your queue number is assigned, it will appear automatically on this page.
+                      </p>
+                    </div>
 
-    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm font-medium leading-6 text-white">
-      You can return to this page anytime using “View My Order”. Please keep your booking reference safe.
-    </div>
-  </div>
-) : null}
+                    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm font-medium leading-6 text-white">
+                      You can return to this page anytime using “View My Order”.
+                    </div>
+                  </div>
+                ) : null}
 
                 {hasSelectedTagNumbers ? (
                   <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
@@ -529,10 +528,10 @@ export default function OrderSuccessPage() {
                     </div>
 
                     <p className="mt-4 text-sm leading-6 text-white/70">
-  {liveOrder
-    ? "Please keep these tag numbers ready for collection or delivery coordination."
-    : "Please show these tag numbers to the team on qurbani day."}
-</p>
+                      {liveOrder
+                        ? "Please keep these tag numbers ready for collection or delivery coordination."
+                        : "Please show these tag numbers to the team on qurbani day."}
+                    </p>
                   </div>
                 ) : null}
 
@@ -592,14 +591,13 @@ export default function OrderSuccessPage() {
                     ) : (
                       <>
                         <p>
-                          Your booking has been recorded with your selected sizes, quantities,
-                          pricing, and preferences.
+                          Make payment using the banking details below.
                         </p>
                         <p>
-                          Please make payment using the banking details below and send your proof of payment / payment reference as instructed.
+                          Use your name and surname as the payment reference, then send proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader.
                         </p>
                         <p>
-                          This confirmation page will continue to reflect live updates such as payment status, workflow status, and queue number when assigned.
+                          On Qurbani day, open this confirmation page from “View My Order” and show it to the staff.
                         </p>
                       </>
                     )}
@@ -614,6 +612,29 @@ export default function OrderSuccessPage() {
 
             <div className="xl:col-span-5">
               <div className="space-y-5 xl:sticky xl:top-6">
+                <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
+                    Banking details
+                  </p>
+
+                  <div className="mt-4 grid gap-3">
+                    <CopyField label="Account name" value={settings.accountName} />
+                    <CopyField label="Bank" value={settings.bankName} />
+                    <CopyField label="Account number" value={settings.accountNumber} />
+                    <CopyField label="Account type" value={settings.accountType} />
+                    <CopyField label="Branch code" value={settings.branchCode} />
+
+                    <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
+                        Payment instruction
+                      </p>
+                      <p className="mt-2 text-sm font-medium leading-6 text-white">
+                        {settings.referenceHint}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="overflow-hidden rounded-[34px] border border-white/10 bg-[#141016] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                   <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
                     {liveOrder ? "Order summary" : "Booking summary"}
@@ -658,14 +679,14 @@ export default function OrderSuccessPage() {
                         <SummaryRow label="Workflow status" value={workflowStatus.label} />
 
                         <SummaryRow
-                label="Estimated total kg"
-                value={order?.liveTotalKg ? `${order.liveTotalKg} kg` : "—"}
-              />
-                        
-                    <SummaryRow
-                      label="Live sheep rate"
-                      value={order?.liveRatePerKg ? `R${order.liveRatePerKg} per kg` : "To be confirmed"}
-                    />
+                          label="Estimated total kg"
+                          value={order?.liveTotalKg ? `${order.liveTotalKg} kg` : "—"}
+                        />
+
+                        <SummaryRow
+                          label="Live sheep rate"
+                          value={order?.liveRatePerKg ? `R${order.liveRatePerKg} per kg` : "To be confirmed"}
+                        />
                       </>
                     ) : (
                       <>
@@ -778,30 +799,6 @@ export default function OrderSuccessPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
-                    Banking details
-                  </p>
-
-                  <div className="mt-4 grid gap-3">
-                    <CopyField label="Account name" value={settings.accountName} />
-                    <CopyField label="Bank" value={settings.bankName} />
-                    <CopyField label="Account number" value={settings.accountNumber} />
-                    <CopyField label="Account type" value={settings.accountType} />
-                    <CopyField label="Branch code" value={settings.branchCode} />
-
-                    <div className="rounded-2xl border border-[#c6a268]/20 bg-[#c6a268]/10 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#d8b67e]">
-                        Payment instruction
-                      </p>
-                      <p className="mt-2 text-sm font-medium leading-6 text-white">
-                        {settings.referenceHint}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                
                 {order?.notes?.trim() ? (
                   <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                     <p className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e] text-center lg:text-left">
