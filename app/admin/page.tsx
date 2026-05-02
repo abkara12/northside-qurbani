@@ -362,11 +362,17 @@ function getLiveCalculatedTotal(editForm: EditFormState | null) {
 
   const quantity = Number(editForm.liveQuantity || 0);
   const totalKg = Number(editForm.liveTotalKg || 0);
-  const rate = getLiveRatePerKg(quantity);
+
+  const automaticRate = getLiveRatePerKg(quantity);
+  const manualRate = Number(editForm.liveRatePerKg || 0);
+  const rate = automaticRate ?? (manualRate > 0 ? manualRate : null);
 
   if (!rate || totalKg <= 0) return 0;
 
-  return totalKg * rate;
+  const deliveryPerSheep = editForm.delivery ? 100 : 0;
+  const deliveryTotal = editForm.delivery ? quantity * deliveryPerSheep : 0;
+
+  return totalKg * rate + deliveryTotal;
 }
 
 function normaliseStock(value: number | null | undefined) {
