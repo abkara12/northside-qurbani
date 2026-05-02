@@ -9,9 +9,9 @@ import { db } from "../../../lib/firebase";
 type WeightBreakdownItem = {
   id?: string;
   label: string;
-  price?: number;
+  price?: number | null;
   quantity: number;
-  subtotal?: number;
+  subtotal?: number | null;
 };
 
 type SheepPreferenceItem = {
@@ -73,7 +73,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   accountType: "Business Cheque",
   branchCode: "REPLACE WITH BRANCH CODE",
   referenceHint:
-    "Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha or Yaqoob Sader.",
+    "Use your name and surname as the payment reference, then send your proof of payment to Moulana Shaheed Bhabha(060 621 1418) or Yaqoob Sader(083 951 0300).",
 };
 
 function formatZAR(value: number) {
@@ -82,6 +82,40 @@ function formatZAR(value: number) {
     currency: "ZAR",
     maximumFractionDigits: 0,
   }).format(value || 0);
+}
+
+function isPOAValue(value?: number | null) {
+  return value === null || value === undefined || value <= 0;
+}
+
+function isPOARow(row: WeightBreakdownItem) {
+  return row.label.toLowerCase().includes("55+") || isPOAValue(row.price);
+}
+
+function hasPOAPricing(order: OrderData | null) {
+  if (!order || order.orderType === "live") return false;
+  return order.weightBreakdown?.some(isPOARow) || false;
+}
+
+function knownExtrasTotal(order: OrderData | null) {
+  if (!order) return 0;
+  return (order.servicesTotal || 0) + (order.deliveryTotal || 0);
+}
+
+function totalDueValue(order: OrderData | null) {
+  if (!order) return "—";
+
+  if (hasPOAPricing(order)) {
+    const extras = knownExtrasTotal(order);
+
+    if (extras > 0) {
+      return `${formatZAR(extras)} + sheep price to be confirmed`;
+    }
+
+    return "Sheep price to be confirmed";
+  }
+
+  return formatZAR(order.totalPrice || 0);
 }
 
 function SummaryRow({
@@ -364,6 +398,7 @@ export default function OrderSuccessPage() {
   const queueAssigned = !liveOrder && (order?.queueNumber || 0) > 0;
   const selectedTagNumbers = order?.selectedSheepTagNumbers?.filter(Boolean) || [];
   const hasSelectedTagNumbers = selectedTagNumbers.length > 0;
+  const hasPOA = hasPOAPricing(order);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#09070b] text-white">
@@ -462,60 +497,57 @@ export default function OrderSuccessPage() {
                   )}
                 </h1>
 
-{liveOrder ? (
-  <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
-    Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up.
-  </p>
-) : (
-  <div className="mt-6 space-y-4">
-    <div className="rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
-      <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
-        What happens next
-      </p>
+                {liveOrder ? (
+                  <p className="mx-auto mt-4 max-w-2xl text-center text-[0.98rem] leading-7 text-emerald-50/90 sm:text-[1.03rem] sm:leading-8 lg:mx-0 lg:text-left">
+                    Thank you. Please keep your order reference safe for payment, delivery coordination, and any future follow-up.
+                  </p>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    <div className="rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">
+                        What happens next
+                      </p>
 
-      <div className="mt-4 space-y-4">
-        {/* Step 1 */}
-        <div className="flex items-start gap-3">
-          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
-            1
-          </div>
-          <p className="text-sm leading-6 text-white/80">
-            Make payment using the banking details below.
-          </p>
-        </div>
+                      <div className="mt-4 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+                            1
+                          </div>
+                          <p className="text-sm leading-6 text-white/80">
+                            Make payment using the banking details below.
+                          </p>
+                        </div>
 
-        {/* Step 2 */}
-        <div className="flex items-start gap-3">
-          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
-            2
-          </div>
-          <p className="text-sm leading-6 text-white/80">
-            Use your <span className="text-white font-semibold">name and surname</span> as the reference and send your proof of payment to{" "}
-            <span className="text-white font-semibold">
-              Moulana Shaheed Bhabha
-            </span>{" "}
-            or{" "}
-            <span className="text-white font-semibold">
-              Yaqoob Sader
-            </span>.
-          </p>
-        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+                            2
+                          </div>
+                          <p className="text-sm leading-6 text-white/80">
+                            Use your <span className="text-white font-semibold">name and surname</span> as the reference and send your proof of payment to{" "}
+                            <span className="text-white font-semibold">
+                              Moulana Shaheed Bhabha
+                            </span>{" "}
+                            or{" "}
+                            <span className="text-white font-semibold">
+                              Yaqoob Sader
+                            </span>.
+                          </p>
+                        </div>
 
-        {/* Step 3 */}
-        <div className="flex items-start gap-3">
-          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
-            3
-          </div>
-          <p className="text-sm leading-6 text-white/80">
-            On Qurbani day, open this page and show it to the staff. Your{" "}
-            <span className="text-white font-semibold">queue number</span>{" "}
-            will appear below once assigned.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 h-6 w-6 flex-shrink-0 rounded-full bg-[#c6a268] text-[12px] font-semibold text-black flex items-center justify-center">
+                            3
+                          </div>
+                          <p className="text-sm leading-6 text-white/80">
+                            On Qurbani day, open this page and show it to the staff. Your{" "}
+                            <span className="text-white font-semibold">queue number</span>{" "}
+                            will appear below once assigned.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <StatusBadge label={workflowStatus.label} variant={workflowStatus.variant} />
@@ -716,8 +748,8 @@ export default function OrderSuccessPage() {
                           value={queueAssigned ? String(order?.queueNumber) : "Not assigned yet"}
                         />
                         <SummaryRow
-                          label="Total due"
-                          value={formatZAR(order?.totalPrice || 0)}
+                          label={hasPOA ? "Known charges" : "Total due"}
+                          value={totalDueValue(order)}
                           strong
                         />
                       </>
@@ -745,10 +777,12 @@ export default function OrderSuccessPage() {
 
                             <div className="text-right">
                               <p className="text-sm text-white/55">
-                                {formatZAR(row.price || 0)} each
+                                {isPOARow(row) ? "POA" : `${formatZAR(row.price || 0)} each`}
                               </p>
                               <p className="mt-1 text-sm font-semibold text-white">
-                                {formatZAR(row.subtotal || 0)}
+                                {isPOARow(row)
+                                  ? "Price to be confirmed"
+                                  : formatZAR(row.subtotal || 0)}
                               </p>
                             </div>
                           </div>
