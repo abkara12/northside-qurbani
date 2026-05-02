@@ -482,6 +482,35 @@ export default function OrderSuccessPage() {
                   </p>
                 </div>
 
+
+                {!liveOrder ? (
+  <div className="mt-6 rounded-[26px] border border-[#c6a268]/35 bg-[#c6a268]/12 p-5 shadow-[0_18px_45px_rgba(198,162,104,0.08)]">
+    <p className="text-xs uppercase tracking-[0.24em] text-[#d8b67e]">
+      Important for Qurbani Day
+    </p>
+
+    <h3 className="mt-3 text-[1.25rem] font-semibold tracking-[-0.02em] text-white">
+      Access this page on the day.
+    </h3>
+
+    <div className="mt-4 space-y-3 text-sm leading-6 text-white/75">
+      <p>
+        On the day of Qurbani, please open this confirmation page and show it to the staff when you arrive.
+      </p>
+      <p>
+        Staff will use your booking reference to check your details and add your booking to the processing queue.
+      </p>
+      <p>
+        Once your queue number is assigned, it will appear automatically on this page.
+      </p>
+    </div>
+
+    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm font-medium leading-6 text-white">
+      You can return to this page anytime using “View My Order”. Please keep your booking reference safe.
+    </div>
+  </div>
+) : null}
+
                 {hasSelectedTagNumbers ? (
                   <div className="mt-6 rounded-[24px] border border-[#c6a268]/30 bg-[#c6a268]/10 p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-[#d8b67e]">

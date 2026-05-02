@@ -1371,9 +1371,6 @@ if (form.orderType === "live") {
                         </div>
 
                         <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                          <p className="text-sm leading-6 text-white/60">
-                            Each sheep can have its own slicing preference.
-                          </p>
 
                           {sheepPreferenceRows.length === 0 ? (
                             <p className="mt-3 text-sm text-white/45">
@@ -1749,7 +1746,7 @@ if (form.orderType === "live") {
                                         );
                                         return stockLeft === null
                                           ? "Stock open"
-                                          : `${stockLeft} left after this row`;
+                                          : `${stockLeft} left after this`;
                                       })()}
                                     </div>
                                   </div>
