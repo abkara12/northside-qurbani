@@ -102,8 +102,22 @@ function knownExtrasTotal(order: OrderData | null) {
   return (order.servicesTotal || 0) + (order.deliveryTotal || 0);
 }
 
+function hasUnconfirmedLivePricing(order: OrderData | null) {
+  return order?.orderType === "live" && order.pricingVisible === false;
+}
+
 function totalDueValue(order: OrderData | null) {
   if (!order) return "—";
+
+  if (hasUnconfirmedLivePricing(order)) {
+    const delivery = order.deliveryTotal || 0;
+
+    if (delivery > 0) {
+      return `${formatZAR(delivery)} + live sheep price to be confirmed`;
+    }
+
+    return "Live sheep price to be confirmed by admin";
+  }
 
   if (hasPOAPricing(order)) {
     const extras = knownExtrasTotal(order);
@@ -759,15 +773,22 @@ export default function OrderSuccessPage() {
                           }
                         />
                         <SummaryRow label="Workflow status" value={workflowStatus.label} />
-
                         <SummaryRow
-                          label="Estimated total kg"
-                          value={order?.liveTotalKg ? `${order.liveTotalKg} kg` : "—"}
+                          label="Live sheep price"
+                          value={
+                            order?.pricingVisible === false
+                              ? "To be confirmed by admin"
+                              : formatZAR(order?.basePriceTotal || 0)
+                          }
                         />
-
                         <SummaryRow
-                          label="Live sheep rate"
-                          value={order?.liveRatePerKg ? `R${order.liveRatePerKg} per kg` : "To be confirmed"}
+                          label="Delivery total"
+                          value={order?.deliveryTotal ? formatZAR(order.deliveryTotal) : "—"}
+                        />
+                        <SummaryRow
+                          label={order?.pricingVisible === false ? "Known charges" : "Total due"}
+                          value={totalDueValue(order)}
+                          strong
                         />
                       </>
                     ) : (

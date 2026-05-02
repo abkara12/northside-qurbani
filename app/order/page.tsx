@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -631,17 +632,7 @@ displayLabel:
 
   const liveQuantityNumber = Math.max(0, Number(form.liveQuantity) || 0);
 
-  const liveTotalKgNumber = Math.max(0, Number(form.liveTotalKg) || 0);
-
-function getLiveRatePerKg(quantity: number) {
-  if (quantity >= 150) return 55;
-  if (quantity >= 100) return 57;
-  return null;
-}
-
-const liveRatePerKg = getLiveRatePerKg(liveQuantityNumber);
-
-
+  const liveRatePerKg: number | null = null;
 
   const effectiveQuantity =
     form.orderType === "qurbani" ? qurbaniQuantity : liveQuantityNumber;
@@ -674,20 +665,17 @@ const weightBreakdown: WeightBreakdownItem[] = parsedSelections
   const servicesTotal = effectiveQuantity * servicesPerSheep;
   const deliveryTotal = effectiveQuantity * deliveryPerSheep;
 
-const liveBaseTotal =
-  liveRatePerKg && liveTotalKgNumber > 0
-    ? liveTotalKgNumber * liveRatePerKg
-    : 0;
+const liveBaseTotal = 0;
 
   const totalPrice =
     form.orderType === "qurbani"
       ? basePriceTotal + servicesTotal + deliveryTotal
-      : liveBaseTotal + deliveryTotal;
+      : deliveryTotal;
 
 const pricingVisible =
   form.orderType === "qurbani"
     ? totalPrice > 0 && !hasPOASelection
-    : liveRatePerKg !== null && liveTotalKgNumber > 0;
+    : false;
 
   const legacyPreferredWeight = weightBreakdown
     .map((row) => `${row.label} x${row.quantity}`)
@@ -932,15 +920,6 @@ if (form.orderType === "live") {
     nextErrors.liveQuantity =
       "Please enter a valid number of live sheep required.";
   }
-
-  const liveTotalKg = Number(form.liveTotalKg);
-
-  if (qty >= 100) {
-    if (!Number.isFinite(liveTotalKg) || liveTotalKg <= 0) {
-      nextErrors.liveTotalKg =
-        "Please enter the estimated total kg.";
-    }
-  }
 }
 
     if (!form.agree) {
@@ -1043,10 +1022,10 @@ if (form.orderType === "live") {
             : [],
 
             liveQuantity: isQurbani ? null : liveQuantityNumber,
-            liveTotalKg: isQurbani ? null : liveTotalKgNumber,
-            liveRatePerKg: isQurbani ? null : liveRatePerKg,
+            liveTotalKg: null,
+            liveRatePerKg: null,
             livePricePerSheep: null,
-            liveBaseTotal: isQurbani ? 0 : liveBaseTotal,
+            liveBaseTotal: 0,
 
           addServices: isQurbani ? form.addServices : false,
           delivery: isQurbani ? form.delivery : form.liveDelivery,
@@ -1071,13 +1050,14 @@ if (form.orderType === "live") {
           fullDistributionCut: isQurbani ? form.fullDistributionCut : false,
           selectedSheepTagNumbers: [],
 
-          basePriceTotal: isQurbani ? basePriceTotal : liveBaseTotal,
+          basePriceTotal: isQurbani ? basePriceTotal : 0,
           servicesPerSheep,
           servicesTotal,
           deliveryPerSheep,
           deliveryTotal,
           totalPrice,
           pricingVisible,
+          pricingFinalized: isQurbani ? pricingVisible : false,
 
           notes: form.notes.trim(),
 
@@ -1234,7 +1214,7 @@ if (form.orderType === "live") {
                       <OrderTypeCard
                         active={form.orderType === "live"}
                         title="Live Sheep Purchase"
-                        description="Submit a separate booking for customers buying live sheep directly."
+                        description="Choose how many live sheep you need. The final price will be confirmed by admin."
                         onClick={() => switchOrderType("live")}
                       />
                     </div>
@@ -1576,20 +1556,6 @@ if (form.orderType === "live") {
                             />
                           </div>
 
-                                              <div className="sm:col-span-2">
-                        <Label htmlFor="liveTotalKg" required>
-                          Estimated total kg
-                        </Label>
-                        <Input
-                          id="liveTotalKg"
-                          type="number"
-                          min={1}
-                          value={form.liveTotalKg}
-                          onChange={(value) => updateField("liveTotalKg", value)}
-                          placeholder="Enter estimated total kg"
-                          error={errors.liveTotalKg}
-                        />
-                      </div>
 
                           {form.liveDelivery ? (
                             <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
@@ -1869,21 +1835,11 @@ if (form.orderType === "live") {
                         />
                       </>
                     ) : (
-                                        <>
-                  <SummaryRow
-                    label="Live sheep rate"
-                    value={liveRatePerKg ? `R${liveRatePerKg}/kg excl. transport` : "To be confirmed"}
-                  />
-
-                  <SummaryRow
-                    label="Estimated total kg"
-                    value={liveTotalKgNumber ? `${liveTotalKgNumber} kg` : "—"}
-                  />
-
-                  <SummaryRow
-                    label="Live sheep total"
-                    value={liveBaseTotal ? formatZAR(liveBaseTotal) : "Price to be confirmed"}
-                  />
+                      <>
+                        <SummaryRow
+                          label="Live sheep price"
+                          value="To be confirmed by admin"
+                        />
                         <SummaryRow
                           label="Delivery total"
                           value={
@@ -1902,6 +1858,10 @@ if (form.orderType === "live") {
                       value={
                         form.orderType === "qurbani" && hasPOASelection
                           ? "POA"
+                          : form.orderType === "live"
+                          ? deliveryTotal
+                            ? `${formatZAR(deliveryTotal)} + live sheep price to be confirmed`
+                            : "Live sheep price to be confirmed by admin"
                           : pricingVisible
                           ? formatZAR(totalPrice)
                           : "To be confirmed"
