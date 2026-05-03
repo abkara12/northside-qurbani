@@ -485,6 +485,7 @@ export default function Home() {
   const [menuState, setMenuState] = useState<"open" | "closed">("closed");
   const [user, setUser] = useState<User | null>(null);
   const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrderState | null>(null);
 
   useEffect(() => {
@@ -608,36 +609,54 @@ export default function Home() {
             FAQ
           </a>
 
-          {isStaff ? (
-            <Link
-              href="/admin"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
-            >
-              Staff Dashboard
-            </Link>
-          ) : savedOrder ? (
-            <Link
-              href={`/order/success/${savedOrder.id}`}
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
-            >
-              View My Order
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                Staff Sign In
-              </Link>
-              <Link
-                href="/order"
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
-              >
-                Place Order
-              </Link>
-            </>
-          )}
+{isStaff ? (
+  <>
+    <Link
+      href="/admin"
+      className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+    >
+      Staff Dashboard
+    </Link>
+
+    <Link
+      href="/order"
+      className="inline-flex h-10 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#b8955c]"
+    >
+      Place Order
+    </Link>
+
+    {savedOrder ? (
+      <Link
+        href={`/order/success/${savedOrder.id}`}
+        className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+      >
+        View My Order
+      </Link>
+    ) : null}
+  </>
+) : savedOrder ? (
+  <Link
+    href={`/order/success/${savedOrder.id}`}
+    className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+  >
+    View My Order
+  </Link>
+) : (
+  <>
+    <Link
+      href="/login"
+      className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition hover:bg-white/10"
+    >
+      Staff Sign In
+    </Link>
+    <Link
+      href="/order"
+      className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+    >
+      Place Order
+    </Link>
+  </>
+)}
         </div>
 
         <button
@@ -711,38 +730,56 @@ export default function Home() {
                 <div className="my-1 h-px bg-white/10" />
 
                 {isStaff ? (
-                  <MenuRow
-                    href="/admin"
-                    label="Dashboard"
-                    sub="Manage operations and updates"
-                    onClick={closeMenu}
-                    variant="primary"
-                  />
-                ) : savedOrder ? (
-                  <MenuRow
-                    href={`/order/success/${savedOrder.id}`}
-                    label="View My Order"
-                    sub={`Reference: ${savedOrder.reference}`}
-                    onClick={closeMenu}
-                    variant="primary"
-                  />
-                ) : (
-                  <>
-                    <MenuRow
-                      href="/login"
-                      label="Staff Sign In"
-                      sub="Access the operations dashboard"
-                      onClick={closeMenu}
-                    />
-                    <MenuRow
-                      href="/order"
-                      label="Place Order"
-                      sub="Submit your qurbani booking"
-                      onClick={closeMenu}
-                      variant="primary"
-                    />
-                  </>
-                )}
+  <>
+    <MenuRow
+      href="/admin"
+      label="Dashboard"
+      sub="Manage operations and updates"
+      onClick={closeMenu}
+      variant="primary"
+    />
+
+    <MenuRow
+      href="/order"
+      label="Place Order"
+      sub="Create your own customer order"
+      onClick={closeMenu}
+    />
+
+    {savedOrder ? (
+      <MenuRow
+        href={`/order/success/${savedOrder.id}`}
+        label="View My Order"
+        sub={`Reference: ${savedOrder.reference}`}
+        onClick={closeMenu}
+      />
+    ) : null}
+  </>
+) : savedOrder ? (
+  <MenuRow
+    href={`/order/success/${savedOrder.id}`}
+    label="View My Order"
+    sub={`Reference: ${savedOrder.reference}`}
+    onClick={closeMenu}
+    variant="primary"
+  />
+) : (
+  <>
+    <MenuRow
+      href="/order"
+      label="Place Order"
+      sub="Start your booking"
+      onClick={closeMenu}
+      variant="primary"
+    />
+    <MenuRow
+      href="/login"
+      label="Staff Sign In"
+      sub="Access staff operations"
+      onClick={closeMenu}
+    />
+  </>
+)}
               </div>
 
               <div className="mt-auto pt-6">
@@ -793,37 +830,55 @@ export default function Home() {
 
             <div className="mt-6 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
               {isStaff ? (
-                <Link
-                  href="/admin"
-                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
-                >
-                  Staff Dashboard
-                </Link>
-              ) : savedOrder ? (
-                <Link
-                  href={`/order/success/${savedOrder.id}`}
-                  className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] hover:shadow-[0_20px_38px_rgba(0,0,0,0.3)] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
-                >
-                  View My Order
-                </Link>
-              ) : (
-                <>
-                  <OrderAccessButtons
-                    primaryLarge
-                    className="flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3"
-                  />
+  <>
+    <Link
+      href="/admin"
+      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+    >
+      Staff Dashboard
+    </Link>
 
-                  <Link
-                    href="/login"
-                    className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
-                  >
-                    Staff Sign In
-                  </Link>
-                </>
-              )}
+    <Link
+      href="/order"
+      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+    >
+      Place Order
+    </Link>
+
+    {savedOrder ? (
+      <Link
+        href={`/order/success/${savedOrder.id}`}
+        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+      >
+        View My Order
+      </Link>
+    ) : null}
+  </>
+) : savedOrder ? (
+  <Link
+    href={`/order/success/${savedOrder.id}`}
+    className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+  >
+    View My Order
+  </Link>
+) : (
+  <>
+    <OrderAccessButtons
+      primaryLarge
+      className="flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3"
+    />
+
+    <Link
+      href="/login"
+      className="inline-flex h-[40px] min-w-[156px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-[13px] font-medium text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:text-[14px] lg:h-[42px] lg:min-w-0 lg:w-auto lg:px-6"
+    >
+      Staff Sign In
+    </Link>
+  </>
+)}
             </div>
 
-            {!isStaff && savedOrder ? (
+            {savedOrder ? (
               <div className="mx-auto mt-4 max-w-[34rem] rounded-[24px] border border-white/10 bg-white/[0.045] px-5 py-4 text-center shadow-[0_14px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:mx-0 lg:text-left">
                 <div className="text-[11px] uppercase tracking-[0.26em] text-[#d8b67e]">
                   Your previous booking is saved
@@ -1160,7 +1215,7 @@ from beginning to end.
                   easy-to-use digital experience.
                 </p>
 
-                {!isStaff && savedOrder ? (
+                {savedOrder ? (
                   <div className="mx-auto mt-5 max-w-xl rounded-[22px] border border-white/10 bg-white/5 px-5 py-4 text-center lg:mx-0 lg:text-left">
                     <div className="text-[11px] uppercase tracking-[0.24em] text-[#d8b67e]">
                       Your previous booking is saved
