@@ -610,30 +610,39 @@ export default function Home() {
           </a>
 
 {isStaff ? (
-  <>
-    <Link
-      href="/admin"
-      className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
-    >
-      Staff Dashboard
-    </Link>
+  savedOrder ? (
+    <>
+      <Link
+        href="/admin"
+        className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+      >
+        Staff Dashboard
+      </Link>
 
-    <Link
-      href="/order"
-      className="inline-flex h-10 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#b8955c]"
-    >
-      Place Order
-    </Link>
-
-    {savedOrder ? (
       <Link
         href={`/order/success/${savedOrder.id}`}
         className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
       >
         View My Order
       </Link>
-    ) : null}
-  </>
+    </>
+  ) : (
+    <>
+      <Link
+        href="/admin"
+        className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
+      >
+        Staff Dashboard
+      </Link>
+
+      <Link
+        href="/order"
+        className="inline-flex h-10 items-center justify-center rounded-full bg-[#c6a268] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#b8955c]"
+      >
+        Place Order
+      </Link>
+    </>
+  )
 ) : savedOrder ? (
   <Link
     href={`/order/success/${savedOrder.id}`}
@@ -649,6 +658,7 @@ export default function Home() {
     >
       Staff Sign In
     </Link>
+
     <Link
       href="/order"
       className="inline-flex h-10 items-center justify-center rounded-full bg-[#f5efe6] px-6 text-sm font-medium text-[#141414] shadow-sm transition hover:bg-[#e8dfd3]"
@@ -730,31 +740,41 @@ export default function Home() {
                 <div className="my-1 h-px bg-white/10" />
 
                 {isStaff ? (
-  <>
-    <MenuRow
-      href="/admin"
-      label="Dashboard"
-      sub="Manage operations and updates"
-      onClick={closeMenu}
-      variant="primary"
-    />
+  savedOrder ? (
+    <>
+      <MenuRow
+        href="/admin"
+        label="Staff Dashboard"
+        sub="Manage operations and updates"
+        onClick={closeMenu}
+        variant="primary"
+      />
 
-    <MenuRow
-      href="/order"
-      label="Place Order"
-      sub="Create your own customer order"
-      onClick={closeMenu}
-    />
-
-    {savedOrder ? (
       <MenuRow
         href={`/order/success/${savedOrder.id}`}
         label="View My Order"
         sub={`Reference: ${savedOrder.reference}`}
         onClick={closeMenu}
       />
-    ) : null}
-  </>
+    </>
+  ) : (
+    <>
+      <MenuRow
+        href="/admin"
+        label="Staff Dashboard"
+        sub="Manage operations and updates"
+        onClick={closeMenu}
+        variant="primary"
+      />
+
+      <MenuRow
+        href="/order"
+        label="Place Order"
+        sub="Create your own customer order"
+        onClick={closeMenu}
+      />
+    </>
+  )
 ) : savedOrder ? (
   <MenuRow
     href={`/order/success/${savedOrder.id}`}
@@ -830,30 +850,39 @@ export default function Home() {
 
             <div className="mt-6 flex flex-col items-center gap-2.5 lg:flex-row lg:items-center lg:justify-start lg:gap-3">
               {isStaff ? (
-  <>
-    <Link
-      href="/admin"
-      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
-    >
-      Staff Dashboard
-    </Link>
+  savedOrder ? (
+    <>
+      <Link
+        href="/admin"
+        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+      >
+        Staff Dashboard
+      </Link>
 
-    <Link
-      href="/order"
-      className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
-    >
-      Place Order
-    </Link>
-
-    {savedOrder ? (
       <Link
         href={`/order/success/${savedOrder.id}`}
         className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
       >
         View My Order
       </Link>
-    ) : null}
-  </>
+    </>
+  ) : (
+    <>
+      <Link
+        href="/admin"
+        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full bg-[#c6a268] px-6 text-[14px] font-semibold text-[#141414] shadow-[0_16px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-[#b8955c] sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+      >
+        Staff Dashboard
+      </Link>
+
+      <Link
+        href="/order"
+        className="inline-flex h-[44px] min-w-[182px] items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-white/10 sm:text-[15px] lg:h-[46px] lg:min-w-0 lg:w-auto lg:px-7"
+      >
+        Place Order
+      </Link>
+    </>
+  )
 ) : savedOrder ? (
   <Link
     href={`/order/success/${savedOrder.id}`}
@@ -875,8 +904,7 @@ export default function Home() {
       Staff Sign In
     </Link>
   </>
-)}
-            </div>
+)}            </div>
 
             {savedOrder ? (
               <div className="mx-auto mt-4 max-w-[34rem] rounded-[24px] border border-white/10 bg-white/[0.045] px-5 py-4 text-center shadow-[0_14px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:mx-0 lg:text-left">
