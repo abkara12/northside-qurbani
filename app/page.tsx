@@ -168,8 +168,7 @@ function InstallAppPrompt() {
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
               {deferred ? (
                 <div>
-                  Tap <span className="font-semibold text-white">Install</span>
-                  for quick access to your orders, and updates on Qurbani day.
+                  Tap <span className="font-semibold text-white">Install</span>for quick access to your orders and updates on Qurbani day.
                 </div>
               ) : (
                 <div>
