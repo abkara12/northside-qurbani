@@ -1155,10 +1155,30 @@ useEffect(() => {
     .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
  const liveOrders = activeOrders.filter((o) => o.orderType === "live");
 
+ const totalQurbaniSheepAlreadyOrdered = activeQurbaniOrders.reduce((sum, order) => {
+  if (order.weightBreakdown?.length) {
+    return (
+      sum +
+      order.weightBreakdown.reduce(
+        (inner, row) => inner + (row.quantity || 0),
+        0
+      )
+    );
+  }
+
+  return sum + (order.quantity || 0);
+}, 0);
+
+
+ 
+
 const totalLiveSheepOrdered = liveOrders.reduce(
   (sum, order) => sum + (order.liveQuantity || order.quantity || 0),
   0
 );
+
+const totalSheepAlreadyOrdered =
+  totalQurbaniSheepAlreadyOrdered + totalLiveSheepOrdered;
 
 const totalLiveValue = liveOrders
   .filter(isPricingFinalized)
@@ -2613,6 +2633,14 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
     value={String(activeOrders.length)}
     helper={`${cancelledOrders.length} cancelled`}
   />
+
+
+  <SummaryCard
+  label="Total Sheep Ordered"
+  value={String(totalSheepAlreadyOrdered)}
+  helper={`${totalQurbaniSheepAlreadyOrdered} qurbani • ${totalLiveSheepOrdered} live`}
+/>
+
 
   {isOwner && (
   <SummaryCard
