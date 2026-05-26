@@ -591,6 +591,114 @@ function ManagementTabButton({
   );
 }
 
+
+function SheepCountSummary({
+  settings,
+  activeQurbaniOrders,
+  liveOrders,
+}: {
+  settings: AppSettings;
+  activeQurbaniOrders: OrderItem[];
+  liveOrders: OrderItem[];
+}) {
+  const countMap = useMemo(() => {
+    const map = new Map<string, number>();
+    activeQurbaniOrders.forEach((order) => {
+      (order.weightBreakdown || []).forEach((row) => {
+        map.set(row.label, (map.get(row.label) || 0) + (row.quantity || 0));
+      });
+    });
+    return map;
+  }, [activeQurbaniOrders]);
+
+  const totalLive = liveOrders.reduce(
+    (s, o) => s + (o.liveQuantity || o.quantity || 0), 0
+  );
+  const totalQurbani = Array.from(countMap.values()).reduce((a, b) => a + b, 0);
+  const maxCount = Math.max(...Array.from(countMap.values()), 1);
+
+  return (
+    <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 sm:p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+      <h3 className="text-lg font-semibold text-white mb-1">Sheep Count per Category</h3>
+      <p className="text-sm text-white/55 mb-5">
+        Ordered totals by weight bracket — share with the farmers to confirm correct numbers.
+      </p>
+
+      {/* Totals row */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { label: "Total all sheep", value: totalQurbani + totalLive },
+          { label: "Qurbani sheep", value: totalQurbani },
+          { label: "Live sheep", value: totalLive },
+        ].map(({ label, value }) => (
+          <div key={label} className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="text-xs text-white/45 mb-1">{label}</div>
+            <div className="text-2xl font-semibold text-white">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Per-category table */}
+      <div className="space-y-2">
+        <div className="grid grid-cols-[1fr_60px_100px_80px] gap-2 px-2 pb-1 border-b border-white/10">
+          {["Category", "Ordered", "Stock left", "Capacity"].map((h) => (
+            <div key={h} className="text-xs font-semibold uppercase tracking-wide text-white/40">{h}</div>
+          ))}
+        </div>
+
+        {settings.weightOptions.map((opt) => {
+          const ordered = countMap.get(opt.label) || 0;
+          const stock = typeof opt.stock === "number" ? opt.stock : null;
+          const capacity = stock !== null ? stock + ordered : null;
+          const barPct = Math.round((ordered / maxCount) * 100);
+
+          return (
+            <div
+              key={opt.label}
+              className="grid grid-cols-[1fr_60px_100px_80px] gap-2 items-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3"
+            >
+              <div>
+                <div className="text-sm font-semibold text-white">{opt.label}</div>
+                <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                  <div
+                    className="h-1.5 rounded-full bg-[#c6a268] transition-all"
+                    style={{ width: `${barPct}%` }}
+                  />
+                </div>
+                <div className="text-xs text-white/40 mt-1">
+                  {opt.price ? formatZAR(opt.price) : "POA"}
+                </div>
+              </div>
+              <div className="text-xl font-semibold text-white">{ordered}</div>
+              <div>
+                {stock === null ? (
+                  <span className="text-xs text-white/40">Unlimited</span>
+                ) : stock <= 2 ? (
+                  <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-200">
+                    {stock} left
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-200">
+                    {stock} left
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-white/60">{capacity ?? "—"}</div>
+            </div>
+          );
+        })}
+
+        {/* Grand total row */}
+        <div className="grid grid-cols-[1fr_60px_100px_80px] gap-2 items-center px-3 pt-3 border-t border-white/10">
+          <div className="text-sm font-semibold text-white">Total qurbani</div>
+          <div className="text-xl font-semibold text-[#d8b67e]">{totalQurbani}</div>
+          <div />
+          <div />
+        </div>
+      </div>
+    </div>
+  );
+}
 function SummaryCard({
   label,
   value,
@@ -2693,6 +2801,14 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
 
   
 </div>
+
+<SheepCountSummary
+  settings={settings}
+  activeQurbaniOrders={activeQurbaniOrders}
+  liveOrders={liveOrders}
+/>
+
+
           
             <div className="rounded-[32px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6">
   <div className="space-y-6">
