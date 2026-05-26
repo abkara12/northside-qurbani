@@ -2025,7 +2025,7 @@ if (!counterSnap.exists()) {
     printWindow.print();
   }
 
-  function handlePrintSheepTags() {
+ function handlePrintSheepTags() {
   const printableOrders = filteredOrders.filter(
     (order) => order.orderType !== "live" && !order.cancelled
   );
@@ -2034,10 +2034,9 @@ if (!counterSnap.exists()) {
     const ref = orderReference(order.id);
     const customer = order.fullName || "Unnamed Customer";
     const phone = order.phone || "—";
-    const assignedTags = order.selectedSheepTagNumbers || [];
 
     if (order.sheepPreferences?.length) {
-      return order.sheepPreferences.map((item, index) => ({
+      return order.sheepPreferences.map((item) => ({
         ref,
         customer,
         phone,
@@ -2047,7 +2046,6 @@ if (!counterSnap.exists()) {
           item.cutPreferences?.length
             ? item.cutPreferences.join(", ")
             : "No preference selected",
-        assignedTag: assignedTags[index] || "",
       }));
     }
 
@@ -2061,40 +2059,39 @@ if (!counterSnap.exists()) {
         <style>
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 8mm;
           }
 
           body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            color: #111;
+            color: #000;
           }
 
           .page-title {
-            padding: 10px 12px 0;
-            font-size: 18px;
+            padding: 10px 12px 2px;
+            font-size: 20px;
             font-weight: bold;
           }
 
           .page-subtitle {
-            padding: 4px 12px 12px;
-            font-size: 12px;
-            color: #555;
+            padding: 2px 12px 10px;
+            font-size: 13px;
+            color: #444;
           }
 
           .grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            padding: 0 12px 12px;
+            gap: 8px;
+            padding: 0 8px 8px;
           }
 
           .tag {
-            border: 2px solid #000;
+            border: 3px solid #000;
             border-radius: 10px;
-            padding: 12px;
-            min-height: 180px;
+            padding: 14px 16px;
             page-break-inside: avoid;
             break-inside: avoid;
           }
@@ -2104,49 +2101,71 @@ if (!counterSnap.exists()) {
             justify-content: space-between;
             align-items: flex-start;
             gap: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
           }
 
           .brand {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
+            letter-spacing: -0.3px;
           }
 
           .ref {
-            font-size: 13px;
+            font-size: 16px;
             font-weight: bold;
+            text-align: right;
           }
 
-          .line {
-            margin: 6px 0;
-            font-size: 13px;
-            line-height: 1.4;
-          }
-
-          .big {
-            font-size: 15px;
+          .field-label {
+            font-size: 11px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #555;
+            margin-bottom: 1px;
           }
 
-          .cuts {
+          .field-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.2;
+            margin-bottom: 10px;
+          }
+
+          .field-value.large {
+            font-size: 24px;
+          }
+
+          .cuts-section {
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 1px dashed #777;
-            font-size: 13px;
-            line-height: 1.5;
+            border-top: 2px dashed #555;
           }
 
-          .tag-number {
-            margin-top: 10px;
-            font-size: 13px;
+          .cuts-label {
+            font-size: 11px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #555;
+            margin-bottom: 4px;
+          }
+
+          .cuts-value {
+            font-size: 19px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.3;
           }
         </style>
       </head>
       <body>
-        <div class="page-title">Northside Qurbani Sheep Tags</div>
+        <div class="page-title">Northside Qurbani — Sheep Tags</div>
         <div class="page-subtitle">
-          Printed on ${new Date().toLocaleString("en-ZA")} • Total sheep tags: ${sheepTags.length}
+          Printed: ${new Date().toLocaleString("en-ZA")} &nbsp;•&nbsp; Total tags: ${sheepTags.length}
         </div>
 
         <div class="grid">
@@ -2159,14 +2178,26 @@ if (!counterSnap.exists()) {
                     <div class="ref">${tag.ref}</div>
                   </div>
 
-                  <div class="line big">${tag.customer}</div>
-                  <div class="line">Phone: ${tag.phone}</div>
-                  <div class="line">Sheep No: ${tag.sheepNo}</div>
-                  <div class="line">Weight: ${tag.weightLabel}</div>
+                  <div class="field-label">Customer</div>
+                  <div class="field-value large">${tag.customer}</div>
 
-                  <div class="cuts">
-                    <strong>Slicing:</strong><br />
-                    ${tag.cuts}
+                  <div class="field-label">Phone</div>
+                  <div class="field-value">${tag.phone}</div>
+
+                  <div style="display:flex; gap:32px;">
+                    <div>
+                      <div class="field-label">Sheep No.</div>
+                      <div class="field-value large">${tag.sheepNo}</div>
+                    </div>
+                    <div>
+                      <div class="field-label">Weight</div>
+                      <div class="field-value large">${tag.weightLabel}</div>
+                    </div>
+                  </div>
+
+                  <div class="cuts-section">
+                    <div class="cuts-label">Slicing preference</div>
+                    <div class="cuts-value">${tag.cuts}</div>
                   </div>
                 </div>
               `
@@ -2189,7 +2220,6 @@ if (!counterSnap.exists()) {
   printWindow.focus();
   printWindow.print();
 }
-
  async function saveEditForm() {
   if (!selectedOrder || !editForm) return;
 
