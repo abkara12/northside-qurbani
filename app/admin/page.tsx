@@ -2059,7 +2059,7 @@ if (!counterSnap.exists()) {
         <style>
           @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin: 5mm;
           }
 
           body {
@@ -2081,30 +2081,30 @@ if (!counterSnap.exists()) {
             color: #444;
           }
 
-          .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            padding: 0 8px 8px;
-          }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 0 4px 4px;
+}
 
-          .tag {
-            border: 3px solid #000;
-            border-radius: 10px;
-            padding: 14px 16px;
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
+.tag {
+  border: 3px solid #000;
+  border-radius: 10px;
+  padding: 10px 12px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
 
-          .top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-          }
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+}
 
           .brand {
             font-size: 18px;
@@ -2127,23 +2127,24 @@ if (!counterSnap.exists()) {
             margin-bottom: 1px;
           }
 
-          .field-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #000;
-            line-height: 1.2;
-            margin-bottom: 10px;
-          }
+.field-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
 
-          .field-value.large {
-            font-size: 24px;
-          }
+.field-value.large {
+  font-size: 24px;
+}
 
-          .cuts-section {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px dashed #555;
-          }
+
+.cuts-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 2px dashed #555;
+}
 
           .cuts-label {
             font-size: 11px;
@@ -2154,12 +2155,12 @@ if (!counterSnap.exists()) {
             margin-bottom: 4px;
           }
 
-          .cuts-value {
-            font-size: 19px;
-            font-weight: bold;
-            color: #000;
-            line-height: 1.3;
-          }
+.cuts-value {
+  font-size: 19px;
+  font-weight: bold;
+  color: #000;
+  line-height: 1.15;
+}
         </style>
       </head>
       <body>
