@@ -514,24 +514,18 @@ function SheepCountSummary({
   const totalAll = totalQurbani + totalLive;
   const maxCount = Math.max(...Array.from(countMap.values()), 1);
 
-  // Known categories from settings
-  const knownRows = settings.weightOptions.map((opt) => {
-    const ordered = countMap.get(opt.label) || 0;
-    const stock = typeof opt.stock === "number" ? opt.stock : null;
-    const capacity = stock !== null ? stock + ordered : null;
-    return { label: opt.label, price: opt.price, ordered, stock, capacity, legacy: false };
-  });
+  const knownRows = settings.weightOptions.map((opt) => ({
+    label: opt.label,
+    price: opt.price,
+    ordered: countMap.get(opt.label) || 0,
+  }));
 
-  // Legacy categories that exist in orders but not in current settings
   const legacyRows = Array.from(countMap.entries())
     .filter(([label]) => !settings.weightOptions.some((o) => o.label === label))
     .map(([label, ordered]) => ({
       label,
       price: null,
       ordered,
-      stock: null,
-      capacity: null,
-      legacy: true,
     }));
 
   const allRows = [...knownRows, ...legacyRows];
@@ -540,7 +534,7 @@ function SheepCountSummary({
     <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 sm:p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
       <h3 className="text-lg font-semibold text-white mb-1">Sheep Count per Category</h3>
       <p className="text-sm text-white/55 mb-5">
-        Full breakdown of ordered sheep by weight bracket — including legacy categories and all order types.
+        Full breakdown of ordered sheep by weight bracket, including all order types.
       </p>
 
       {/* Top totals */}
@@ -558,8 +552,8 @@ function SheepCountSummary({
       </div>
 
       {/* Table header */}
-      <div className="grid grid-cols-[1fr_64px_110px_80px] gap-2 px-3 pb-2 border-b border-white/10">
-        {["Category", "Ordered", "Stock left", "Capacity"].map((h) => (
+      <div className="grid grid-cols-[1fr_64px] gap-2 px-3 pb-2 border-b border-white/10">
+        {["Category", "Ordered"].map((h) => (
           <div key={h} className="text-[11px] font-semibold uppercase tracking-widest text-white/40">
             {h}
           </div>
@@ -574,66 +568,30 @@ function SheepCountSummary({
           return (
             <div
               key={row.label}
-              className={`grid grid-cols-[1fr_64px_110px_80px] gap-2 items-center rounded-[16px] border px-3 py-3 ${
-                row.legacy
-                  ? "border-white/5 bg-white/[0.02] opacity-80"
-                  : "border-white/10 bg-white/[0.03]"
-              }`}
+              className="grid grid-cols-[1fr_64px] gap-2 items-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3"
             >
-              {/* Label + bar + price */}
               <div>
                 <div className="text-sm font-semibold text-white">{row.label}</div>
                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/10">
                   <div
-                    className={`h-1.5 rounded-full transition-all ${
-                      row.legacy ? "bg-[#c6a268]/40" : "bg-[#c6a268]"
-                    }`}
+                    className="h-1.5 rounded-full bg-[#c6a268] transition-all"
                     style={{ width: `${barPct}%` }}
                   />
                 </div>
                 <div className="text-xs text-white/40 mt-1">
-                  {row.legacy
-                    ? "Legacy category"
-                    : row.price
-                    ? formatZAR(row.price)
-                    : "POA"}
+                  {row.price ? formatZAR(row.price) : "POA"}
                 </div>
               </div>
 
-              {/* Ordered count */}
               <div className="text-xl font-semibold text-white">{row.ordered}</div>
-
-              {/* Stock left */}
-              <div>
-                {row.legacy || row.stock === null ? (
-                  <span className="text-xs text-white/40">
-                    {row.legacy ? "—" : "Unlimited"}
-                  </span>
-                ) : row.stock <= 2 ? (
-                  <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-200">
-                    {row.stock} left
-                  </span>
-                ) : (
-                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-200">
-                    {row.stock} left
-                  </span>
-                )}
-              </div>
-
-              {/* Capacity */}
-              <div className="text-sm text-white/60">
-                {row.capacity ?? "—"}
-              </div>
             </div>
           );
         })}
 
         {/* Grand total row */}
-        <div className="grid grid-cols-[1fr_64px_110px_80px] gap-2 items-center px-3 pt-3 border-t border-white/10 mt-1">
+        <div className="grid grid-cols-[1fr_64px] gap-2 items-center px-3 pt-3 border-t border-white/10 mt-1">
           <div className="text-sm font-semibold text-white">Total qurbani</div>
           <div className="text-xl font-semibold text-[#d8b67e]">{totalQurbani}</div>
-          <div />
-          <div />
         </div>
       </div>
     </div>
