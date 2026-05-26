@@ -484,20 +484,37 @@ function SheepCountSummary({
   liveOrders: OrderItem[];
 }) {
   const countMap = useMemo(() => {
-    const map = new Map<string, number>();
+    // Map from normalised key -> { displayLabel, count }
+    const map = new Map<string, { display: string; count: number }>();
+
+    function normalise(label: string) {
+      return label.toLowerCase().trim().replace(/\s+/g, " ");
+    }
 
     activeQurbaniOrders.forEach((order) => {
       if (order.weightBreakdown?.length) {
         order.weightBreakdown.forEach((row) => {
           if (row.label && row.quantity > 0) {
-            map.set(row.label, (map.get(row.label) || 0) + row.quantity);
+            const key = normalise(row.label);
+            const existing = map.get(key);
+            if (existing) {
+              existing.count += row.quantity;
+            } else {
+              map.set(key, { display: row.label.trim(), count: row.quantity });
+            }
           }
         });
       } else {
         const label = (order.preferredWeight || "").trim();
         const qty = order.quantity || 1;
         if (label && qty > 0) {
-          map.set(label, (map.get(label) || 0) + qty);
+          const key = normalise(label);
+          const existing = map.get(key);
+          if (existing) {
+            existing.count += qty;
+          } else {
+            map.set(key, { display: label, count: qty });
+          }
         }
       }
     });
@@ -510,31 +527,54 @@ function SheepCountSummary({
     0
   );
 
-  const totalQurbani = Array.from(countMap.values()).reduce((a, b) => a + b, 0);
+  const totalQurbani = Array.from(countMap.values()).reduce(
+    (a, b) => a + b.count,
+    0
+  );
   const totalAll = totalQurbani + totalLive;
-  const maxCount = Math.max(...Array.from(countMap.values()), 1);
+  const maxCount = Math.max(
+    ...Array.from(countMap.values()).map((v) => v.count),
+    1
+  );
 
-  const knownRows = settings.weightOptions.map((opt) => ({
-    label: opt.label,
-    price: opt.price,
-    ordered: countMap.get(opt.label) || 0,
-  }));
+  function normalise(label: string) {
+    return label.toLowerCase().trim().replace(/\s+/g, " ");
+  }
 
+  // Known settings rows — look up by normalised key
+  const knownRows = settings.weightOptions.map((opt) => {
+    const key = normalise(opt.label);
+    const found = countMap.get(key);
+    return {
+      label: opt.label,
+      price: opt.price,
+      ordered: found?.count || 0,
+      isKnown: true,
+    };
+  });
+
+  const knownKeys = new Set(settings.weightOptions.map((o) => normalise(o.label)));
+
+  // Any labels from actual orders that don't match any current setting
   const legacyRows = Array.from(countMap.entries())
-    .filter(([label]) => !settings.weightOptions.some((o) => o.label === label))
-    .map(([label, ordered]) => ({
-      label,
+    .filter(([key]) => !knownKeys.has(key))
+    .map(([, { display, count }]) => ({
+      label: display,
       price: null,
-      ordered,
+      ordered: count,
+      isKnown: false,
     }));
 
   const allRows = [...knownRows, ...legacyRows];
 
   return (
     <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 sm:p-6 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-      <h3 className="text-lg font-semibold text-white mb-1">Sheep Count per Category</h3>
+      <h3 className="text-lg font-semibold text-white mb-1">
+        Sheep Count per Category
+      </h3>
       <p className="text-sm text-white/55 mb-5">
-        Full breakdown of ordered sheep by weight bracket, including all order types.
+        Full breakdown of ordered sheep by weight bracket, including all order
+        types.
       </p>
 
       {/* Top totals */}
@@ -544,7 +584,10 @@ function SheepCountSummary({
           { label: "Qurbani sheep", value: totalQurbani },
           { label: "Live sheep", value: totalLive },
         ].map(({ label, value }) => (
-          <div key={label} className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
+          <div
+            key={label}
+            className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4"
+          >
             <div className="text-xs text-white/45 mb-1">{label}</div>
             <div className="text-2xl font-semibold text-white">{value}</div>
           </div>
@@ -554,7 +597,10 @@ function SheepCountSummary({
       {/* Table header */}
       <div className="grid grid-cols-[1fr_64px] gap-2 px-3 pb-2 border-b border-white/10">
         {["Category", "Ordered"].map((h) => (
-          <div key={h} className="text-[11px] font-semibold uppercase tracking-widest text-white/40">
+          <div
+            key={h}
+            className="text-[11px] font-semibold uppercase tracking-widest text-white/40"
+          >
             {h}
           </div>
         ))}
@@ -571,19 +617,25 @@ function SheepCountSummary({
               className="grid grid-cols-[1fr_64px] gap-2 items-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3"
             >
               <div>
-                <div className="text-sm font-semibold text-white">{row.label}</div>
+                <div className="text-sm font-semibold text-white">
+                  {row.label}
+                </div>
                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/10">
                   <div
                     className="h-1.5 rounded-full bg-[#c6a268] transition-all"
                     style={{ width: `${barPct}%` }}
                   />
                 </div>
-                <div className="text-xs text-white/40 mt-1">
-                  {row.price ? formatZAR(row.price) : "POA"}
-                </div>
+                {row.price ? (
+                  <div className="text-xs text-white/40 mt-1">
+                    {formatZAR(row.price)}
+                  </div>
+                ) : null}
               </div>
 
-              <div className="text-xl font-semibold text-white">{row.ordered}</div>
+              <div className="text-xl font-semibold text-white">
+                {row.ordered}
+              </div>
             </div>
           );
         })}
@@ -591,7 +643,9 @@ function SheepCountSummary({
         {/* Grand total row */}
         <div className="grid grid-cols-[1fr_64px] gap-2 items-center px-3 pt-3 border-t border-white/10 mt-1">
           <div className="text-sm font-semibold text-white">Total qurbani</div>
-          <div className="text-xl font-semibold text-[#d8b67e]">{totalQurbani}</div>
+          <div className="text-xl font-semibold text-[#d8b67e]">
+            {totalQurbani}
+          </div>
         </div>
       </div>
     </div>
