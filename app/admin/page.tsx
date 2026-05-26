@@ -2168,10 +2168,6 @@ if (!counterSnap.exists()) {
                     <strong>Slicing:</strong><br />
                     ${tag.cuts}
                   </div>
-
-                  <div class="tag-number">
-                    ${tag.assignedTag ? `Assigned Tag: ${tag.assignedTag}` : "Assigned Tag: __________"}
-                  </div>
                 </div>
               `
             )
