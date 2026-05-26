@@ -1290,26 +1290,44 @@ useEffect(() => {
 ]);
 
   const simpleSearchResults = useMemo(() => {
-    const term = simpleSearch.trim().toLowerCase();
-    if (!term) return [];
-    return activeQurbaniOrders
-      .filter(
-        (order) =>
-          order.fullName?.toLowerCase().includes(term) ||
-          order.phone?.toLowerCase().includes(term) ||
-          order.email?.toLowerCase().includes(term) ||
-          orderReference(order.id).toLowerCase().includes(term) ||
-          (order.deliveryArea || "").toLowerCase().includes(term) ||
-          (order.selectedSheepTagNumbers || []).join(" ").toLowerCase().includes(term)
-      )
-      .sort((a, b) =>
-        (a.fullName || "").localeCompare(b.fullName || "", undefined, {
-          sensitivity: "base",
-        })
-      )
-      .slice(0, 12);
-  }, [activeQurbaniOrders, simpleSearch]);
+  const term = simpleSearch.trim().toLowerCase();
+  if (!term) return [];
 
+  const matched = activeQurbaniOrders.filter((order) => {
+    const name = (order.fullName || "").toLowerCase();
+    const phone = (order.phone || "").toLowerCase();
+    const email = (order.email || "").toLowerCase();
+    const ref = orderReference(order.id).toLowerCase();
+    const area = (order.deliveryArea || "").toLowerCase();
+    const tags = (order.selectedSheepTagNumbers || []).join(" ").toLowerCase();
+
+    return (
+      name.includes(term) ||
+      phone.includes(term) ||
+      email.includes(term) ||
+      ref.includes(term) ||
+      area.includes(term) ||
+      tags.includes(term)
+    );
+  });
+
+  // Sort: names starting with the term come first, then contains matches
+  matched.sort((a, b) => {
+    const nameA = (a.fullName || "").toLowerCase();
+    const nameB = (b.fullName || "").toLowerCase();
+
+    const aStarts = nameA.startsWith(term);
+    const bStarts = nameB.startsWith(term);
+
+    if (aStarts && !bStarts) return -1;
+    if (!aStarts && bStarts) return 1;
+
+    // Within the same group, sort alphabetically
+    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+  });
+
+  return matched.slice(0, 12);
+}, [activeQurbaniOrders, simpleSearch]);
   const queueOrders = useMemo(() => {
     return activeQurbaniOrders
       .filter((order) => !order.cancelled && !order.slaughtered && (order.queueNumber || 0) > 0)
