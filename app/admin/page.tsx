@@ -2749,7 +2749,7 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
                               >
                                 {updatingField === order.id
                                 ? "Assigning Queue Number..."
-                                : `Put Customer Next In Queue (#${nextQueueNumber})`}
+                                : `Put Customer Next In Queue`}
                               </button>
                             )}
                           </div>
