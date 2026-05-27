@@ -2666,11 +2666,6 @@ const finalDelivered = finalSliced ? !!editForm.delivered : false;
           <div className="mt-8 space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <SummaryCard label="Unslaughtered" value={String(pendingOrders.length)} />
-              <SummaryCard
-                label="In Queue"
-                value={String(queueOrders.length)}
-                helper={`Next #${nextQueueNumber}`}
-              />
               <SummaryCard label="Slaughtered" value={String(slaughteredOrders.length)} />
             </div>
 
